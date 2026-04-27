@@ -48,6 +48,33 @@ app.get('/api/clients', async function(req, res) {
   }
 });
 
+app.get('/api/transactions', async function(req, res) {
+  try {
+    const t = await getToken();
+    const r = await axios.post(BASE + '/documents/search', {
+      page: 1,
+      pageSize: 50,
+      type: [320, 305, 300, 400]
+    }, {
+      headers: { Authorization: 'Bearer ' + t }
+    });
+    const txs = (r.data.items || []).map(function(doc) {
+      return {
+        id: doc.id,
+        amount: doc.payment && doc.payment[0] ? doc.payment[0].price : doc.sum,
+        description: doc.client ? doc.client.name : doc.description,
+        date: doc.documentDate || doc.createdAt,
+        clientName: doc.client ? doc.client.name : '',
+        clientId: doc.client ? doc.client.id : '',
+        canInvoice: true,
+        invoiceCreated: true
+      };
+    });
+    res.json({ transactions: txs });
+  } catch(e) {
+    res.status(500).json({ error: e.message, transactions: [] });
+  }
+});
 app.post('/api/webhook', function(req, res) {
   console.log('Webhook:', JSON.stringify(req.body));
   res.json({ ok: true });
