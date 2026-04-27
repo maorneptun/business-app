@@ -33,7 +33,10 @@ app.get('/api/health', async function(req, res) {
 app.get('/api/clients', async function(req, res) {
   try {
     var t = await getToken();
-    var r = await axios.get(BASE + '/clients/search', {
+   var r = await axios.post(BASE + '/clients/search', {
+  headers: { Authorization: 'Bearer ' + t },
+  data: { page: 1, pageSize: 100 }
+});
       headers: { Authorization: 'Bearer ' + t },
       params: { page: 1, pageSize: 100, active: true }
     });
