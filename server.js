@@ -1,68 +1,100 @@
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
+
 const app = express();
 app.use(cors());
 app.use(express.json());
+
 const ID = '2888f895-fd92-4775-926e-3c778bda51d4';
-const SECRET = '_7p5_[m[_1t4v?eIl=C!+XhTa9Ma!m=a';
+const SECRET = process.env.GREEN_INVOICE_API_KEY_SECRET || '_7p5_[m[_1t4v?eIl=C!+XhTa9Ma!m=a';
 const BASE = 'https://api.greeninvoice.co.il/api/v1';
+
 let tok = null;
 let exp = null;
+
 async function getToken() {
   if (tok && exp > Date.now()) return tok;
-  const r = await axios.post(BASE + '/account/token', {id: ID, secret: SECRET});
+  const r = await axios.post(BASE + '/account/token', { id: ID, secret: SECRET });
   tok = r.data.token;
   exp = Date.now() + 3500000;
   return tok;
 }
+
 app.get('/api/health', async function(req, res) {
   try {
     await getToken();
-    res.json({status: 'ok', connected: true});
-  } catch(e) {
-    res.status(500).json({error: e.message});
-  }
-});
-
-app.get('/api/bank/transactions', async function(req, res) {
-  try {
-    var t = await getToken();
-    var response = await axios.get(BASE + '/bank/transactions', {
-      headers: { Authorization: 'Bearer ' + t }
-    });
-    res.json(response.data);
+    res.json({ status: 'ok', connected: true });
   } catch(e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-app.get('/api/bank/accounts', async function(req, res) {
+app.get('/api/clients', async function(req, res) {
   try {
     var t = await getToken();
-    var response = await axios.get(BASE + '/bank/accounts', {
-      headers: { Authorization: 'Bearer ' + t }
+    var r = await axios.get(BASE + '/clients/search', {
+      headers: { Authorization: 'Bearer ' + t },
+      params: { page: 1, pageSize: 100, active: true }
     });
-    res.json(response.data);
+    res.json(r.data);
   } catch(e) {
     res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/transactions', async function(req, res) {
+  try {
+    var t = await getToken();
+    var r = await axios.get(BASE + '/bank/transactions', {
+      headers: { Authorization: 'Bearer ' + t },
+      params: { page: 1, pageSize: 50 }
+    });
+    res.json(r.data);
+  } catch(e) {
+    res.status(500).json({ error: e.message, transactions: [] });
   }
 });
 
 app.post('/api/webhook', function(req, res) {
-  var data = req.body;
-  console.log('Webhook received:', JSON.stringify(data));
+  console.log('Webhook received:', JSON.stringify(req.body));
   res.json({ ok: true });
 });
 
-app.listen(4000, async function() {
-  console.log('Server running on port 4000');
+app.post('/api/invoice/create', async function(req, res) {
   try {
-    var { connectToCloudflare } = require('cloudflared');
-    var result = await connectToCloudflare({ port: 4000 });
-    console.log('Public URL: ' + result.url);
-    console.log('Webhook URL: ' + result.url + '/api/webhook');
+    var b = req.body;
+    var t = await getToken();
+    var r = await axios.post(BASE + '/documents', {
+      type: 320,
+      lang: 'he',
+      currency: 'ILS',
+      vatType: 0,
+      client: {
+        name: b.clientName,
+        emails: b.clientEmail ? [b.clientEmail] : [],
+        phone: b.clientPhone || '',
+        add: true
+      },
+      income: [{
+        description: b.description || 'תשלום',
+        price: b.amount,
+        currency: 'ILS',
+        vatType: 0
+      }],
+      payment: [{
+        type: 1,
+        price: b.amount,
+        currency: 'ILS',
+        date: new Date().toISOString().split('T')[0]
+      }]
+    }, { headers: { Authorization: 'Bearer ' + t } });
+    res.json({ success: true, invoiceId: r.data.id, invoiceNumber: r.data.number, invoiceUrl: r.data.url });
   } catch(e) {
-    console.log('Tunnel error: ' + e.message);
+    res.status(500).json({ error: e.message });
   }
+});
+
+app.listen(4000, function() {
+  console.log('Server running on port 4000');
 });
