@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
@@ -20,41 +21,30 @@ async function getToken() {
   return tok;
 }
 
-app.get('/api/clients', async function(req, res) {
+app.get('/api/health', async function(req, res) {
   try {
-    const t = await getToken();
-    const r = await axios.post(BASE + '/documents/search', {
-      page: 1,
-      pageSize: 100,
-      type: [320, 305, 300]
-    }, {
-      headers: { Authorization: 'Bearer ' + t }
-    });
-    const clients = [];
-    const seen = {};
-    (r.data.items || []).forEach(function(doc) {
-      if (doc.client && doc.client.name && !seen[doc.client.name]) {
-        seen[doc.client.name] = true;
-        clients.push({ id: doc.client.id, name: doc.client.name, email: doc.client.emails ? doc.client.emails[0] : '' });
-      }
-    });
-    res.json({ items: clients, total: clients.length });
+    await getToken();
+    res.json({ status: 'ok', connected: true });
   } catch(e) {
     res.status(500).json({ error: e.message });
-  }
-});
   }
 });
 
 app.get('/api/clients', async function(req, res) {
   try {
     const t = await getToken();
-    const r = await axios.post(BASE + '/clients/search', {
-      page: 1,
-      pageSize: 100
-    }, {
-      headers: { Authorization: 'Bearer ' + t }
+    const r = await axios.post(BASE + '/documents/search', { page: 1, pageSize: 100, type: [320, 305, 300] }, { headers: { Authorization: 'Bearer ' + t } });
+    const clients = [];
+    const seen = {};
+    (r.data.items || []).forEach(function(doc) {
+      if (doc.client && doc.client.name && !seen[doc.client.name]) {
+        seen[doc.client.name] = true;
+        clients.push({ id: doc.client.id, name: doc.client.name });
+      }
     });
+    res.json({ items: clients });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
   }
 });
 
@@ -72,12 +62,7 @@ app.post('/api/invoice/create', async function(req, res) {
       lang: 'he',
       currency: 'ILS',
       vatType: 0,
-      client: {
-        name: b.clientName,
-        emails: b.clientEmail ? [b.clientEmail] : [],
-        phone: b.clientPhone || '',
-        add: true
-      },
+      client: { name: b.clientName, emails: b.clientEmail ? [b.clientEmail] : [], phone: b.clientPhone || '', add: true },
       income: [{ description: b.description || 'תשלום', price: b.amount, currency: 'ILS', vatType: 0 }],
       payment: [{ type: 1, price: b.amount, currency: 'ILS', date: new Date().toISOString().split('T')[0] }]
     }, { headers: { Authorization: 'Bearer ' + t } });
