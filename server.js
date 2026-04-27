@@ -46,7 +46,7 @@ app.get('/api/clients', async function(req, res) {
 app.get('/api/transactions', async function(req, res) {
   try {
     var t = await getToken();
-    var r = await axios.get(BASE + '/bank/transactions', {
+  var r = await axios.get(BASE + '/clients', {
       headers: { Authorization: 'Bearer ' + t },
       params: { page: 1, pageSize: 50 }
     });
