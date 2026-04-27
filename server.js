@@ -1,13 +1,12 @@
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
-
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const ID = '94814b61-b92e-4a3d-9dea-ec9ca53aa9c7';
-const SECRET = process.env.GREEN_INVOICE_API_KEY_SECRET || '+JtCB*4yY@i+dSL:>UsNU.c=>1g$Q|QH';
+const ID = process.env.GREEN_INVOICE_API_KEY_ID;
+const SECRET = process.env.GREEN_INVOICE_API_KEY_SECRET;
 const BASE = 'https://api.greeninvoice.co.il/api/v1';
 
 let tok = null;
@@ -32,13 +31,9 @@ app.get('/api/health', async function(req, res) {
 
 app.get('/api/clients', async function(req, res) {
   try {
-    var t = await getToken();
-   var r = await axios.get(BASE + '/clients', {
-  headers: { Authorization: 'Bearer ' + t }
-
-});
-      headers: { Authorization: 'Bearer ' + t },
-      params: { page: 1, pageSize: 100, active: true }
+    const t = await getToken();
+    const r = await axios.get(BASE + '/clients', {
+      headers: { Authorization: 'Bearer ' + t }
     });
     res.json(r.data);
   } catch(e) {
@@ -46,29 +41,16 @@ app.get('/api/clients', async function(req, res) {
   }
 });
 
-app.get('/api/transactions', async function(req, res) {
-  try {
-    var t = await getToken();
-  var r = await axios.get(BASE + '/clients', {
-      headers: { Authorization: 'Bearer ' + t },
-      params: { page: 1, pageSize: 50 }
-    });
-    res.json(r.data);
-  } catch(e) {
-    res.status(500).json({ error: e.message, transactions: [] });
-  }
-});
-
 app.post('/api/webhook', function(req, res) {
-  console.log('Webhook received:', JSON.stringify(req.body));
+  console.log('Webhook:', JSON.stringify(req.body));
   res.json({ ok: true });
 });
 
 app.post('/api/invoice/create', async function(req, res) {
   try {
-    var b = req.body;
-    var t = await getToken();
-    var r = await axios.post(BASE + '/documents', {
+    const b = req.body;
+    const t = await getToken();
+    const r = await axios.post(BASE + '/documents', {
       type: 320,
       lang: 'he',
       currency: 'ILS',
@@ -79,20 +61,10 @@ app.post('/api/invoice/create', async function(req, res) {
         phone: b.clientPhone || '',
         add: true
       },
-      income: [{
-        description: b.description || 'תשלום',
-        price: b.amount,
-        currency: 'ILS',
-        vatType: 0
-      }],
-      payment: [{
-        type: 1,
-        price: b.amount,
-        currency: 'ILS',
-        date: new Date().toISOString().split('T')[0]
-      }]
+      income: [{ description: b.description || 'תשלום', price: b.amount, currency: 'ILS', vatType: 0 }],
+      payment: [{ type: 1, price: b.amount, currency: 'ILS', date: new Date().toISOString().split('T')[0] }]
     }, { headers: { Authorization: 'Bearer ' + t } });
-    res.json({ success: true, invoiceId: r.data.id, invoiceNumber: r.data.number, invoiceUrl: r.data.url });
+    res.json({ success: true, invoiceId: r.data.id, invoiceNumber: r.data.number });
   } catch(e) {
     res.status(500).json({ error: e.message });
   }
