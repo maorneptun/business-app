@@ -32,12 +32,12 @@ app.get('/api/health', async function(req, res) {
 app.get('/api/clients', async function(req, res) {
   try {
     const t = await getToken();
-    const r = await axios.get(BASE + '/clients', {
+    const r = await axios.post(BASE + '/clients/search', {
+      page: 1,
+      pageSize: 100
+    }, {
       headers: { Authorization: 'Bearer ' + t }
     });
-    res.json(r.data);
-  } catch(e) {
-    res.status(500).json({ error: e.message });
   }
 });
 
