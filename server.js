@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json());
 
 const ID = '94814b61-b92e-4a3d-9dea-ec9ca53aa9c7';
-const const SECRET = process.env.GREEN_INVOICE_API_KEY_SECRET || '+JtCB*4yY@i+dSL:>UsNU.c=>1g$Q|QH';
+const SECRET = process.env.GREEN_INVOICE_API_KEY_SECRET || '+JtCB*4yY@i+dSL:>UsNU.c=>1g$Q|QH';
 const BASE = 'https://api.greeninvoice.co.il/api/v1';
 
 let tok = null;
