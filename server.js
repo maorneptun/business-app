@@ -20,12 +20,29 @@ async function getToken() {
   return tok;
 }
 
-app.get('/api/health', async function(req, res) {
+app.get('/api/clients', async function(req, res) {
   try {
-    await getToken();
-    res.json({ status: 'ok', connected: true });
+    const t = await getToken();
+    const r = await axios.post(BASE + '/documents/search', {
+      page: 1,
+      pageSize: 100,
+      type: [320, 305, 300]
+    }, {
+      headers: { Authorization: 'Bearer ' + t }
+    });
+    const clients = [];
+    const seen = {};
+    (r.data.items || []).forEach(function(doc) {
+      if (doc.client && doc.client.name && !seen[doc.client.name]) {
+        seen[doc.client.name] = true;
+        clients.push({ id: doc.client.id, name: doc.client.name, email: doc.client.emails ? doc.client.emails[0] : '' });
+      }
+    });
+    res.json({ items: clients, total: clients.length });
   } catch(e) {
     res.status(500).json({ error: e.message });
+  }
+});
   }
 });
 
