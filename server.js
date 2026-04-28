@@ -41,36 +41,42 @@ app.get('/api/transactions', async function(req, res) {
       headers: { Authorization: 'Bearer ' + t },
       params: { 'valueDate[from]': fromDate, 'valueDate[to]': today, from: 0, size: 50, bookingStatus: 'booked' }
     });
-    console.log('Raw response:', JSON.stringify(r.data).substring(0, 1500));
-    const data = r.data;
-    let items = [];
-    if (Array.isArray(data)) items = data;
-    else if (data.results && Array.isArray(data.results)) items = data.results;
-    else if (data.transactions && Array.isArray(data.transactions)) items = data.transactions;
-    else if (data.items && Array.isArray(data.items)) items = data.items;
-    else if (data.data && Array.isArray(data.data)) items = data.data;
-    else { return res.json({ transactions: [], raw: JSON.stringify(data).substring(0, 200) }); }
+    const items = r.data.results || [];
     const seen = {};
     const txs = items.filter(function(tx) {
-      const key = (tx.valueDate || tx.date) + '_' + Math.abs(tx.amount || (tx.transactionAmount && tx.transactionAmount.amount) || 0);
+      const key = (tx.valueDate || tx.date) + '_' + (tx.creditorName || tx.debtorName || tx.name || '') + '_' + (tx.resourceId || '');
       if (seen[key]) return false;
       seen[key] = true;
       return true;
     }).map(function(tx) {
-      const rawAmount = tx.transactionAmount ? tx.transactionAmount.amount : tx.amount;
-      const amount = tx.creditDebitIndicator === 'DBIT' ? -Math.abs(rawAmount) : Math.abs(rawAmount);
+      const isDebit = tx.type === 'debt' || tx.creditorName;
+      const name = tx.creditorName || tx.debtorName || tx.name || tx.description || 'תנועה';
       return {
-        id: tx.transactionId || tx.id,
-        amount: amount,
-        description: tx.remittanceInformationUnstructured || tx.creditorName || tx.debtorName || tx.description || 'תנועה',
-        date: (tx.valueDate || tx.bookingDate || tx.date || '').split('T')[0],
-        canInvoice: amount > 0,
-        done: false
+        id: tx.id,
+        amount: isDebit ? -1 : 1,
+        description: name,
+        date: (tx.valueDate || tx.date || '').split('T')[0],
+        type: tx.type,
+        canInvoice: false,
+        done: false,
+        needsAmount: true
       };
     });
-    res.json({ transactions: txs });
+    res.json({ transactions: txs, note: 'amounts_unavailable' });
   } catch(e) {
     res.status(500).json({ error: e.message, transactions: [] });
+  }
+});
+
+app.get('/api/balance', async function(req, res) {
+  try {
+    const t = await getToken();
+    const r = await axios.get('https://apigw.greeninvoice.co.il/open-banking/v2/accounts', {
+      headers: { Authorization: 'Bearer ' + t }
+    });
+    res.json(r.data);
+  } catch(e) {
+    res.status(500).json({ error: e.message });
   }
 });
 
