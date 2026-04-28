@@ -21,12 +21,87 @@ async function getToken() {
   return tok;
 }
 
-app.get('/api/health', async function(req, res) {
+app.get('/api/transactions', async function(req, res) {
   try {
-    await getToken();
-    res.json({ status: 'ok', connected: true });
+    const t = await getToken();
+    const today = new Date().toISOString().split('T')[0];
+    const from = new Date();
+    from.setMonth(from.getMonth() - 1);
+    const fromDate = from.toISOString().split('T')[0];
+    const r = await axios.get('https://apigw.greeninvoice.co.il/open-banking/v2/transactions', {
+      headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' },
+      params: { 'valueDate[from]': fromDate, 'valueDate[to]': today, from: 0, size: 50, bookingStatus: 'booked' }
+    });
+    const items = r.data.transactions || r.data.items || r.data || [];
+    const seen = {};
+    const txs = items.filter(function(tx) {
+      const key = (tx.valueDate || tx.date) + '_' + Math.abs(tx.amount || (tx.transactionAmount && tx.transactionAmount.amount) || 0);
+      if (seen[key]) return false;
+      seen[key] = true;
+      return true;
+    }).map(function(tx) {
+      const rawAmount = tx.transactionAmount ? tx.transactionAmount.amount : tx.amount;
+      const amount = tx.creditDebitIndicator === 'DBIT' ? -Math.abs(rawAmount) : Math.abs(rawAmount);
+      return {
+        id: tx.transactionId || tx.id,
+        amount: amount,
+        description: tx.remittanceInformationUnstructured || tx.creditorName || tx.debtorName || tx.description || 'תנועה',
+        date: (tx.valueDate || tx.bookingDate || tx.date || '').split('T')[0],
+        canInvoice: amount > 0,
+        done: false
+      };
+    });
+    res.json({ transactions: txs });
+  } catch(e) {
+    res.status(500).json({ error: e.message, transactions: [] });
+  }
+});
+
+app.get('/api/balance', async function(req, res) {
+  try {
+    const t = await getToken();
+    const r = await axios.get(BASE + '/bank/accounts', {
+      headers: { Authorization: 'Bearer ' + t }
+    });
+    const account = (r.data.items || r.data || [])[0];
+    res.json({ balance: account ? account.balance : null, accountNumber: account ? account.accountNumber : null });
   } catch(e) {
     res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/transactions', async function(req, res) {
+  try {
+    const t = await getToken();
+    const today = new Date().toISOString().split('T')[0];
+    const from = new Date();
+    from.setMonth(from.getMonth() - 3);
+    const fromDate = from.toISOString().split('T')[0];
+    const r = await axios.get(BASE + '/bank/transactions', {
+      headers: { Authorization: 'Bearer ' + t },
+      params: { dateFrom: fromDate, dateTo: today, page: 1, pageSize: 50 }
+    });
+    const items = r.data.items || r.data.transactions || r.data || [];
+    const seen = {};
+    const txs = items.filter(function(tx) {
+      const key = (tx.date || tx.valueDate) + '_' + Math.abs(tx.amount || 0) + '_' + (tx.description || '');
+      if (seen[key]) return false;
+      seen[key] = true;
+      return true;
+    }).map(function(tx) {
+      const amount = tx.creditDebitIndicator === 'DBIT' ? -Math.abs(tx.amount) : tx.amount;
+      return {
+        id: tx.id || tx.transactionId,
+        amount: amount,
+        description: tx.description || tx.name || tx.remittanceInformation || 'תנועה',
+        date: (tx.date || tx.valueDate || '').split('T')[0],
+        canInvoice: amount > 0,
+        done: false
+      };
+    });
+    res.json({ transactions: txs });
+  } catch(e) {
+    res.status(500).json({ error: e.message, transactions: [] });
   }
 });
 
@@ -48,33 +123,6 @@ app.get('/api/clients', async function(req, res) {
   }
 });
 
-app.get('/api/transactions', async function(req, res) {
-  try {
-    const t = await getToken();
-    const r = await axios.post(BASE + '/documents/search', {
-      page: 1,
-      pageSize: 50,
-      type: [320, 305, 300, 400]
-    }, {
-      headers: { Authorization: 'Bearer ' + t }
-    });
-    const txs = (r.data.items || []).map(function(doc) {
-      return {
-        id: doc.id,
-        amount: doc.payment && doc.payment[0] ? doc.payment[0].price : doc.sum,
-        description: doc.client ? doc.client.name : doc.description,
-        date: doc.documentDate || doc.createdAt,
-        clientName: doc.client ? doc.client.name : '',
-        clientId: doc.client ? doc.client.id : '',
-        canInvoice: true,
-        invoiceCreated: true
-      };
-    });
-    res.json({ transactions: txs });
-  } catch(e) {
-    res.status(500).json({ error: e.message, transactions: [] });
-  }
-});
 app.post('/api/webhook', function(req, res) {
   console.log('Webhook:', JSON.stringify(req.body));
   res.json({ ok: true });
