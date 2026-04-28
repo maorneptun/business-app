@@ -41,7 +41,7 @@ app.get('/api/transactions', async function(req, res) {
       headers: { Authorization: 'Bearer ' + t },
       params: { 'valueDate[from]': fromDate, 'valueDate[to]': today, from: 0, size: 50, bookingStatus: 'booked' }
     });
-    console.log('Raw response:', JSON.stringify(r.data).substring(0, 500));
+    console.log('Raw response:', JSON.stringify(r.data).substring(0, 1500));
     const data = r.data;
     let items = [];
     if (Array.isArray(data)) items = data;
