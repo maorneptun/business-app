@@ -2,9 +2,15 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
+
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+const upload = multer({ dest: '/tmp/uploads/' });
 
 const ID = process.env.GREEN_INVOICE_API_KEY_ID;
 const SECRET = process.env.GREEN_INVOICE_API_KEY_SECRET;
@@ -13,6 +19,9 @@ const BASE = 'https://api.greeninvoice.co.il/api/v1';
 let tok = null;
 let exp = null;
 
+// תנועות CSV בזיכרון
+let csvTransactions = [];
+
 async function getToken() {
   if (tok && exp > Date.now()) return tok;
   const r = await axios.post(BASE + '/account/token', { id: ID, secret: SECRET });
@@ -20,6 +29,59 @@ async function getToken() {
   exp = Date.now() + 3500000;
   return tok;
 }
+
+// פרסר CSV של בנק הפועלים
+function parsePoalimCSV(content) {
+  // הסר BOM אם קיים
+  content = content.replace(/^\uFEFF/, '');
+
+  const lines = content.split('\n').filter(l => l.trim());
+  const transactions = [];
+
+  // שורה ראשונה = headers, דלג עליה
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(',');
+    if (cols.length < 8) continue;
+
+    const date = (cols[0] || '').trim();
+    const description = (cols[1] || '').trim();
+    const details = (cols[2] || '').trim();
+    const debit = parseFloat((cols[6] || '').trim()) || 0;
+    const credit = parseFloat((cols[7] || '').trim()) || 0;
+    const balance = parseFloat((cols[8] || '').trim()) || 0;
+
+    if (!date || (!debit && !credit)) continue;
+
+    // זיהוי שם לקוח — נסה מ"פרטים" קודם, אחרי כן מ"תיאור"
+    let clientName = '';
+    if (details) {
+      // חלץ שם מ"עבור: XXX"
+      const match = details.match(/עבור:\s*(.+?)(?:\s+מזהה|\s+מח-ן|$)/);
+      if (match) clientName = match[1].trim();
+    }
+    if (!clientName) clientName = description;
+
+    const isIncome = credit > 0;
+
+    transactions.push({
+      id: 'csv_' + date + '_' + i,
+      date: date,
+      description: description,
+      details: details,
+      clientName: clientName,
+      amount: isIncome ? credit : debit,
+      type: isIncome ? 'credit' : 'debit',
+      balance: balance,
+      canInvoice: isIncome,
+      done: false,
+      source: 'csv'
+    });
+  }
+
+  return transactions;
+}
+
+// ===== ENDPOINTS =====
 
 app.get('/api/health', async function(req, res) {
   try {
@@ -30,56 +92,39 @@ app.get('/api/health', async function(req, res) {
   }
 });
 
-app.get('/api/transactions', async function(req, res) {
+// העלאת CSV
+app.post('/api/transactions/upload', upload.single('csv'), function(req, res) {
   try {
-    const t = await getToken();
-    const today = new Date().toISOString().split('T')[0];
-    const from = new Date();
-    from.setMonth(from.getMonth() - 1);
-    const fromDate = from.toISOString().split('T')[0];
-    const r = await axios.get('https://apigw.greeninvoice.co.il/open-banking/v2/transactions', {
-      headers: { Authorization: 'Bearer ' + t },
-      params: { 'valueDate[from]': fromDate, 'valueDate[to]': today, from: 0, size: 50, bookingStatus: 'booked' }
-    });
-    const items = r.data.results || [];
-    const seen = {};
-    const txs = items.filter(function(tx) {
-      const key = (tx.valueDate || tx.date) + '_' + (tx.creditorName || tx.debtorName || tx.name || '') + '_' + (tx.resourceId || '');
-      if (seen[key]) return false;
-      seen[key] = true;
-      return true;
-    }).map(function(tx) {
-      const isDebit = tx.type === 'debt' || tx.creditorName;
-      const name = tx.creditorName || tx.debtorName || tx.name || tx.description || 'תנועה';
-      return {
-        id: tx.id,
-        amount: isDebit ? -1 : 1,
-        description: name,
-        date: (tx.valueDate || tx.date || '').split('T')[0],
-        type: tx.type,
-        canInvoice: false,
-        done: false,
-        needsAmount: true
-      };
-    });
-    res.json({ transactions: txs, note: 'amounts_unavailable' });
-  } catch(e) {
-    res.status(500).json({ error: e.message, transactions: [] });
-  }
-});
+    if (!req.file) return res.status(400).json({ error: 'לא התקבל קובץ' });
 
-app.get('/api/balance', async function(req, res) {
-  try {
-    const t = await getToken();
-    const r = await axios.get('https://apigw.greeninvoice.co.il/open-banking/v2/accounts', {
-      headers: { Authorization: 'Bearer ' + t }
+    const content = fs.readFileSync(req.file.path, 'utf8');
+    fs.unlinkSync(req.file.path); // מחק קובץ זמני
+
+    const parsed = parsePoalimCSV(content);
+    if (parsed.length === 0) {
+      return res.status(400).json({ error: 'לא נמצאו תנועות בקובץ' });
+    }
+
+    csvTransactions = parsed;
+    console.log('CSV imported:', parsed.length, 'transactions');
+
+    res.json({
+      success: true,
+      count: parsed.length,
+      transactions: parsed
     });
-    res.json(r.data);
   } catch(e) {
+    console.error('CSV parse error:', e);
     res.status(500).json({ error: e.message });
   }
 });
 
+// קבלת תנועות (CSV בלבד)
+app.get('/api/transactions', function(req, res) {
+  res.json({ transactions: csvTransactions, source: 'csv' });
+});
+
+// רשימת לקוחות ממורנינג
 app.get('/api/clients', async function(req, res) {
   try {
     const t = await getToken();
@@ -110,7 +155,7 @@ app.post('/api/invoice/create', async function(req, res) {
     const r = await axios.post(BASE + '/documents', {
       type: 320, lang: 'he', currency: 'ILS', vatType: 0,
       client: { name: b.clientName, emails: b.clientEmail ? [b.clientEmail] : [], phone: b.clientPhone || '', add: true },
-      income: [{ description: b.description || 'תשלום', price: b.amount, currency: 'ILS', vatType: 0 }],
+      income: [{ description: b.description || 'שירותים', price: b.amount, currency: 'ILS', vatType: 0 }],
       payment: [{ type: 1, price: b.amount, currency: 'ILS', date: new Date().toISOString().split('T')[0] }]
     }, { headers: { Authorization: 'Bearer ' + t } });
     res.json({ success: true, invoiceId: r.data.id, invoiceNumber: r.data.number });
