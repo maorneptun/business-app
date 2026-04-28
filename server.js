@@ -52,14 +52,29 @@ function parsePoalimCSV(content) {
 
     if (!date || (!debit && !credit)) continue;
 
-    // זיהוי שם לקוח — נסה מ"פרטים" קודם, אחרי כן מ"תיאור"
+    // זיהוי שם לקוח
     let clientName = '';
+
     if (details) {
-      // חלץ שם מ"עבור: XXX"
-      const match = details.match(/עבור:\s*(.+?)(?:\s+מזהה|\s+מח-ן|$)/);
-      if (match) clientName = match[1].trim();
+      // עדיפות 1: "המבצע: XXX" — השם האמיתי של הלקוח
+      const mbatzea = details.match(/המבצע:\s*(.+?)(?:\s+עבור:|\s+מזהה|\s+מח-ן|$)/);
+      if (mbatzea) {
+        clientName = mbatzea[1].trim();
+      }
+
+      // עדיפות 2: אם אין המבצע, ותיאור הוא שם חברה (לא "זיכוי X" / "העברה")
+      // למשל: "ש. קרני מהנדסי", "גב אקספרט בע"מ", "באבקום סנטרס ב"
     }
-    if (!clientName) clientName = description;
+
+    // עדיפות 3: תיאור עמודה — אם זה שם חברה (לא מילת מערכת)
+    const systemWords = ['זיכוי מלאומי', 'זיכוי בינלאומי', 'זיכוי מהמזרחי', 'העברה', 'העב\'', 'העברה/הפקדה', 'החזר'];
+    const isSystemDesc = systemWords.some(w => description.includes(w));
+
+    if (!clientName && !isSystemDesc) {
+      clientName = description; // שם חברה אמיתי בעמודת תיאור
+    }
+
+    if (!clientName) clientName = description; // fallback
 
     const isIncome = credit > 0;
 
