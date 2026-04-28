@@ -45,6 +45,7 @@ app.get('/api/transactions', async function(req, res) {
     const data = r.data;
     let items = [];
     if (Array.isArray(data)) items = data;
+    else if (data.results && Array.isArray(data.results)) items = data.results;
     else if (data.transactions && Array.isArray(data.transactions)) items = data.transactions;
     else if (data.items && Array.isArray(data.items)) items = data.items;
     else if (data.data && Array.isArray(data.data)) items = data.data;
