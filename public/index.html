@@ -1,0 +1,3122 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>נפטון — ניהול עסק</title>
+<!-- PWA -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1a1a2e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="נפטון">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    });
+  }
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --primary: #1a1a2e;
+    --accent: #0f6e56;
+    --accent-light: #e1f5ee;
+    --accent-mid: #1d9e75;
+    --danger: #d85a30;
+    --danger-light: #faece7;
+    --warning: #ba7517;
+    --warning-light: #faeeda;
+    --info: #185fa5;
+    --info-light: #e6f1fb;
+    --bg: #f5f6f8;
+    --surface: #ffffff;
+    --border: #e2e4e9;
+    --text: #1a1a2e;
+    --text-muted: #6b7280;
+    --shabbat: #faeeda;
+    --shabbat-text: #854f0b;
+    --holiday: #fbeaf0;
+    --holiday-text: #993556;
+    --radius: 10px;
+    --shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Heebo', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+  }
+
+  /* ====== LAYOUT ====== */
+  .app { display: flex; min-height: 100vh; }
+
+  .sidebar {
+    width: 220px;
+    background: var(--primary);
+    color: white;
+    padding: 0;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    height: 100vh;
+    z-index: 100;
+  }
+
+  .sidebar-logo {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .sidebar-logo h1 { font-size: 18px; font-weight: 700; color: #9fe1cb; }
+  .sidebar-logo p { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+
+  .sidebar-nav { padding: 12px 0; flex: 1; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 20px;
+    cursor: pointer;
+    color: rgba(255,255,255,0.65);
+    font-size: 13px;
+    transition: all 0.15s;
+    border-right: 3px solid transparent;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.06); color: white; }
+  .nav-item.active { background: rgba(29,158,117,0.2); color: #9fe1cb; border-right-color: #9fe1cb; }
+  .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+
+  .main-content {
+    margin-right: 220px;
+    flex: 1;
+    padding: 24px;
+  }
+
+  /* ====== TABS ====== */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ====== TOP BAR ====== */
+  .page-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .page-title { font-size: 20px; font-weight: 700; }
+  .page-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  /* ====== BUTTONS ====== */
+  .btn {
+    padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer;
+    font-family: 'Heebo', sans-serif; font-size: 13px; font-weight: 500;
+    transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { background: #0f5c47; }
+  .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--bg); }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-danger:hover { background: #b84a24; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+  /* ====== CARDS ====== */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+
+  /* ====== FORM ====== */
+  .form-group { margin-bottom: 14px; }
+  .form-label { display: block; font-size: 12px; font-weight: 500; color: var(--text-muted); margin-bottom: 5px; }
+  .form-control {
+    width: 100%; padding: 8px 12px; border: 1px solid var(--border);
+    border-radius: 8px; font-family: 'Heebo', sans-serif; font-size: 13px;
+    background: var(--surface); color: var(--text); transition: border 0.15s;
+  }
+  .form-control:focus { outline: none; border-color: var(--accent); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+  /* ====== SEARCH ====== */
+  .search-bar {
+    position: relative; margin-bottom: 16px;
+  }
+  .search-bar input {
+    width: 100%; padding: 9px 12px 9px 36px;
+    border: 1px solid var(--border); border-radius: 8px;
+    font-family: 'Heebo', sans-serif; font-size: 13px; background: var(--surface);
+  }
+  .search-bar input:focus { outline: none; border-color: var(--accent); }
+  .search-icon {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    color: var(--text-muted); font-size: 14px;
+  }
+
+  /* ====== TABLE ====== */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: right; padding: 10px 12px; font-weight: 600; font-size: 11px;
+       color: var(--text-muted); background: var(--bg); border-bottom: 1px solid var(--border);
+       white-space: nowrap; }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f9fafb; }
+
+  /* ====== BADGE ====== */
+  .badge {
+    display: inline-flex; align-items: center;
+    padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 500;
+  }
+  .badge-green { background: var(--accent-light); color: var(--accent); }
+  .badge-red { background: var(--danger-light); color: var(--danger); }
+  .badge-yellow { background: var(--warning-light); color: var(--warning); }
+  .badge-blue { background: var(--info-light); color: var(--info); }
+
+  /* ====== AVATAR ====== */
+  .avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--accent-light); color: var(--accent);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600; flex-shrink: 0;
+  }
+  .emp-cell { display: flex; align-items: center; gap: 8px; }
+
+  /* ====== CALENDAR ====== */
+  .calendar-wrap { user-select: none; }
+  .cal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .cal-header h3 { font-size: 15px; font-weight: 600; }
+  .cal-nav { display: flex; gap: 8px; }
+  .cal-nav button {
+    padding: 5px 10px; border: 1px solid var(--border); background: var(--surface);
+    border-radius: 6px; cursor: pointer; font-size: 14px;
+  }
+  .cal-nav button:hover { background: var(--bg); }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal-day-name {
+    text-align: center; font-size: 11px; font-weight: 600;
+    color: var(--text-muted); padding: 4px 0;
+  }
+  .cal-day-name.shabbat { color: var(--shabbat-text); }
+  .cal-cell {
+    border-radius: 8px; padding: 6px 4px; text-align: center; font-size: 12px;
+    cursor: pointer; transition: all 0.1s; min-height: 40px;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+    border: 1px solid transparent;
+  }
+  .cal-cell:hover:not(.empty):not(.other-month) { border-color: var(--accent); }
+  .cal-cell.empty { cursor: default; }
+  .cal-cell.other-month { color: #ccc; cursor: default; }
+  .cal-cell.today { background: var(--accent-light); font-weight: 700; color: var(--accent); }
+  .cal-cell.selected { background: var(--accent); color: white; }
+  .cal-cell.shabbat { background: var(--shabbat); }
+  .cal-cell.shabbat .day-num { color: var(--shabbat-text); }
+  .cal-cell.holiday { background: var(--holiday); }
+  .cal-cell.holiday .day-num { color: var(--holiday-text); }
+  .cal-cell.has-absence { position: relative; }
+  .cal-cell.has-absence::after {
+    content: ''; position: absolute; bottom: 4px;
+    width: 5px; height: 5px; border-radius: 50%; background: var(--danger);
+  }
+  .day-num { font-weight: 500; line-height: 1; }
+  .day-holiday-name { font-size: 9px; color: var(--holiday-text); margin-top: 2px; line-height: 1; }
+  .cal-legend { display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-muted); }
+  .legend-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+
+  /* ====== MODAL ====== */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4); z-index: 200;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border-radius: 12px;
+    padding: 24px; width: 480px; max-width: 95vw;
+    max-height: 90vh; overflow-y: auto;
+  }
+  .modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .modal-title { font-size: 16px; font-weight: 700; }
+  .modal-close {
+    cursor: pointer; font-size: 20px; color: var(--text-muted);
+    background: none; border: none; line-height: 1;
+  }
+  .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+
+  /* ====== STATS ROW ====== */
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px;
+  }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px;
+  }
+  .stat-label { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
+  .stat-value { font-size: 22px; font-weight: 700; }
+  .stat-value.green { color: var(--accent); }
+  .stat-value.red { color: var(--danger); }
+  .stat-value.blue { color: var(--info); }
+
+  /* ====== TABS INNER ====== */
+  .tabs-inner { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+  .tab-btn {
+    padding: 9px 18px; border: none; background: none; cursor: pointer;
+    font-family: 'Heebo', sans-serif; font-size: 13px; color: var(--text-muted);
+    border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s;
+  }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ====== IMPORT AREA ====== */
+  .import-drop {
+    border: 2px dashed var(--border); border-radius: var(--radius);
+    padding: 32px; text-align: center; cursor: pointer;
+    transition: all 0.15s; margin-bottom: 16px;
+  }
+  .import-drop:hover, .import-drop.dragover { border-color: var(--accent); background: var(--accent-light); }
+  .import-drop p { color: var(--text-muted); font-size: 13px; margin-top: 8px; }
+
+  /* ====== HOURS ====== */
+  .hours-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: var(--info-light); color: var(--info);
+    padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 500;
+    cursor: pointer;
+  }
+  .clock-entry {
+    display: flex; align-items: center; gap: 8px; padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .clock-entry:last-child { border-bottom: none; }
+
+  /* ====== PRINT ====== */
+  @media print {
+    .sidebar, .page-header .btn, .btn, .modal-overlay { display: none !important; }
+    .main-content { margin-right: 0; padding: 0; }
+    body { background: white; }
+  }
+
+  /* ====== TOAST ====== */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: #1a1a2e; color: white; padding: 10px 20px; border-radius: 8px;
+    font-size: 13px; z-index: 300; transition: transform 0.3s;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  .flex { display: flex; }
+  .gap-8 { gap: 8px; }
+  .mb-16 { margin-bottom: 16px; }
+
+  /* ====== CLIENT TAGS ====== */
+  .client-tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--accent-light); color: var(--accent);
+    border: 1px solid #b2ddd1; border-radius: 20px;
+    padding: 3px 10px 3px 8px; font-size: 12px; font-weight: 500;
+  }
+  .client-tag .tag-x {
+    cursor: pointer; font-size: 14px; line-height: 1;
+    color: var(--accent); opacity: 0.6;
+  }
+  .client-tag .tag-x:hover { opacity: 1; }
+
+  /* ====== CALC CALENDAR ====== */
+  .calc-day {
+    border-radius: 8px; padding: 8px 4px; text-align: center; font-size: 12px;
+    cursor: pointer; border: 2px solid transparent; transition: all 0.12s;
+    min-height: 44px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; font-weight: 500;
+    user-select: none;
+  }
+  .calc-day.worked   { background: #e1f5ee; border-color: #0f6e56; color: #0f6e56; }
+  .calc-day.absent   { background: #faece7; border-color: #d85a30; color: #d85a30; text-decoration: line-through; }
+  .calc-day.shabbat  { background: #faeeda; color: #854f0b; cursor: default; opacity: 0.7; }
+  .calc-day.holiday  { background: #fbeaf0; color: #993556; opacity: 0.8; }
+  .calc-day.empty    { background: none; cursor: default; }
+  .calc-day-hdr      { text-align:center; font-size:11px; font-weight:600; color:var(--text-muted); padding:4px 0; }
+  .calc-day-hdr.sh   { color: var(--shabbat-text); }
+
+  /* ====== MOBILE ====== */
+  @media (max-width: 700px) {
+    /* סרגל ניווט תחתון כמו אפליקציה */
+    .sidebar {
+      width: 100%; height: auto;
+      position: fixed; bottom: 0; top: auto;
+      flex-direction: row;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      z-index: 200; padding: 0;
+    }
+    .sidebar-logo { display: none; }
+    .sidebar-nav {
+      display: flex; flex-direction: row;
+      padding: 0; width: 100%; overflow: visible;
+    }
+    .nav-item {
+      flex: 1; flex-direction: column;
+      padding: 8px 4px 10px;
+      border-right: none; border-top: 3px solid transparent;
+      font-size: 10px; gap: 3px; text-align: center;
+      justify-content: center;
+      white-space: nowrap;
+    }
+    .nav-item.active {
+      border-top-color: #9fe1cb;
+      border-right-color: transparent;
+      background: rgba(29,158,117,0.25);
+    }
+    .nav-icon { font-size: 20px; width: auto; }
+
+    /* תוכן ראשי */
+    .app { flex-direction: column; }
+    .main-content {
+      margin-right: 0;
+      padding: 14px 12px;
+      padding-bottom: 80px; /* מקום לסרגל תחתון */
+    }
+
+    /* כרטיסים וגריד */
+    .stats-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .form-row, .form-row-3 { grid-template-columns: 1fr; }
+
+    /* כותרת עמוד */
+    .page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .page-header > div:last-child { display: flex; flex-wrap: wrap; gap: 6px; }
+    .page-title { font-size: 18px; }
+
+    /* מודאלים */
+    .modal { width: 100vw !important; max-width: 100vw !important;
+      border-radius: 16px 16px 0 0 !important;
+      position: fixed; bottom: 0; margin: 0; max-height: 92vh; }
+    .modal-overlay { align-items: flex-end !important; }
+
+    /* טבלאות — גלילה אופקית */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { font-size: 12px; min-width: 480px; }
+    th, td { padding: 8px 8px; }
+
+    /* לוח שנה */
+    .cal-grid { gap: 2px; }
+    .cal-cell { min-height: 36px; font-size: 11px; padding: 4px 2px; }
+    .form-row.mb-16 { grid-template-columns: 1fr; }
+
+    /* כרטיסי עובדים */
+    .emp-row { padding: 10px 12px; gap: 10px; }
+    .emp-row > div:last-child { flex-wrap: wrap; gap: 5px; }
+
+    /* כפתורים */
+    .btn { padding: 9px 14px; font-size: 13px; }
+    .btn-sm { padding: 7px 10px; font-size: 12px; }
+
+    /* calc */
+    .calc-grid { grid-template-columns: repeat(7,1fr); gap: 3px; }
+    .calc-day { min-height: 36px; font-size: 11px; padding: 4px 2px; }
+
+    /* EAC modal */
+    .emp-abs-modal { width: 100% !important; }
+    .eac-grid { gap: 3px; }
+    .eac-cell { min-height: 38px; font-size: 12px; }
+
+    /* toast */
+    .toast { bottom: 90px; }
+  }
+
+  /* safe area לאייפון עם notch */
+  @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    @media (max-width: 700px) {
+      .sidebar { padding-bottom: env(safe-area-inset-bottom); }
+      .main-content { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+    }
+  }
+
+  /* Employee row */
+  .emp-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .emp-row:hover {
+    border-color: var(--accent);
+    background: var(--accent-light);
+  }
+
+  /* ====== REPL TYPE TOGGLE ====== */
+  #repl-type-btn-system, #repl-type-btn-external, #repl-type-btn-none {
+    flex: 1; justify-content: center; transition: all 0.15s;
+  }
+
+  /* ====== EMP ABSENCE CALENDAR MODAL ====== */
+  .emp-abs-modal { width: 560px; }
+  .emp-abs-month-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .emp-abs-month-nav h3 { font-size: 16px; font-weight: 700; }
+  .emp-abs-month-nav .nav-btns { display: flex; gap: 6px; }
+  .emp-abs-month-nav .nav-btns button {
+    padding: 5px 12px; border: 1px solid var(--border);
+    background: var(--surface); border-radius: 6px; cursor: pointer; font-size: 14px;
+    transition: background 0.12s;
+  }
+  .emp-abs-month-nav .nav-btns button:hover { background: var(--bg); }
+
+  .eac-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+  .eac-hdr {
+    text-align: center; font-size: 11px; font-weight: 700;
+    color: var(--text-muted); padding: 4px 0;
+  }
+  .eac-hdr.sh { color: var(--shabbat-text); }
+
+  .eac-cell {
+    border-radius: 8px; padding: 7px 4px; text-align: center;
+    font-size: 13px; font-weight: 600;
+    min-height: 44px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.12s;
+    border: 2px solid transparent; user-select: none;
+    position: relative;
+  }
+  .eac-cell.empty { cursor: default; }
+  .eac-cell.shabbat {
+    background: var(--shabbat); color: var(--shabbat-text);
+    cursor: default; opacity: 0.7; border-color: transparent;
+  }
+  .eac-cell.holiday {
+    background: var(--holiday); color: var(--holiday-text);
+    opacity: 0.85;
+  }
+  .eac-cell.normal {
+    background: #f0faf5; border-color: #c3e8d6; color: var(--accent);
+  }
+  .eac-cell.normal:hover { background: #d4f0e4; border-color: var(--accent); }
+  /* חיסור — אדום מלא בולט */
+  .eac-cell.absent {
+    background: var(--danger) !important;
+    border-color: #b84a24 !important;
+    color: white !important;
+  }
+  .eac-cell.absent:hover { background: #b84a24 !important; }
+  .eac-cell.absent .eac-x {
+    font-size: 10px; margin-top: 2px; opacity: 0.9; font-weight: 700;
+  }
+  .eac-cell.today-mark::after {
+    content: '•'; position: absolute; bottom: 3px;
+    font-size: 12px; color: var(--accent); font-weight: 900;
+  }
+  .eac-cell.absent.today-mark::after { color: rgba(255,255,255,0.7); }
+  .eac-holiday-lbl { font-size: 8px; margin-top: 1px; opacity: 0.75; line-height: 1; }
+
+  .eac-legend {
+    display: flex; gap: 14px; margin-top: 12px; flex-wrap: wrap;
+  }
+  .eac-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-muted); }
+  .eac-legend-dot { width: 13px; height: 13px; border-radius: 4px; flex-shrink: 0; }
+
+  .eac-summary {
+    margin-top: 14px; padding: 10px 14px;
+    background: var(--bg); border-radius: 8px;
+    font-size: 13px; display: flex; gap: 20px; flex-wrap: wrap;
+  }
+  .eac-summary span { color: var(--text-muted); }
+  .eac-summary strong { color: var(--danger); }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <h1>נפטון</h1>
+    <p>ניהול עסק</p>
+    <div id="sync-indicator" style="font-size:10px;margin-top:4px;color:rgba(255,255,255,0.5)"></div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-item" onclick="showPage('employees')">
+      <span class="nav-icon">👥</span> עובדים
+    </div>
+    <div class="nav-item" onclick="showPage('absences')">
+      <span class="nav-icon">📅</span> חיסורים
+    </div>
+    <div class="nav-item" onclick="showPage('hours')">
+      <span class="nav-icon">⏱️</span> שעות עבודה
+    </div>
+
+    <div class="nav-item" onclick="showPage('reports')">
+      <span class="nav-icon">📊</span> דוחות
+    </div>
+  </nav>
+</div>
+
+<!-- MAIN -->
+<div class="main-content">
+
+  <!-- ===== PAGE: EMPLOYEES ===== -->
+  <div id="page-employees" class="page active">
+    <div class="page-header">
+      <div>
+        <div class="page-title">עובדים</div>
+        <div class="page-subtitle" id="emp-count-sub"></div>
+      </div>
+      <div class="flex gap-8">
+        <button class="btn btn-secondary" onclick="exportData()">💾 גיבוי</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('restore-input').click()">📥 שחזור</button>
+        <input type="file" id="restore-input" accept=".json" style="display:none" onchange="restoreData(event)">
+        <button class="btn btn-secondary" onclick="openImportModal()">📂 ייבוא קובץ</button>
+        <button class="btn btn-primary" onclick="openEditEmpPanel(null)">+ הוסף עובד</button>
+        <button class="btn btn-secondary" onclick="cleanGarbageEmployees()" style="color:var(--danger)">🧹 נקה גיבריש</button>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">סה"כ עובדים</div><div class="stat-value blue" id="stat-total">0</div></div>
+      <div class="stat-card"><div class="stat-label">פעילים</div><div class="stat-value green" id="stat-active">0</div></div>
+      <div class="stat-card"><div class="stat-label">חיסורים החודש</div><div class="stat-value red" id="stat-absences">0</div></div>
+      <div class="stat-card"><div class="stat-label">ממוצע שעות שבועי</div><div class="stat-value" id="stat-hours">0</div></div>
+    </div>
+
+    <!-- חיפוש -->
+    <div style="position:relative;margin-bottom:16px">
+      <input type="text" id="emp-search" class="form-control"
+        placeholder="חיפוש עובד לפי שם..."
+        oninput="renderEmployees()"
+        style="padding-right:16px;font-size:14px">
+    </div>
+
+    <!-- רשימת עובדים -->
+    <div id="emp-list"></div>
+    <div id="emp-empty" style="text-align:center;padding:40px;color:var(--text-muted);display:none">
+      <div style="font-size:32px;margin-bottom:8px">👥</div>
+      <p>לא נמצאו עובדים</p>
+    </div>
+  </div>
+
+  <!-- ===== PAGE: ABSENCES ===== -->
+  <div id="page-absences" class="page">
+    <div class="page-header">
+      <div>
+        <div class="page-title">חיסורים</div>
+        <div class="page-subtitle">סימון ומעקב חיסורי עובדים</div>
+      </div>
+      <button class="btn btn-primary" onclick="openAbsenceModal()">+ רשום חיסור</button>
+    </div>
+
+    <div class="form-row mb-16">
+      <div class="card" style="margin-bottom:0">
+        <div class="cal-header">
+          <div class="cal-nav">
+            <button onclick="calPrev()">→</button>
+            <button onclick="calNext()">←</button>
+          </div>
+          <h3 id="cal-title"></h3>
+        </div>
+        <div class="calendar-wrap">
+          <div class="cal-grid" id="cal-days-names"></div>
+          <div class="cal-grid" id="cal-grid"></div>
+        </div>
+        <div class="cal-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--holiday)"></div> חג ישראלי</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--shabbat)"></div> שישי/שבת</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--danger);border-radius:50%"></div> יש חיסור</div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:0">
+        <div class="card-title" id="abs-date-title">בחר תאריך ביומן</div>
+        <div id="abs-day-list" style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px 0;">
+          לחץ על יום כדי לראות חיסורים
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div class="card-title" style="margin-bottom:0">כל החיסורים</div>
+        <div class="flex gap-8">
+          <select class="form-control" id="abs-filter-emp" onchange="renderAbsenceTable()" style="width:auto">
+            <option value="">כל העובדים</option>
+          </select>
+          <select class="form-control" id="abs-filter-month" onchange="renderAbsenceTable()" style="width:auto">
+            <option value="">כל החודשים</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>עובד</th>
+              <th>תאריך</th>
+              <th>לקוח</th>
+              <th>ממלא מקום</th>
+              <th>שעות חילוף</th>
+              <th>תשלום לממלא</th>
+              <th>הערה</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="abs-tbody"></tbody>
+        </table>
+        <div id="abs-empty" style="text-align:center;padding:24px;color:var(--text-muted);display:none;">אין חיסורים רשומים</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PAGE: HOURS ===== -->
+  <div id="page-hours" class="page">
+    <div class="page-header">
+      <div>
+        <div class="page-title">שעות עבודה</div>
+        <div class="page-subtitle">הזנה ידנית או ייבוא מקובץ לקוח</div>
+      </div>
+    </div>
+
+    <div class="tabs-inner">
+      <button class="tab-btn active" onclick="switchHoursTab('manual')">הזנה ידנית</button>
+      <button class="tab-btn" onclick="switchHoursTab('upload')">ייבוא מקובץ לקוח</button>
+      <button class="tab-btn" onclick="switchHoursTab('calc')">📅 חישוב לפי נוכחות</button>
+    </div>
+
+    <!-- TAB: MANUAL -->
+    <div id="hours-tab-manual" class="tab-content active">
+      <div class="card">
+        <div class="card-title">הזנת שעות</div>
+        <div class="form-row-3 mb-16">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">עובד</label>
+            <select class="form-control" id="manual-emp">
+              <option value="">בחר עובד</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">תאריך</label>
+            <input type="date" class="form-control" id="manual-date">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">שעות</label>
+            <input type="number" class="form-control" id="manual-hours" placeholder="8" min="0" max="24" step="0.5">
+          </div>
+        </div>
+        <div class="form-row mb-16" style="margin-bottom:14px">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label" style="display:flex;align-items:center;justify-content:space-between">
+              לקוח (מחשבונית ירוקה)
+              <span id="clients-load-status" style="font-size:11px;color:var(--text-muted)">
+                <button onclick="loadGreenInvoiceClients()" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--accent);text-decoration:underline;padding:0">↻ טען לקוחות</button>
+              </span>
+            </label>
+            <select class="form-control" id="manual-client" style="display:none"></select>
+            <input type="text" class="form-control" id="manual-client-text" placeholder="שם הלקוח (או לחץ טען לקוחות)">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">הערה</label>
+            <input type="text" class="form-control" id="manual-note" placeholder="שעות נוספות, חג, ...">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="saveManualHours()">+ שמור</button>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div class="card-title" style="margin-bottom:0">יומן שעות</div>
+          <div class="flex gap-8">
+            <select class="form-control" id="hours-filter-emp" onchange="renderHoursTable()" style="width:auto">
+              <option value="">כל העובדים</option>
+            </select>
+            <select class="form-control" id="hours-filter-month" onchange="renderHoursTable()" style="width:auto">
+              <option value="">כל החודשים</option>
+            </select>
+          </div>
+        </div>
+        <div class="search-bar">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="hours-search" placeholder="חיפוש עובד..." oninput="renderHoursTable()">
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>עובד</th><th>תאריך</th><th>שעות</th><th>לקוח</th><th>מקור</th><th>הערה</th><th></th></tr>
+            </thead>
+            <tbody id="hours-tbody"></tbody>
+          </table>
+          <div id="hours-empty" style="text-align:center;padding:24px;color:var(--text-muted);display:none;">אין רשומות שעות</div>
+        </div>
+        <div id="hours-total" style="text-align:left;padding:10px 0 0;font-size:13px;font-weight:600;color:var(--accent)"></div>
+        <!-- סיכום עם חיסורים -->
+        <div id="hours-abs-summary" style="display:none;margin-top:14px;border-top:1px solid var(--border);padding-top:14px;"></div>
+      </div>
+    </div>
+
+    <!-- TAB: UPLOAD -->
+    <div id="hours-tab-upload" class="tab-content">
+      <div class="card">
+        <div class="card-title">ייבוא קובץ שעות מלקוח</div>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
+          העלה קובץ Excel או PDF שקיבלת מהלקוח. תוכל לראות את הנתונים ולקשר כל שורה לעובד הנכון.
+        </p>
+        <div class="import-drop" id="hours-drop" onclick="document.getElementById('hours-file-input').click()">
+          <div style="font-size:32px">📄</div>
+          <p style="font-weight:500;margin-top:8px">לחץ לבחירת קובץ או גרור לכאן</p>
+          <p>Excel (.xlsx, .xls, .csv) · PDF</p>
+        </div>
+        <input type="file" id="hours-file-input" accept=".csv,.xlsx,.xls,.pdf" style="display:none" onchange="handleHoursFile(event)">
+
+        <div id="hours-upload-info" style="display:none;margin-top:12px">
+          <div id="hours-file-name" style="font-size:13px;font-weight:500;color:var(--accent);margin-bottom:12px"></div>
+
+          <!-- PDF: manual fill after viewing -->
+          <div id="hours-pdf-section" style="display:none">
+            <div style="background:var(--warning-light);border-radius:8px;padding:12px;font-size:13px;color:var(--warning);margin-bottom:16px">
+              📋 קובץ PDF — תוכן הקובץ הועלה. הזן את השעות ידנית לפי הקובץ שמוצג להלן.
+            </div>
+            <div id="pdf-rows-container"></div>
+            <button class="btn btn-secondary btn-sm" onclick="addPdfRow()" style="margin-top:8px">+ הוסף שורה</button>
+            <div style="margin-top:16px">
+              <button class="btn btn-primary" onclick="savePdfRows()">שמור הכל</button>
+            </div>
+          </div>
+
+          <!-- CSV/Excel: auto-parse preview -->
+          <div id="hours-csv-section" style="display:none">
+            <div style="font-size:13px;font-weight:500;margin-bottom:8px">קישור עמודות:</div>
+            <div class="form-row-3 mb-16" id="col-map-row" style="margin-bottom:14px"></div>
+            <div style="font-size:13px;font-weight:500;margin-bottom:8px">תצוגה מקדימה (5 שורות ראשונות):</div>
+            <div class="table-wrap" style="margin-bottom:16px">
+              <table id="hours-preview-table" style="font-size:12px"></table>
+            </div>
+            <div style="font-size:13px;margin-bottom:12px">
+              <label class="form-label">לקוח (מקור הקובץ)</label>
+              <input type="text" class="form-control" id="upload-client-name" placeholder="שם הלקוח ששלח את הקובץ" style="max-width:300px">
+            </div>
+            <button class="btn btn-primary" onclick="confirmHoursImport()">ייבא לרשומות</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <!-- TAB: CALC — חישוב לפי נוכחות -->
+    <div id="hours-tab-calc" class="tab-content">
+      <div class="card">
+        <div class="card-title">חישוב שעות לפי ימי נוכחות</div>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
+          בחר עובד וחודש — סמן את הימים שבהם <strong>לא עבד</strong> — המערכת תחשב אוטומטית את סה"כ השעות.
+        </p>
+        <div class="form-row" style="margin-bottom:16px">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">עובד</label>
+            <select class="form-control" id="calc-emp" onchange="renderCalcCalendar()">
+              <option value="">בחר עובד...</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">חודש</label>
+            <input type="month" class="form-control" id="calc-month" onchange="renderCalcCalendar()">
+          </div>
+        </div>
+
+        <div id="calc-info" style="display:none;background:var(--accent-light);border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;">
+          <span id="calc-info-text"></span>
+        </div>
+
+        <div id="calc-cal-wrap" style="display:none">
+          <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text-muted)">לחץ על יום להחלפת סטטוס — 🟩 עבד &nbsp;|&nbsp; 🟥 לא עבד</div>
+          <div id="calc-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:20px;"></div>
+
+          <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:20px">
+            <div style="font-size:15px;font-weight:700;color:var(--accent)" id="calc-result-text"></div>
+            <button class="btn btn-primary" onclick="saveCalcHours()" id="calc-save-btn" style="display:none">💾 שמור לרשומות</button>
+          </div>
+          <div id="calc-breakdown" style="font-size:12px;color:var(--text-muted)"></div>
+        </div>
+      </div>
+    </div>
+
+  <!-- ===== PAGE: REPORTS ===== -->
+  <div id="page-reports" class="page">
+    <div class="page-header">
+      <div>
+        <div class="page-title">דוחות</div>
+        <div class="page-subtitle">הפקת דוחות שעות וחיסורים</div>
+      </div>
+      <button class="btn btn-primary" onclick="printReport()">🖨️ הדפסת דוח</button>
+    </div>
+
+    <div class="card mb-16">
+      <div class="card-title">פרמטרים לדוח</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">עובד</label>
+          <select class="form-control" id="rpt-emp" onchange="buildReport()">
+            <option value="">כל העובדים</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">חודש</label>
+          <input type="month" class="form-control" id="rpt-month" onchange="buildReport()">
+        </div>
+      </div>
+    </div>
+
+    <div id="report-output">
+      <div style="text-align:center;padding:40px;color:var(--text-muted);">
+        בחר פרמטרים לדוח למעלה
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main-content -->
+</div><!-- /app -->
+
+<!-- ===== MODALS ===== -->
+
+<!-- Employee Edit Panel -->
+<div class="modal-overlay" id="modal-edit-emp">
+  <div class="modal" style="width:500px">
+    <div class="modal-header">
+      <div class="modal-title" id="edit-emp-title">עובד חדש</div>
+      <button class="modal-close" onclick="closeModal('modal-edit-emp')">×</button>
+    </div>
+    <input type="hidden" id="edit-emp-id">
+
+    <!-- שם -->
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">שם פרטי *</label>
+        <input type="text" class="form-control" id="emp-fname" placeholder="ישראל">
+      </div>
+      <div class="form-group">
+        <label class="form-label">שם משפחה</label>
+        <input type="text" class="form-control" id="emp-lname" placeholder="ישראלי">
+      </div>
+    </div>
+
+    <!-- פרטים -->
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">תעודת זהות</label>
+        <input type="text" class="form-control" id="emp-id" placeholder="123456789">
+      </div>
+      <div class="form-group">
+        <label class="form-label">טלפון</label>
+        <input type="text" class="form-control" id="emp-phone" placeholder="050-0000000">
+      </div>
+    </div>
+
+    <!-- לקוחות -->
+    <div class="form-group">
+      <label class="form-label">לקוחות משויכים <span style="font-weight:400;color:var(--text-muted)">(ניתן לשייך כמה)</span></label>
+      <div id="emp-clients-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;min-height:28px;"></div>
+      <div style="display:flex;gap:6px">
+        <input type="text" class="form-control" id="emp-client-input" placeholder="הקלד לקוח ולחץ +" autocomplete="off" list="emp-client-list"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();addEmpClient()}"
+          style="flex:1">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="addEmpClient()" style="flex-shrink:0">+</button>
+      </div>
+      <datalist id="emp-client-list"></datalist>
+      <input type="hidden" id="emp-client">
+    </div>
+
+    <!-- שעות + סטטוס -->
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">שעות עבודה</label>
+        <select class="form-control" id="emp-hours-type" onchange="toggleHoursInput()">
+          <option value="daily">שעות יומיות</option>
+          <option value="report">דוח שעות</option>
+        </select>
+      </div>
+      <div class="form-group" id="emp-daily-hours-group">
+        <label class="form-label">מספר שעות ביום</label>
+        <input type="number" class="form-control" id="emp-daily-hours" value="8" min="1" max="24" step="0.5">
+      </div>
+    </div>
+
+    <!-- סטטוס -->
+    <div class="form-group">
+      <label class="form-label">סטטוס</label>
+      <div style="display:flex;gap:12px;margin-top:4px">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px">
+          <input type="radio" name="emp-status-radio" value="active" id="emp-status-active" checked> פעיל
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px">
+          <input type="radio" name="emp-status-radio" value="inactive" id="emp-status-inactive"> לא פעיל
+        </label>
+      </div>
+    </div>
+
+    <div class="modal-footer" style="justify-content:space-between">
+      <button class="btn btn-danger btn-sm" id="btn-delete-emp" onclick="deleteEmpFromPanel()" style="display:none">🗑️ מחק עובד</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary" onclick="closeModal('modal-edit-emp')">ביטול</button>
+        <button class="btn btn-primary" onclick="saveEmployee()">שמור</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Employee Absence Calendar Modal -->
+<div class="modal-overlay" id="modal-emp-abs-cal">
+  <div class="modal emp-abs-modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="eac-modal-title">יומן חיסורים</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px" id="eac-modal-sub">לחץ על יום לסימון חיסור</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-emp-abs-cal')">×</button>
+    </div>
+
+    <!-- ניווט חודש -->
+    <div class="emp-abs-month-nav">
+      <div class="nav-btns">
+        <button onclick="eacPrev()">→</button>
+        <button onclick="eacNext()">←</button>
+      </div>
+      <h3 id="eac-month-title"></h3>
+    </div>
+
+    <!-- גריד לוח שנה -->
+    <div class="eac-grid" id="eac-day-names"></div>
+    <div class="eac-grid" id="eac-grid" style="margin-top:4px"></div>
+
+    <!-- מקרא -->
+    <div class="eac-legend">
+      <div class="eac-legend-item"><div class="eac-legend-dot" style="background:var(--danger)"></div> חיסור</div>
+      <div class="eac-legend-item"><div class="eac-legend-dot" style="background:#f0faf5;border:2px solid #c3e8d6"></div> יום עבודה</div>
+      <div class="eac-legend-item"><div class="eac-legend-dot" style="background:var(--shabbat)"></div> שבת / שישי</div>
+      <div class="eac-legend-item"><div class="eac-legend-dot" style="background:var(--holiday)"></div> חג</div>
+    </div>
+
+    <!-- סיכום -->
+    <div class="eac-summary" id="eac-summary">
+      <span>סה"כ חיסורים שסומנו: <strong id="eac-count">0</strong></span>
+      <span id="eac-dates-list" style="font-size:11px;color:var(--danger)"></span>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-emp-abs-cal')">ביטול</button>
+      <button class="btn btn-primary" onclick="saveEacAbsences()">✅ אישור — שמור חיסורים</button>
+    </div>
+  </div>
+</div>
+
+<!-- Import -->
+<div class="modal-overlay" id="modal-import">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">ייבוא עובדים מקובץ</div>
+      <button class="modal-close" onclick="closeModal('modal-import')">×</button>
+    </div>
+    <div class="import-drop" id="import-drop" onclick="document.getElementById('file-import').click()">
+      <div style="font-size:32px">📂</div>
+      <p>לחץ לבחירת קובץ CSV או Excel</p>
+      <p style="font-size:11px;margin-top:4px;">פורמט מומלץ: שם,שם משפחה,ת.ז.,טלפון,לקוח,שעות יומיות</p>
+    </div>
+    <input type="file" id="file-import" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleImport(event)">
+    <div id="import-preview" style="display:none">
+      <div class="card-title" style="margin-bottom:8px;">תצוגה מקדימה</div>
+      <div class="table-wrap"><table id="import-table" style="font-size:12px"></table></div>
+      <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="document.getElementById('import-preview').style.display='none'">ביטול</button>
+        <button class="btn btn-primary" onclick="confirmImport()">ייבא הכל</button>
+      </div>
+    </div>
+    <div style="margin-top:12px;font-size:11px;color:var(--text-muted)">
+      💡 ניתן גם להדביק טבלה ממגנטיק, חשבשבת, RayNet או כל תוכנת שכר שמייצאת Excel/CSV
+    </div>
+  </div>
+</div>
+
+<!-- Absence -->
+<div class="modal-overlay" id="modal-absence">
+  <div class="modal" style="width:520px">
+    <div class="modal-header">
+      <div class="modal-title">רשום חיסור</div>
+      <button class="modal-close" onclick="closeModal('modal-absence')">×</button>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">עובד *</label>
+      <input type="text" class="form-control" id="abs-emp-search" placeholder="🔍 חיפוש עובד..." oninput="filterEmpSel('abs-emp-sel',this.value,'בחר עובד')" style="margin-bottom:5px">
+      <select class="form-control" id="abs-emp-sel" size="4" style="height:auto" onchange="onAbsEmpChange()"></select>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">תאריך *</label>
+        <input type="date" class="form-control" id="abs-date-input">
+      </div>
+      <div class="form-group">
+        <label class="form-label">לקוח (אצל מי היה חיסור)</label>
+        <select class="form-control" id="abs-client-sel" style="display:none"></select>
+        <input type="text" class="form-control" id="abs-client-input" placeholder="שם הלקוח">
+      </div>
+    </div>
+
+    <!-- ממלא מקום -->
+    <div style="background:var(--bg);border-radius:10px;padding:14px;margin-bottom:14px;border:1px solid var(--border)">
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text)">🔄 ממלא מקום</div>
+
+      <div class="form-group" style="margin-bottom:8px">
+        <input type="text" class="form-control" id="abs-repl-search" placeholder="🔍 חיפוש שם עובד..." oninput="filterEmpSel('abs-replacement',this.value,'אין ממלא מקום')" style="margin-bottom:5px">
+        <select class="form-control" id="abs-replacement" size="4" style="height:auto" onchange="toggleReplPayment()"></select>
+      </div>
+
+      <!-- פרטי תשלום — מוסתרים עד שבוחרים ממלא מקום -->
+      <div id="repl-payment-section" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+        <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px">תשלום לממלא מקום</div>
+        <div class="form-row">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">סטטוס תשלום</label>
+            <select class="form-control" id="abs-repl-paid" onchange="toggleReplPaymentAmount()">
+              <option value="unpaid">לא שולם</option>
+              <option value="paid">שולם</option>
+              <option value="pending">ממתין לתשלום</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0" id="repl-amount-group">
+            <label class="form-label">סכום (₪)</label>
+            <input type="number" class="form-control" id="abs-repl-amount" placeholder="0" min="0" step="1">
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0;margin-top:8px">
+          <label class="form-label">הערת תשלום</label>
+          <input type="text" class="form-control" id="abs-repl-pay-note" placeholder="מזומן, העברה, ...">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">הערה כללית</label>
+      <input type="text" class="form-control" id="abs-note" placeholder="סיבת חיסור, מחלה, ...">
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-absence')">ביטול</button>
+      <button class="btn btn-primary" onclick="saveAbsence()">שמור</button>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- Edit Absence Modal -->
+<div class="modal-overlay" id="modal-edit-absence">
+  <div class="modal" style="width:560px">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="edit-abs-title">עריכת חיסור</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px" id="edit-abs-sub"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-edit-absence')">×</button>
+    </div>
+
+    <input type="hidden" id="edit-abs-id">
+
+    <!-- ממלא מקום — toggle מהמערכת / חיצוני -->
+    <div style="background:var(--bg);border-radius:10px;padding:16px;margin-bottom:14px;border:1px solid var(--border)">
+      <div style="font-size:13px;font-weight:600;margin-bottom:12px;color:var(--text)">🔄 ממלא מקום</div>
+
+      <!-- בחירת סוג ממלא -->
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button id="repl-type-btn-system" class="btn btn-primary btn-sm" onclick="setReplType('system')">👤 עובד מהמערכת</button>
+        <button id="repl-type-btn-external" class="btn btn-secondary btn-sm" onclick="setReplType('external')">🌐 עובד חיצוני</button>
+        <button id="repl-type-btn-none" class="btn btn-secondary btn-sm" onclick="setReplType('none')">✕ ללא ממלא</button>
+      </div>
+
+      <!-- מהמערכת -->
+      <div id="repl-system-section">
+        <div class="form-group" style="margin-bottom:0">
+          <input type="text" class="form-control" id="edit-abs-repl-search" placeholder="🔍 חיפוש שם עובד..." oninput="filterEmpSel('edit-abs-repl-sel',this.value,'אין ממלא מקום')" style="margin-bottom:5px">
+          <select class="form-control" id="edit-abs-repl-sel" size="4" style="height:auto" onchange="onEditReplChange()"></select>
+        </div>
+      </div>
+
+      <!-- חיצוני -->
+      <div id="repl-external-section" style="display:none">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">שם הממלא (חיצוני)</label>
+          <input type="text" class="form-control" id="edit-abs-repl-ext-name" placeholder="שם מלא של הממלא"
+            oninput="document.getElementById('edit-repl-details-section').style.display=this.value.trim()?'block':'none'">
+        </div>
+      </div>
+
+      <!-- שעות חילוף + תשלום — מופיעים לכל סוג ממלא -->
+      <div id="edit-repl-details-section" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+        <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:10px">פרטי חילוף</div>
+
+        <!-- שעות חילוף -->
+        <div class="form-group">
+          <label class="form-label">שעות חילוף <span style="font-size:10px;color:var(--text-muted)">(שעות שעבד הממלא)</span></label>
+          <input type="number" class="form-control" id="edit-abs-repl-hours" placeholder="8" min="0" max="24" step="0.5">
+          <div style="font-size:11px;color:var(--info);margin-top:4px" id="edit-repl-hours-hint"></div>
+        </div>
+
+        <!-- תשלום -->
+        <div style="background:white;border-radius:8px;padding:12px;border:1px solid var(--border)">
+          <div style="font-size:12px;font-weight:600;margin-bottom:8px">💰 תשלום לממלא מקום</div>
+          <div class="form-row">
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">סטטוס תשלום</label>
+              <select class="form-control" id="edit-abs-repl-paid" onchange="toggleEditReplAmount()">
+                <option value="unpaid">❌ לא שולם</option>
+                <option value="paid">✅ שולם</option>
+                <option value="pending">⏳ ממתין לתשלום</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom:0" id="edit-repl-amount-group">
+              <label class="form-label">סכום (₪)</label>
+              <input type="number" class="form-control" id="edit-abs-repl-amount" placeholder="0" min="0" step="1">
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:0;margin-top:8px">
+            <label class="form-label">הערת תשלום</label>
+            <input type="text" class="form-control" id="edit-abs-repl-pay-note" placeholder="מזומן, העברה, ...">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- הערה כללית -->
+    <div class="form-group">
+      <label class="form-label">הערה כללית</label>
+      <input type="text" class="form-control" id="edit-abs-note" placeholder="סיבת חיסור, מחלה, ...">
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-edit-absence')">ביטול</button>
+      <button class="btn btn-primary" onclick="saveEditAbsence()">💾 שמור שינויים</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== STATE =====
+let employees = [];
+let absences  = [];
+let hoursLog  = [];
+let importRows = [];
+let hoursImportRows = [];
+let hoursImportHeaders = [];
+let calDate = new Date();
+let _saveTimer = null;
+let _syncStatus = 'idle'; // idle | saving | error
+
+// כתובת ה-API — אם רצים ב-localhost משתמשים ב-Render, אחרת relative
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'https://business-app-hf5y.onrender.com'
+  : '';
+
+// מחזיר רק עובדים עם שם עברי תקין
+function validEmployees() {
+  return employees.filter(e => {
+    const name = (e.fname || '') + ' ' + (e.lname || '');
+    const hasHebrew = /[\u05D0-\u05EA]/.test(name);
+    const hasBinary = /[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(name);
+    const weirdCount = (name.match(/[^\u05D0-\u05EA\u05F0-\u05F4 a-zA-Z0-9\-'"().@,]/g) || []).length;
+    return hasHebrew && !hasBinary && weirdCount <= 4;
+  });
+}
+
+// בונה options לעובדים תקינים בלבד
+function empOptions(placeholder = 'בחר עובד') {
+  return `<option value="">${placeholder}</option>` +
+    validEmployees().map(e => `<option value="${e.id}">${e.fname} ${e.lname}</option>`).join('');
+}
+
+// פילטר חיפוש עובד בתוך select
+function filterEmpSel(selId, query, placeholder) {
+  const sel = document.getElementById(selId);
+  const q = query.toLowerCase().trim();
+  const filtered = q
+    ? validEmployees().filter(e => (e.fname + ' ' + e.lname).includes(q) || (e.eid||'').includes(q))
+    : validEmployees();
+  sel.innerHTML = `<option value="">${placeholder}</option>` +
+    filtered.map(e => `<option value="${e.id}">${e.fname} ${e.lname}</option>`).join('');
+}
+
+// Israeli holidays 2024-2026 (approx Gregorian dates)
+const HOLIDAYS = {
+  '2024-10-02': 'ראש השנה',
+  '2024-10-03': 'ראש השנה',
+  '2024-10-04': 'צום גדליה',
+  '2024-10-11': 'יום כיפור',
+  '2024-10-16': 'סוכות',
+  '2024-10-23': 'שמחת תורה',
+  '2024-12-25': 'חנוכה',
+  '2025-01-13': 'ט"ו בשבט',
+  '2025-03-13': 'פורים',
+  '2025-04-12': 'ערב פסח',
+  '2025-04-13': 'פסח',
+  '2025-04-14': 'פסח',
+  '2025-04-19': 'פסח (אחרון)',
+  '2025-04-20': 'פסח (אחרון)',
+  '2025-04-26': 'יום השואה',
+  '2025-05-01': 'יום הזיכרון',
+  '2025-05-01': 'יום העצמאות',
+  '2025-05-26': 'ל"ג בעומר',
+  '2025-06-01': 'שבועות',
+  '2025-09-22': 'ראש השנה',
+  '2025-09-23': 'ראש השנה',
+  '2025-10-01': 'יום כיפור',
+  '2025-10-06': 'סוכות',
+  '2025-10-13': 'שמחת תורה',
+  '2026-03-02': 'פורים',
+  '2026-03-31': 'ערב פסח',
+  '2026-04-01': 'פסח',
+  '2026-04-07': 'פסח (אחרון)',
+  '2026-04-15': 'יום השואה',
+  '2026-04-22': 'יום הזיכרון',
+  '2026-04-23': 'יום העצמאות',
+  '2026-05-21': 'שבועות',
+};
+
+// ===== SYNC INDICATOR =====
+function setSyncStatus(status, msg) {
+  _syncStatus = status;
+  let el = document.getElementById('sync-indicator');
+  if (!el) return;
+  const icons = { saving: '☁️ שומר...', saved: '✅ נשמר', error: '❌ שגיאת שמירה' };
+  el.textContent = msg || icons[status] || '';
+  el.style.color = status === 'error' ? 'var(--danger)' : status === 'saved' ? 'var(--accent)' : 'var(--text-muted)';
+}
+
+// שמירה ב-MongoDB (debounced — מחכה 800ms אחרי השינוי האחרון)
+function save() {
+  // שמור גם ב-localStorage כ-fallback
+  localStorage.setItem('nep_employees', JSON.stringify(employees));
+  localStorage.setItem('nep_absences', JSON.stringify(absences));
+  localStorage.setItem('nep_hours', JSON.stringify(hoursLog));
+
+  // debounce ל-MongoDB
+  clearTimeout(_saveTimer);
+  setSyncStatus('saving');
+  _saveTimer = setTimeout(async () => {
+    try {
+      const resp = await fetch(`${API_BASE}/api/data`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ employees, absences, hoursLog })
+      });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      setSyncStatus('saved');
+      setTimeout(() => setSyncStatus('idle', ''), 3000);
+    } catch (err) {
+      setSyncStatus('error');
+      console.error('Save error:', err);
+    }
+  }, 800);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ===== NAV =====
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  const items = document.querySelectorAll('.nav-item');
+  const map = {employees:0, absences:1, hours:2, reports:3};
+  items[map[name]].classList.add('active');
+  if (name === 'absences') renderCalendar();
+  if (name === 'reports') { buildReport(); }
+  if (name === 'employees') { renderEmployees(); updateStats(); }
+  if (name === 'hours') { renderHoursTable(); }
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+// שם תצוגה של עובד
+function empName(e) { return e ? (e.fname + (e.lname ? ' ' + e.lname : '')).trim() : '—'; }
+function empInitials(e) { if (!e) return '?'; const n = empName(e); const w = n.split(' '); return (w[0]?.[0]||'') + (w[1]?.[0]||w[0]?.[1]||''); }
+
+// ===== EMPLOYEES =====
+function openEditEmpPanel(id) {
+  const isNew = !id;
+  document.getElementById('edit-emp-title').textContent = isNew ? 'עובד חדש' : 'עריכת עובד';
+  document.getElementById('edit-emp-id').value = id || '';
+  document.getElementById('btn-delete-emp').style.display = isNew ? 'none' : 'inline-flex';
+
+  if (id) {
+    const e = employees.find(x => x.id === id);
+    if (!e) return;
+    document.getElementById('emp-fname').value = e.fname || '';
+    document.getElementById('emp-lname').value = e.lname || '';
+    document.getElementById('emp-id').value = e.eid || '';
+    document.getElementById('emp-phone').value = e.phone || '';
+    // תמיכה בשני פורמטים: clients (מערך חדש) או client (מחרוזת ישנה)
+    const clients = e.clients || (e.client ? [e.client] : []);
+    renderEmpClientTags(clients);
+    document.getElementById('emp-daily-hours').value = e.dailyHours || 8;
+    document.getElementById('emp-hours-type').value = e.hoursType || 'daily';
+    document.getElementById('emp-status-active').checked = (e.status !== 'inactive');
+    document.getElementById('emp-status-inactive').checked = (e.status === 'inactive');
+    toggleHoursInput();
+  } else {
+    document.getElementById('emp-fname').value = '';
+    document.getElementById('emp-lname').value = '';
+    document.getElementById('emp-id').value = '';
+    document.getElementById('emp-phone').value = '';
+    renderEmpClientTags([]);
+    document.getElementById('emp-daily-hours').value = '8';
+    document.getElementById('emp-hours-type').value = 'daily';
+    document.getElementById('emp-status-active').checked = true;
+    toggleHoursInput();
+  }
+  openModal('modal-edit-emp');
+}
+
+// backward compat alias
+function openAddEmployeeModal(id) { openEditEmpPanel(id); }
+
+function toggleHoursInput() {
+  const type = document.getElementById('emp-hours-type').value;
+  document.getElementById('emp-daily-hours-group').style.display = type === 'daily' ? 'block' : 'none';
+}
+
+function saveEmployee() {
+  const fname = document.getElementById('emp-fname').value.trim();
+  if (!fname) { showToast('נא למלא שם פרטי'); return; }
+  const editId = document.getElementById('edit-emp-id').value;
+  const hoursType = document.getElementById('emp-hours-type').value;
+  // קרא לקוחות מהתגיות
+  const clientsRaw = document.getElementById('emp-client').value;
+  const clients = clientsRaw ? JSON.parse(clientsRaw) : [];
+  const emp = {
+    id: editId || Date.now().toString(),
+    fname,
+    lname: document.getElementById('emp-lname').value.trim(),
+    eid: document.getElementById('emp-id').value.trim(),
+    phone: document.getElementById('emp-phone').value.trim(),
+    clients,                          // מערך חדש
+    client: clients[0] || '',         // תאימות אחורה
+    hoursType,
+    dailyHours: hoursType === 'daily' ? (parseFloat(document.getElementById('emp-daily-hours').value) || 8) : 0,
+    status: document.getElementById('emp-status-active').checked ? 'active' : 'inactive',
+    createdAt: editId ? (employees.find(e=>e.id===editId)||{}).createdAt : new Date().toISOString()
+  };
+  if (editId) {
+    const idx = employees.findIndex(e => e.id === editId);
+    if (idx >= 0) employees[idx] = emp;
+  } else {
+    employees.push(emp);
+  }
+  save();
+  closeModal('modal-edit-emp');
+  renderEmployees(); updateStats(); updateAllSelects();
+  showToast(editId ? 'עובד עודכן ✅' : 'עובד נוסף ✅');
+}
+
+function deleteEmpFromPanel() {
+  const id = document.getElementById('edit-emp-id').value;
+  if (!id) return;
+  const emp = employees.find(e => e.id === id);
+  if (!confirm(`למחוק את ${empName(emp)}?`)) return;
+  employees = employees.filter(e => e.id !== id);
+  save();
+  closeModal('modal-edit-emp');
+  renderEmployees(); updateStats(); updateAllSelects();
+  showToast('עובד נמחק');
+}
+
+function deleteEmployee(id) {
+  const emp = employees.find(e => e.id === id);
+  if (!confirm(`למחוק את ${empName(emp)}?`)) return;
+  employees = employees.filter(e => e.id !== id);
+  save(); renderEmployees(); updateStats(); updateAllSelects();
+  showToast('עובד נמחק');
+}
+
+
+function renderEmployees() {
+  const q = (document.getElementById('emp-search')?.value || '').trim();
+  const list = document.getElementById('emp-list');
+  const empty = document.getElementById('emp-empty');
+  const sub = document.getElementById('emp-count-sub');
+
+  let filtered = employees.filter(e => {
+    const name = empName(e).toLowerCase();
+    const search = q.toLowerCase();
+    return !q || name.includes(search) ||
+      (e.eid||'').includes(search) ||
+      (e.client||'').toLowerCase().includes(search) ||
+      (e.phone||'').includes(search);
+  });
+
+  // הצג רק עובדים תקינים (ללא גיבריש)
+  filtered = filtered.filter(e => {
+    const name = empName(e);
+    const hasHeb = /[\u05D0-\u05EA]/.test(name);
+    const hasBin = /[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(name);
+    return hasHeb && !hasBin;
+  });
+
+  sub.textContent = `${filtered.length} עובדים`;
+
+  if (!filtered.length) {
+    list.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  list.innerHTML = filtered.map(e => {
+    const initials = empInitials(e);
+    const isActive = e.status !== 'inactive';
+    const absCount = absences.filter(a => a.empId === e.id).length;
+    const hoursLabel = e.hoursType === 'report' ? 'דוח שעות' : `${e.dailyHours || 8} שע' ביום`;
+    const clients = e.clients && e.clients.length ? e.clients : (e.client ? [e.client] : []);
+    const clientsHtml = clients.map(c =>
+      `<span style="display:inline-block;background:var(--accent-light);color:var(--accent);border-radius:10px;padding:1px 7px;font-size:11px;margin-left:3px">${c}</span>`
+    ).join('');
+
+    return `<div class="emp-row" onclick="openEditEmpPanel('${e.id}')">
+      <div class="avatar" style="flex-shrink:0">${initials}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:14px">${empName(e)}</div>
+        <div style="font-size:12px;margin-top:3px">${clientsHtml || '<span style="color:var(--text-muted)">ללא לקוח</span>'}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <span style="font-size:12px;color:var(--text-muted)">${hoursLabel}</span>
+        ${absCount > 0 ? `<span class="badge badge-red" style="font-size:11px">${absCount} חיסורים</span>` : ''}
+        <span class="badge ${isActive ? 'badge-green' : 'badge-yellow'}" style="font-size:11px">${isActive ? 'פעיל' : 'לא פעיל'}</span>
+        <button class="btn btn-secondary btn-sm" title="יומן חיסורים"
+          onclick="event.stopPropagation(); openEmpAbsCalendar('${e.id}')"
+          style="padding:5px 10px;font-size:12px;display:inline-flex;align-items:center;gap:4px">
+          📅 חיסורים
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterEmployees() { renderEmployees(); }
+
+
+// ===== גיבוי ושחזור =====
+function exportData() {
+  const data = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    employees,
+    absences,
+    hoursLog
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `neptun-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  showToast(`✅ גיבוי נשמר — ${employees.length} עובדים, ${absences.length} חיסורים`);
+}
+
+function restoreData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!data.employees) { showToast('קובץ לא תקין'); return; }
+      if (!confirm(`לשחזר ${data.employees.length} עובדים, ${(data.absences||[]).length} חיסורים?\nהנתונים הנוכחיים יוחלפו.`)) return;
+      employees = data.employees || [];
+      absences = data.absences || [];
+      hoursLog = data.hoursLog || [];
+      save();
+      renderEmployees(); renderAbsenceTable(); renderHoursTable();
+      updateStats(); updateAllSelects();
+      showToast(`✅ שוחזרו ${employees.length} עובדים`);
+    } catch(err) {
+      showToast('שגיאה בקריאת הקובץ');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+
+function cleanGarbageEmployees() {
+  const before = employees.length;
+
+  // תקן שמות כפולים
+  employees = employees.map(e => {
+    const fn = (e.fname || '').trim();
+    const ln = (e.lname || '').trim();
+    // אם fname == lname — פצל
+    if (fn && ln && fn === ln) {
+      const parts = fn.split(/\s+/);
+      e.fname = parts[0];
+      e.lname = parts.slice(1).join(' ') || '';
+    }
+    // אם lname מכיל את fname (כפילות מלאה) — קח מ-lname
+    if (fn && ln && ln.includes(fn) && ln !== fn) {
+      const parts = ln.split(/\s+/);
+      e.fname = parts[0];
+      e.lname = parts.slice(1).join(' ') || '';
+    }
+    return e;
+  });
+
+  // הסר גיבריש
+  employees = employees.filter(e => {
+    const name = (e.fname || '') + ' ' + (e.lname || '');
+    const hasHebrew = /[\u05D0-\u05EA]/.test(name);
+    const hasBinary = /[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(name);
+    const weirdCount = (name.match(/[^\u05D0-\u05EA\u05F0-\u05F4 a-zA-Z0-9\-\'\"().@,]/g) || []).length;
+    return hasHebrew && !hasBinary && weirdCount <= 4;
+  });
+
+  const removed = before - employees.length;
+  save();
+  renderEmployees();
+  updateStats();
+  updateAllSelects();
+  showToast(`✅ תוקן! נשארו ${employees.length} עובדים (הוסרו ${removed})`);
+}
+
+
+
+function updateStats() {
+  document.getElementById('stat-total').textContent = employees.length;
+  document.getElementById('stat-active').textContent = employees.filter(e => e.status === 'active').length;
+  const now = new Date();
+  const monthAbs = absences.filter(a => {
+    const d = new Date(a.date);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  }).length;
+  document.getElementById('stat-absences').textContent = monthAbs;
+  if (employees.length) {
+    const avgHrs = employees.reduce((s,e) => s + (e.dailyHours||8), 0) / employees.length;
+    document.getElementById('stat-hours').textContent = (avgHrs * 5).toFixed(0) + ' שע\'';
+  }
+}
+
+function getAbsencesThisMonth() {
+  const now = new Date();
+  return absences.filter(a => {
+    const d = new Date(a.date);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  }).map(a => a.empId);
+}
+
+// ===== IMPORT =====
+function openImportModal() { openModal('modal-import'); }
+
+function handleImport(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+
+  if (ext === 'xlsx' || ext === 'xls') {
+    // Excel — use SheetJS
+    if (!window.XLSX) {
+      showToast('טוען ספרייה...');
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+      s.onload = () => parseExcelImport(file);
+      document.head.appendChild(s);
+    } else {
+      parseExcelImport(file);
+    }
+  } else {
+    // CSV — נסה UTF-8 קודם, אם יש תווים מוזרים נסה windows-1255
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      let text = ev.target.result;
+      // בדוק אם יש תווים מוזרים (encoding שגוי)
+      if (text.includes('�') || /[\x80-\x9F]/.test(text)) {
+        const r2 = new FileReader();
+        r2.onload = (ev2) => parseCsvText(ev2.target.result);
+        r2.readAsText(file, 'windows-1255');
+      } else {
+        parseCsvText(text);
+      }
+    };
+    reader.readAsText(file, 'UTF-8');
+  }
+}
+
+function parseExcelImport(file) {
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const data = new Uint8Array(ev.target.result);
+    const wb = XLSX.read(data, { type: 'array', codepage: 1255 });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+    if (!rows.length) { showToast('הגיליון ריק'); return; }
+    const headers = Object.keys(rows[0]);
+    importRows = rows;
+    buildImportPreview(headers, rows);
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parseCsvText(text) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 2) { showToast('קובץ ריק'); return; }
+  const headers = lines[0].split(',').map(h => h.trim().replace(/"/g,''));
+  importRows = lines.slice(1).map(line => {
+    const cols = line.split(',').map(c => c.trim().replace(/"/g,''));
+    const obj = {};
+    headers.forEach((h,i) => obj[h] = cols[i] || '');
+    return obj;
+  }).filter(r => Object.values(r).some(v => v));
+  buildImportPreview(headers, importRows);
+}
+
+function buildImportPreview(headers, rows) {
+  const div = document.getElementById('import-preview');
+  const tbl = document.getElementById('import-table');
+  tbl.innerHTML = `<thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
+    <tbody>${rows.slice(0,5).map(r =>
+      `<tr>${headers.map(h => `<td>${r[h]||''}</td>`).join('')}</tr>`
+    ).join('')}</tbody>`;
+  div.style.display = 'block';
+}
+
+function confirmImport() {
+  let added = 0;
+  importRows.forEach(row => {
+    const vals = Object.values(row);
+
+    let fname = (row['שם פרטי'] || row['first_name'] || '').trim();
+    let lname = (row['שם משפחה'] || row['last_name'] || '').trim();
+
+    // אם אין שם פרטי/משפחה נפרדים — חפש עמודת שם מלא
+    if (!fname) {
+      const fullName = (row['שם'] || row['שם עובד'] || row['שם מלא'] || row['name'] || vals[0] || '').trim();
+      if (!fullName) return;
+      // פצל לפי רווח: מילה ראשונה = שם פרטי, השאר = שם משפחה
+      const parts = fullName.split(/\s+/);
+      fname = parts[0] || fullName;
+      lname = parts.slice(1).join(' ') || '';
+    }
+
+    // אם fname == lname (כפילות) — נקה
+    if (fname === lname) lname = '';
+
+    // אם lname ריק לחלוטין — שם המשפחה = vals[1] רק אם שונה מfname
+    if (!lname) {
+      const candidate = (vals[1] || '').trim();
+      if (candidate && candidate !== fname) lname = candidate;
+    }
+
+    if (!fname) return;
+
+    employees.push({
+      id: Date.now().toString() + Math.random(),
+      fname,
+      lname,
+      eid: (row['ת.ז'] || row['תעודת זהות'] || row['ת.ז.'] || row['id'] || '').trim(),
+      phone: (row['טלפון'] || row['phone'] || '').trim(),
+      client: (row['לקוח'] || row['client'] || '').trim(),
+      dailyHours: parseFloat(row['שעות'] || row['שעות יומיות'] || '8') || 8,
+      status: 'active',
+      createdAt: new Date().toISOString()
+    });
+    added++;
+  });
+  save();
+  closeModal('modal-import');
+  renderEmployees(); updateStats(); updateAllSelects();
+  showToast(`יובאו ${added} עובדים`);
+}
+
+// ===== CALENDAR =====
+const HEB_MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+const DAY_NAMES = ['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'];
+
+function renderCalendar() {
+  const y = calDate.getFullYear(), m = calDate.getMonth();
+  document.getElementById('cal-title').textContent = `${HEB_MONTHS[m]} ${y}`;
+
+  const namesDiv = document.getElementById('cal-days-names');
+  namesDiv.innerHTML = DAY_NAMES.map((d,i) =>
+    `<div class="cal-day-name${i>=5?' shabbat':''}">${d}</div>`
+  ).join('');
+
+  const firstDay = new Date(y, m, 1).getDay();
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const today = new Date();
+  const absenceDates = absences.map(a => a.date);
+
+  let cells = '';
+  // Fill leading blanks
+  for (let i = 0; i < firstDay; i++) cells += `<div class="cal-cell empty"></div>`;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(y, m, d);
+    const dow = date.getDay();
+    const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday = date.toDateString() === today.toDateString();
+    const isShabbat = dow === 5 || dow === 6;
+    const holiday = HOLIDAYS[dateStr];
+    const hasAbs = absenceDates.includes(dateStr);
+
+    let cls = 'cal-cell';
+    if (isToday) cls += ' today';
+    else if (isShabbat) cls += ' shabbat';
+    if (holiday) cls += ' holiday';
+    if (hasAbs) cls += ' has-absence';
+
+    cells += `<div class="${cls}" onclick="calSelectDay('${dateStr}')">
+      <span class="day-num">${d}</span>
+      ${holiday ? `<span class="day-holiday-name">${holiday}</span>` : ''}
+    </div>`;
+  }
+  document.getElementById('cal-grid').innerHTML = cells;
+}
+
+function calPrev() { calDate.setMonth(calDate.getMonth() - 1); renderCalendar(); }
+function calNext() { calDate.setMonth(calDate.getMonth() + 1); renderCalendar(); }
+
+function calSelectDay(dateStr) {
+  document.querySelectorAll('.cal-cell.selected').forEach(c => c.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+  const dayAbs = absences.filter(a => a.date === dateStr);
+  const d = new Date(dateStr);
+  document.getElementById('abs-date-title').textContent = `חיסורים — ${d.toLocaleDateString('he-IL')}`;
+  const list = document.getElementById('abs-day-list');
+  if (!dayAbs.length) {
+    list.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:16px">אין חיסורים ביום זה</div>';
+    return;
+  }
+  list.innerHTML = dayAbs.map(a => {
+    const emp = employees.find(e => e.id === a.empId);
+    const repl = a.replacementId ? employees.find(e => e.id === a.replacementId) : null;
+    return `<div class="clock-entry">
+      <div style="flex:1">
+        <div style="font-weight:500">${emp ? empName(emp) : '—'}</div>
+        <div style="font-size:11px;color:var(--text-muted)">${a.client || ''} ${repl ? '← מולא ע"י ' + repl.fname + ' ' + repl.lname : ''}</div>
+      </div>
+      <span class="badge badge-red">חיסור</span>
+    </div>`;
+  }).join('');
+}
+
+// ===== CLIENT TAGS =====
+let _empClientsList = []; // תגיות נוכחיות בטופס
+
+function renderEmpClientTags(clients) {
+  _empClientsList = [...clients];
+  const wrap = document.getElementById('emp-clients-tags');
+  wrap.innerHTML = _empClientsList.map((c,i) =>
+    `<span class="client-tag">${c}<span class="tag-x" onclick="removeEmpClient(${i})">×</span></span>`
+  ).join('');
+  document.getElementById('emp-client').value = JSON.stringify(_empClientsList);
+  document.getElementById('emp-client-input').value = '';
+}
+
+function addEmpClient() {
+  const input = document.getElementById('emp-client-input');
+  const val = input.value.trim();
+  if (!val) return;
+  if (!_empClientsList.includes(val)) {
+    _empClientsList.push(val);
+    renderEmpClientTags(_empClientsList);
+  } else {
+    showToast('לקוח זה כבר מופיע');
+    input.value = '';
+  }
+}
+
+function removeEmpClient(idx) {
+  _empClientsList.splice(idx, 1);
+  renderEmpClientTags(_empClientsList);
+}
+
+// ===== ABSENCES =====
+function openAbsenceModal(dateStr) {
+  document.getElementById('abs-emp-sel').innerHTML = empOptions('בחר עובד');
+  document.getElementById('abs-emp-search').value = '';
+  document.getElementById('abs-repl-search').value = '';
+  document.getElementById('abs-replacement').innerHTML = empOptions('אין ממלא מקום');
+  document.getElementById('abs-date-input').value = dateStr || new Date().toISOString().slice(0,10);
+  document.getElementById('abs-client-input').value = '';
+  document.getElementById('abs-client-sel').innerHTML = '<option value="">-- בחר לקוח --</option>';
+  document.getElementById('abs-client-sel').style.display = 'none';
+  document.getElementById('abs-client-input').style.display = 'block';
+  document.getElementById('abs-note').value = '';
+  document.getElementById('abs-repl-paid').value = 'unpaid';
+  document.getElementById('abs-repl-amount').value = '';
+  document.getElementById('abs-repl-pay-note').value = '';
+  document.getElementById('repl-payment-section').style.display = 'none';
+  openModal('modal-absence');
+}
+
+// כשבוחרים עובד בחיסור — מלא לקוח אוטומטי
+function onAbsEmpChange() {
+  const empId = document.getElementById('abs-emp-sel').value;
+  const emp = empId ? employees.find(e => e.id === empId) : null;
+  const clients = emp ? (emp.clients && emp.clients.length ? emp.clients : (emp.client ? [emp.client] : [])) : [];
+
+  const sel = document.getElementById('abs-client-sel');
+  const inp = document.getElementById('abs-client-input');
+
+  if (clients.length === 0) {
+    sel.style.display = 'none';
+    inp.style.display = 'block';
+    inp.value = '';
+  } else if (clients.length === 1) {
+    // לקוח יחיד — מלא אוטומטי
+    sel.style.display = 'none';
+    inp.style.display = 'block';
+    inp.value = clients[0];
+  } else {
+    // כמה לקוחות — הראה dropdown לבחירה
+    inp.style.display = 'none';
+    sel.style.display = 'block';
+    sel.innerHTML = '<option value="">-- בחר לקוח --</option>' +
+      clients.map(c => `<option value="${c}">${c}</option>`).join('');
+    sel.value = clients[0]; // ברירת מחדל: הראשון
+  }
+}
+
+function toggleReplPayment() {
+  const replId = document.getElementById('abs-replacement').value;
+  document.getElementById('repl-payment-section').style.display = replId ? 'block' : 'none';
+  if (!replId) {
+    document.getElementById('abs-repl-paid').value = 'unpaid';
+    document.getElementById('abs-repl-amount').value = '';
+    document.getElementById('abs-repl-pay-note').value = '';
+  }
+  toggleReplPaymentAmount();
+}
+
+function toggleReplPaymentAmount() {
+  const paid = document.getElementById('abs-repl-paid').value;
+  // הצג שדה סכום רק אם "שולם"
+  document.getElementById('repl-amount-group').style.opacity = paid === 'unpaid' ? '0.4' : '1';
+}
+
+function saveAbsence() {
+  const empId = document.getElementById('abs-emp-sel').value;
+  const date = document.getElementById('abs-date-input').value;
+  if (!empId || !date) { showToast('נא לבחור עובד ותאריך'); return; }
+  const replacementId = document.getElementById('abs-replacement').value;
+  const replPaid = replacementId ? document.getElementById('abs-repl-paid').value : null;
+  const replAmount = replacementId ? (parseFloat(document.getElementById('abs-repl-amount').value) || 0) : 0;
+  const replPayNote = replacementId ? document.getElementById('abs-repl-pay-note').value.trim() : '';
+  // לקוח — מ-select (כמה לקוחות) או input
+  const selEl = document.getElementById('abs-client-sel');
+  const inpEl = document.getElementById('abs-client-input');
+  const client = (selEl && selEl.style.display !== 'none' ? selEl.value : inpEl.value).trim();
+  absences.push({
+    id: Date.now().toString(),
+    empId, date, client, replacementId,
+    replPaid, replAmount, replPayNote,
+    note: document.getElementById('abs-note').value.trim(),
+    createdAt: new Date().toISOString()
+  });
+  save();
+  closeModal('modal-absence');
+  renderCalendar(); renderAbsenceTable(); updateStats();
+  showToast('חיסור נרשם');
+}
+
+function renderAbsenceTable() {
+  const filterEmp = document.getElementById('abs-filter-emp')?.value || '';
+  const filterMonth = document.getElementById('abs-filter-month')?.value || '';
+  const tbody = document.getElementById('abs-tbody');
+  const empty = document.getElementById('abs-empty');
+
+  let filtered = [...absences].sort((a,b) => b.date.localeCompare(a.date));
+  if (filterEmp) filtered = filtered.filter(a => a.empId === filterEmp);
+  if (filterMonth) filtered = filtered.filter(a => a.date.startsWith(filterMonth));
+
+  if (!filtered.length) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  const paidLabel = { paid: '✅ שולם', unpaid: '❌ לא שולם', pending: '⏳ ממתין' };
+  const paidBadge = { paid: 'badge-green', unpaid: 'badge-red', pending: 'badge-yellow' };
+
+  tbody.innerHTML = filtered.map(a => {
+    const emp = employees.find(e => e.id === a.empId);
+    const repl = a.replacementId ? employees.find(e => e.id === a.replacementId) : null;
+    const d = new Date(a.date);
+
+    let paymentCell = '—';
+    const hasRepl = repl || a.replExtName;
+    if (hasRepl) {
+      const status = a.replPaid || 'unpaid';
+      const badge = paidBadge[status] || 'badge-yellow';
+      const label = paidLabel[status] || status;
+      const amountStr = a.replAmount ? ` · ₪${a.replAmount}` : '';
+      const noteStr = a.replPayNote ? `<div style="font-size:10px;color:var(--text-muted);margin-top:2px">${a.replPayNote}</div>` : '';
+      paymentCell = `<div>
+        <span class="badge ${badge}" style="font-size:11px">${label}${amountStr}</span>
+        ${noteStr}
+      </div>`;
+    }
+
+    // תצוגת ממלא מקום — מהמערכת או חיצוני
+    let replCell = '—';
+    if (repl) {
+      replCell = `<div class="emp-cell"><div class="avatar" style="width:24px;height:24px;font-size:10px">${empInitials(repl)}</div>${repl.fname} ${repl.lname}</div>`;
+    } else if (a.replExtName) {
+      replCell = `<div class="emp-cell"><div class="avatar" style="width:24px;height:24px;font-size:10px;background:#e8e8f0;color:#666">?</div>${a.replExtName} <span class="badge badge-yellow" style="font-size:10px;margin-right:4px">חיצוני</span></div>`;
+    }
+
+    // שעות חילוף
+    const hoursCell = a.replHours ? `<span class="badge badge-blue" style="font-size:11px">${a.replHours} שע'</span>` : '—';
+
+    return `<tr>
+      <td><div class="emp-cell"><div class="avatar">${emp ? empInitials(emp) : '?'}</div> ${emp ? empName(emp) : '—'}</div></td>
+      <td>${d.toLocaleDateString('he-IL')}</td>
+      <td>${a.client || '—'}</td>
+      <td>${replCell}</td>
+      <td>${hoursCell}</td>
+      <td>${paymentCell}</td>
+      <td style="font-size:12px;color:var(--text-muted)">${a.note || ''}</td>
+      <td style="display:flex;gap:4px">
+        <button class="btn btn-secondary btn-sm" title="עריכה" onclick="openEditAbsenceModal('${a.id}')">✏️</button>
+        <button class="btn btn-secondary btn-sm" title="מחיקה" onclick="deleteAbsence('${a.id}')">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function deleteAbsence(id) {
+  absences = absences.filter(a => a.id !== id);
+  save(); renderAbsenceTable(); renderCalendar(); updateStats();
+  showToast('חיסור נמחק');
+}
+
+// ===== EDIT ABSENCE MODAL =====
+let _editReplType = 'none'; // 'system' | 'external' | 'none'
+
+function openEditAbsenceModal(id) {
+  const a = absences.find(x => x.id === id);
+  if (!a) return;
+  const emp = employees.find(e => e.id === a.empId);
+
+  document.getElementById('edit-abs-id').value = id;
+  document.getElementById('edit-abs-title').textContent = `עריכת חיסור — ${emp ? empName(emp) : ''}`;
+  document.getElementById('edit-abs-sub').textContent = new Date(a.date).toLocaleDateString('he-IL', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  document.getElementById('edit-abs-note').value = a.note || '';
+
+  // מלא select עובדים
+  document.getElementById('edit-abs-repl-sel').innerHTML = empOptions('אין ממלא מקום');
+  document.getElementById('edit-abs-repl-search').value = '';
+
+  // קבע סוג ממלא קיים
+  if (a.replacementId) {
+    setReplType('system');
+    document.getElementById('edit-abs-repl-sel').value = a.replacementId;
+    onEditReplChange(true);
+  } else if (a.replExtName) {
+    setReplType('external');
+    document.getElementById('edit-abs-repl-ext-name').value = a.replExtName;
+    document.getElementById('edit-repl-details-section').style.display = 'block';
+  } else {
+    setReplType('none');
+  }
+
+  // מלא שדות תשלום
+  document.getElementById('edit-abs-repl-hours').value = a.replHours || '';
+  document.getElementById('edit-abs-repl-paid').value = a.replPaid || 'unpaid';
+  document.getElementById('edit-abs-repl-amount').value = a.replAmount || '';
+  document.getElementById('edit-abs-repl-pay-note').value = a.replPayNote || '';
+  toggleEditReplAmount();
+
+  // hint שעות
+  updateReplHoursHint(a.replacementId);
+
+  openModal('modal-edit-absence');
+}
+
+function setReplType(type) {
+  _editReplType = type;
+  // כפתורים
+  ['system','external','none'].forEach(t => {
+    const btn = document.getElementById('repl-type-btn-' + t);
+    btn.className = 'btn btn-sm ' + (t === type ? 'btn-primary' : 'btn-secondary');
+  });
+  document.getElementById('repl-system-section').style.display = type === 'system' ? 'block' : 'none';
+  document.getElementById('repl-external-section').style.display = type === 'external' ? 'block' : 'none';
+
+  if (type === 'none') {
+    document.getElementById('edit-repl-details-section').style.display = 'none';
+  } else {
+    // הצג פרטים רק אם בחרו עובד / הזינו שם
+    const hasSelection = type === 'system'
+      ? !!document.getElementById('edit-abs-repl-sel').value
+      : !!document.getElementById('edit-abs-repl-ext-name').value.trim();
+    document.getElementById('edit-repl-details-section').style.display = hasSelection ? 'block' : 'none';
+  }
+}
+
+function onEditReplChange(skipHint) {
+  const replId = document.getElementById('edit-abs-repl-sel').value;
+  document.getElementById('edit-repl-details-section').style.display = replId ? 'block' : 'none';
+  if (!skipHint) updateReplHoursHint(replId);
+}
+
+function updateReplHoursHint(replId) {
+  const hint = document.getElementById('edit-repl-hours-hint');
+  if (!replId) { hint.textContent = ''; return; }
+  const repl = employees.find(e => e.id === replId);
+  if (repl && repl.dailyHours) {
+    hint.textContent = `💡 ${empName(repl)} רגיל: ${repl.dailyHours} שע' ביום`;
+  } else {
+    hint.textContent = '';
+  }
+}
+
+function toggleEditReplAmount() {
+  const paid = document.getElementById('edit-abs-repl-paid').value;
+  document.getElementById('edit-repl-amount-group').style.opacity = paid === 'unpaid' ? '0.4' : '1';
+}
+
+function saveEditAbsence() {
+  const id = document.getElementById('edit-abs-id').value;
+  const idx = absences.findIndex(a => a.id === id);
+  if (idx < 0) return;
+
+  const a = absences[idx];
+  const replHours = parseFloat(document.getElementById('edit-abs-repl-hours').value) || 0;
+
+  // ממלא מקום
+  let replacementId = null;
+  let replExtName = '';
+  if (_editReplType === 'system') {
+    replacementId = document.getElementById('edit-abs-repl-sel').value || null;
+  } else if (_editReplType === 'external') {
+    replExtName = document.getElementById('edit-abs-repl-ext-name').value.trim();
+  }
+
+  const hasRepl = replacementId || replExtName;
+  const replPaid = hasRepl ? document.getElementById('edit-abs-repl-paid').value : null;
+  const replAmount = hasRepl ? (parseFloat(document.getElementById('edit-abs-repl-amount').value) || 0) : 0;
+  const replPayNote = hasRepl ? document.getElementById('edit-abs-repl-pay-note').value.trim() : '';
+
+  // אם היה ממלא מקום קודם שקיבל שעות — מחק אותן
+  const prevReplId = a.replacementId;
+  const prevHours = a.replHours || 0;
+  if (prevReplId && prevHours > 0) {
+    hoursLog = hoursLog.filter(h => !(h.empId === prevReplId && h.absenceId === id));
+  }
+
+  // עדכן חיסור
+  absences[idx] = {
+    ...a,
+    replacementId,
+    replExtName,
+    replHours: hasRepl ? replHours : 0,
+    replPaid,
+    replAmount,
+    replPayNote,
+    note: document.getElementById('edit-abs-note').value.trim(),
+    updatedAt: new Date().toISOString()
+  };
+
+  // אם יש ממלא מקום מהמערכת + שעות — הוסף לשעות העבודה שלו
+  if (replacementId && replHours > 0) {
+    const emp = employees.find(e => e.id === a.empId);
+    const repl = employees.find(e => e.id === replacementId);
+    hoursLog.push({
+      id: Date.now().toString(),
+      empId: replacementId,
+      date: a.date,
+      hours: replHours,
+      client: a.client || '',
+      note: `חילוף: ${emp ? empName(emp) : ''}`,
+      type: 'replacement',
+      absenceId: id,
+      createdAt: new Date().toISOString()
+    });
+  }
+
+  save();
+  closeModal('modal-edit-absence');
+  renderAbsenceTable();
+  renderCalendar();
+  renderEmployees();
+  updateStats();
+  showToast('✅ חיסור עודכן' + (replacementId && replHours > 0 ? ` · ${replHours} שע' נוספו לממלא` : ''));
+}
+
+// ===== HOURS =====
+function switchHoursTab(t) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('hours-tab-' + t).classList.add('active');
+  event.currentTarget.classList.add('active');
+  if (t === 'manual') renderHoursTable();
+  if (t === 'calc') {
+    // מלא select עובדים
+    const sel = document.getElementById('calc-emp');
+    sel.innerHTML = '<option value="">בחר עובד...</option>' +
+      validEmployees().filter(e => e.hoursType !== 'report').map(e =>
+        `<option value="${e.id}">${empName(e)} (${e.dailyHours||8} שע')</option>`).join('');
+    // ברירת מחדל: החודש הנוכחי
+    const now = new Date();
+    const calcMon = document.getElementById('calc-month');
+    if (!calcMon.value) calcMon.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  }
+}
+
+function saveManualHours() {
+  const empId = document.getElementById('manual-emp').value;
+  const date = document.getElementById('manual-date').value;
+  const hours = parseFloat(document.getElementById('manual-hours').value);
+  if (!empId || !date || isNaN(hours)) { showToast('נא למלא עובד, תאריך ושעות'); return; }
+  // Client: prefer dropdown if loaded, else text input
+  const clientSel = document.getElementById('manual-client');
+  const clientText = document.getElementById('manual-client-text');
+  let client = '';
+  if (clientSel.style.display !== 'none' && clientSel.value) {
+    client = clientSel.options[clientSel.selectedIndex].text;
+  } else {
+    client = clientText.value.trim();
+  }
+  hoursLog.push({
+    id: Date.now().toString(),
+    empId, date, hours, client,
+    note: document.getElementById('manual-note').value.trim(),
+    type: 'manual',
+    createdAt: new Date().toISOString()
+  });
+  save(); renderHoursTable(); showToast('שעות נשמרו');
+  document.getElementById('manual-hours').value = '';
+  document.getElementById('manual-note').value = '';
+}
+
+function renderHoursTable() {
+  const q = (document.getElementById('hours-search')?.value || '').toLowerCase();
+  const filterEmp = document.getElementById('hours-filter-emp')?.value || '';
+  const filterMonth = document.getElementById('hours-filter-month')?.value || '';
+  const tbody = document.getElementById('hours-tbody');
+  const empty = document.getElementById('hours-empty');
+  let filtered = [...hoursLog].sort((a,b) => b.date.localeCompare(a.date));
+  if (q) filtered = filtered.filter(h => {
+    const emp = employees.find(e => e.id === h.empId);
+    return emp && (empName(emp)).toLowerCase().includes(q);
+  });
+  if (filterEmp) filtered = filtered.filter(h => h.empId === filterEmp);
+  if (filterMonth) filtered = filtered.filter(h => h.date.startsWith(filterMonth));
+  if (!filtered.length) { tbody.innerHTML = ''; empty.style.display='block';
+    document.getElementById('hours-total').textContent = '';
+    document.getElementById('hours-abs-summary').style.display = 'none';
+    return; }
+  empty.style.display = 'none';
+  const total = filtered.reduce((s,h) => s + (h.hours||0), 0);
+  document.getElementById('hours-total').textContent = `סה"כ שעות מוזנות: ${total.toFixed(1)}`;
+  const sourceLabel = { manual: 'ידני', file: 'קובץ', calc: 'נוכחות' };
+  tbody.innerHTML = filtered.slice(0, 100).map(h => {
+    const emp = employees.find(e => e.id === h.empId);
+    const d = new Date(h.date);
+    return `<tr>
+      <td><div class="emp-cell"><div class="avatar" style="width:24px;height:24px;font-size:10px">${emp?(empInitials(emp)):'?'}</div> ${emp ? empName(emp) : '—'}</div></td>
+      <td>${d.toLocaleDateString('he-IL')}</td>
+      <td><span class="badge badge-blue">${h.hours} שע'</span></td>
+      <td style="font-size:12px">${h.client || '—'}</td>
+      <td><span class="badge ${h.type==='file'?'badge-green':h.type==='calc'?'badge-blue':'badge-yellow'}" style="font-size:10px">${sourceLabel[h.type]||h.type}</span></td>
+      <td style="font-size:12px;color:var(--text-muted)">${h.note || ''}</td>
+      <td><button class="btn btn-secondary btn-sm" onclick="deleteHours('${h.id}')">🗑️</button></td>
+    </tr>`;
+  }).join('');
+
+  // ===== סיכום עם חיסורים — רק כשמסוננים לעובד+חודש ספציפיים =====
+  const summaryEl = document.getElementById('hours-abs-summary');
+  if (filterEmp && filterMonth) {
+    const emp = employees.find(e => e.id === filterEmp);
+    if (emp && emp.hoursType !== 'report') {
+      const dailyH = emp.dailyHours || 8;
+      const [y, m] = filterMonth.split('-').map(Number);
+
+      // חשב ימי עבודה בחודש (ללא שבתות וחגים)
+      const daysInMonth = new Date(y, m, 0).getDate();
+      let workdays = 0;
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const dow = new Date(y, m-1, d).getDay();
+        if (dow === 6) continue;      // שבת
+        if (HOLIDAYS[dateStr]) continue; // חג
+        workdays++;
+      }
+
+      // מספר חיסורים של העובד בחודש
+      const empAbsences = absences.filter(a =>
+        a.empId === filterEmp && a.date.startsWith(filterMonth)
+      );
+      const absCount = empAbsences.length;
+
+      const expectedHours = workdays * dailyH;
+      const absHours = absCount * dailyH;
+      const netHours = expectedHours - absHours;
+
+      summaryEl.style.display = 'block';
+      summaryEl.innerHTML = `
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text)">
+          📊 סיכום חודשי — ${empName(emp)} | ${HEB_MONTHS[m-1]} ${y}
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px">
+          <div style="background:var(--accent-light);border-radius:8px;padding:10px 14px">
+            <div style="font-size:11px;color:var(--accent);font-weight:500">ימי עבודה בחודש</div>
+            <div style="font-size:20px;font-weight:700;color:var(--accent)">${workdays}</div>
+            <div style="font-size:11px;color:var(--text-muted)">${dailyH} שע' ביום</div>
+          </div>
+          <div style="background:${absCount>0?'var(--danger-light)':'var(--accent-light)'};border-radius:8px;padding:10px 14px">
+            <div style="font-size:11px;color:${absCount>0?'var(--danger)':'var(--accent)'};font-weight:500">חיסורים</div>
+            <div style="font-size:20px;font-weight:700;color:${absCount>0?'var(--danger)':'var(--text-muted)'}">${absCount}</div>
+            <div style="font-size:11px;color:var(--text-muted)">−${absHours} שעות</div>
+          </div>
+          <div style="background:#f0f4ff;border-radius:8px;padding:10px 14px">
+            <div style="font-size:11px;color:var(--info);font-weight:500">שעות צפויות</div>
+            <div style="font-size:20px;font-weight:700;color:var(--info)">${expectedHours}</div>
+            <div style="font-size:11px;color:var(--text-muted)">${workdays} × ${dailyH}</div>
+          </div>
+          <div style="background:var(--primary);border-radius:8px;padding:10px 14px">
+            <div style="font-size:11px;color:#9fe1cb;font-weight:500">סה"כ לתשלום</div>
+            <div style="font-size:22px;font-weight:700;color:white">${netHours}</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.5)">${workdays-absCount} ימים × ${dailyH} שע'</div>
+          </div>
+        </div>
+        ${absCount > 0 ? `
+        <div style="margin-top:10px;font-size:12px;color:var(--text-muted)">
+          📅 ימי חיסור: ${empAbsences.map(a => new Date(a.date).toLocaleDateString('he-IL')).join(' | ')}
+        </div>` : `
+        <div style="margin-top:10px;font-size:12px;color:var(--accent)">✅ אין חיסורים רשומים החודש</div>`}
+      `;
+    } else {
+      summaryEl.style.display = 'none';
+    }
+  } else {
+    summaryEl.style.display = 'none';
+  }
+
+  // update month filter options
+  const months = [...new Set(hoursLog.map(h => h.date.slice(0,7)))].sort().reverse();
+  const mEl = document.getElementById('hours-filter-month');
+  if (mEl) {
+    const cur = mEl.value;
+    mEl.innerHTML = '<option value="">כל החודשים</option>' + months.map(mo => {
+      const [y,mn] = mo.split('-');
+      return `<option value="${mo}" ${mo===cur?'selected':''}>${HEB_MONTHS[parseInt(mn)-1]} ${y}</option>`;
+    }).join('');
+  }
+}
+
+function deleteHours(id) {
+  hoursLog = hoursLog.filter(h => h.id !== id);
+  save(); renderHoursTable(); showToast('נמחק');
+}
+
+// ===== HOURS FILE UPLOAD =====
+function parseExcelHours(file) {
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const data = new Uint8Array(ev.target.result);
+    const wb = XLSX.read(data, { type: 'array', codepage: 1255 });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    hoursImportRows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+    if (!hoursImportRows.length) { showToast('הגיליון ריק'); return; }
+    hoursImportHeaders = Object.keys(hoursImportRows[0]);
+    buildHoursCsvUI();
+    document.getElementById('hours-csv-section').style.display = 'block';
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function handleHoursFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  document.getElementById('hours-upload-info').style.display = 'block';
+  document.getElementById('hours-file-name').textContent = '📄 ' + file.name;
+  document.getElementById('hours-pdf-section').style.display = 'none';
+  document.getElementById('hours-csv-section').style.display = 'none';
+
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (ext === 'pdf') {
+    document.getElementById('hours-pdf-section').style.display = 'block';
+    document.getElementById('pdf-rows-container').innerHTML = '';
+    for (let i = 0; i < 3; i++) addPdfRow();
+  } else if (ext === 'xlsx' || ext === 'xls') {
+    if (!window.XLSX) {
+      showToast('טוען ספרייה...');
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+      s.onload = () => parseExcelHours(file);
+      document.head.appendChild(s);
+    } else {
+      parseExcelHours(file);
+    }
+  } else {
+    // CSV/Excel
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target.result;
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      if (lines.length < 2) { showToast('קובץ ריק'); return; }
+      hoursImportHeaders = lines[0].split(',').map(h => h.trim().replace(/"/g,''));
+      hoursImportRows = lines.slice(1).map(line => {
+        const cols = line.split(',').map(c => c.trim().replace(/"/g,''));
+        const obj = {};
+        hoursImportHeaders.forEach((h,i) => obj[h] = cols[i]||'');
+        return obj;
+      }).filter(r => Object.values(r).some(v => v));
+      buildHoursCsvUI();
+    };
+    reader.readAsText(file, 'UTF-8');
+  }
+}
+
+function buildHoursCsvUI() {
+  document.getElementById('hours-csv-section').style.display = 'block';
+  // Column mapper
+  const empOpts = '<option value="">— לא רלוונטי —</option>' +
+    ['שם עובד','ת.ז.','תאריך','שעות','הערה'].map(l => `<option value="${l}">${l}</option>`).join('');
+  const mapRow = document.getElementById('col-map-row');
+  mapRow.innerHTML = hoursImportHeaders.map(h =>
+    `<div class="form-group" style="margin-bottom:0">
+      <label class="form-label">${h}</label>
+      <select class="form-control" id="colmap-${h}" style="font-size:12px">
+        ${empOpts}
+      </select>
+    </div>`
+  ).join('');
+  // Auto-detect
+  hoursImportHeaders.forEach(h => {
+    const lower = h.toLowerCase();
+    let val = '';
+    if (lower.includes('שם') || lower.includes('name') || lower.includes('עובד')) val = 'שם עובד';
+    else if (lower.includes('ז') || lower.includes('id')) val = 'ת.ז.';
+    else if (lower.includes('תאריך') || lower.includes('date')) val = 'תאריך';
+    else if (lower.includes('שעות') || lower.includes('hour') || lower.includes('שעה')) val = 'שעות';
+    else if (lower.includes('הערה') || lower.includes('note')) val = 'הערה';
+    const el = document.getElementById('colmap-'+h);
+    if (el && val) el.value = val;
+  });
+  // Preview
+  const tbl = document.getElementById('hours-preview-table');
+  tbl.innerHTML = `<thead><tr>${hoursImportHeaders.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+    <tbody>${hoursImportRows.slice(0,5).map(r=>
+      `<tr>${hoursImportHeaders.map(h=>`<td>${r[h]||''}</td>`).join('')}</tr>`
+    ).join('')}</tbody>`;
+}
+
+function confirmHoursImport() {
+  const client = document.getElementById('upload-client-name').value.trim();
+  let added = 0;
+  hoursImportRows.forEach(row => {
+    // Find column mappings
+    let empName = '', eid = '', dateStr = '', hours = 0, note = '';
+    hoursImportHeaders.forEach(h => {
+      const sel = document.getElementById('colmap-'+h);
+      if (!sel) return;
+      const v = row[h] || '';
+      if (sel.value === 'שם עובד') empName = v;
+      if (sel.value === 'ת.ז.') eid = v;
+      if (sel.value === 'תאריך') dateStr = v;
+      if (sel.value === 'שעות') hours = parseFloat(v) || 0;
+      if (sel.value === 'הערה') note = v;
+    });
+    if (!hours && !empName) return;
+    // Try to match employee
+    let emp = null;
+    if (eid) emp = employees.find(e => e.eid === eid);
+    if (!emp && empName) emp = employees.find(e =>
+      (e.fname+' '+e.lname).includes(empName) || empName.includes(e.fname)
+    );
+    // Parse date
+    let parsedDate = dateStr;
+    if (dateStr.includes('/')) {
+      const parts = dateStr.split('/');
+      if (parts.length === 3) parsedDate = `${parts[2].length===2?'20'+parts[2]:parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+    }
+    if (!parsedDate || parsedDate === 'Invalid Date') parsedDate = new Date().toISOString().slice(0,10);
+    hoursLog.push({
+      id: Date.now().toString() + Math.random(),
+      empId: emp ? emp.id : '_unknown_' + empName,
+      empNameRaw: empName,
+      date: parsedDate, hours,
+      client, note, type: 'file',
+      createdAt: new Date().toISOString()
+    });
+    added++;
+  });
+  save();
+  showToast(`יובאו ${added} רשומות שעות`);
+  document.getElementById('hours-upload-info').style.display = 'none';
+  document.getElementById('hours-file-input').value = '';
+  switchHoursTab('manual');
+  renderHoursTable();
+}
+
+// PDF: manual row entry
+function addPdfRow() {
+  const con = document.getElementById('pdf-rows-container');
+  const id = 'pdf-row-' + Date.now();
+  const div = document.createElement('div');
+  div.id = id;
+  div.style.cssText = 'display:grid;grid-template-columns:2fr 1.2fr 1fr 1.5fr auto;gap:8px;margin-bottom:8px;align-items:end';
+  div.innerHTML = `
+    <div><label class="form-label">עובד</label><select class="form-control" style="font-size:12px">${empOptions()}</select></div>
+    <div><label class="form-label">תאריך</label><input type="date" class="form-control" style="font-size:12px" value="${new Date().toISOString().slice(0,10)}"></div>
+    <div><label class="form-label">שעות</label><input type="number" class="form-control" style="font-size:12px" placeholder="8" min="0" max="24" step="0.5"></div>
+    <div><label class="form-label">הערה</label><input type="text" class="form-control" style="font-size:12px" placeholder="..."></div>
+    <button class="btn btn-secondary btn-sm" onclick="document.getElementById('${id}').remove()" style="margin-bottom:0">✕</button>
+  `;
+  con.appendChild(div);
+}
+
+function savePdfRows() {
+  const client = document.getElementById('upload-client-name').value.trim();
+  const rows = document.querySelectorAll('#pdf-rows-container > div');
+  let added = 0;
+  rows.forEach(row => {
+    const inputs = row.querySelectorAll('input, select');
+    const empId = inputs[0].value;
+    const date = inputs[1].value;
+    const hours = parseFloat(inputs[2].value);
+    const note = inputs[3].value;
+    if (!empId || !date || isNaN(hours) || hours <= 0) return;
+    hoursLog.push({
+      id: Date.now().toString() + Math.random(),
+      empId, date, hours, client, note,
+      type: 'file', createdAt: new Date().toISOString()
+    });
+    added++;
+  });
+  save();
+  showToast(`נשמרו ${added} רשומות`);
+  document.getElementById('hours-upload-info').style.display = 'none';
+  document.getElementById('hours-file-input').value = '';
+  switchHoursTab('manual');
+  renderHoursTable();
+}
+
+// ===== REPORTS =====
+function buildReport() {
+  const empId = document.getElementById('rpt-emp').value;
+  const month = document.getElementById('rpt-month').value;
+  const out = document.getElementById('report-output');
+  if (!month) { out.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);">בחר חודש</div>'; return; }
+
+  const emps = empId ? employees.filter(e => e.id === empId) : employees;
+  if (!emps.length) { out.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);">אין עובדים</div>'; return; }
+
+  const rows = emps.map(emp => {
+    const empHours = hoursLog.filter(h => h.empId === emp.id && h.date.startsWith(month));
+    const totalHours = empHours.reduce((s,h) => s + (h.hours||0), 0);
+    const empAbs = absences.filter(a => a.empId === emp.id && a.date.startsWith(month));
+    return { emp, totalHours, absCount: empAbs.length, empHours, empAbs };
+  });
+
+  const [y, m] = month.split('-');
+  const monthName = `${HEB_MONTHS[parseInt(m)-1]} ${y}`;
+
+  out.innerHTML = `
+    <div class="card" id="print-area">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
+        <div>
+          <div style="font-size:18px;font-weight:700">דוח שעות וחיסורים</div>
+          <div style="font-size:13px;color:var(--text-muted);margin-top:2px">${monthName}</div>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted)">נפטון | הופק: ${new Date().toLocaleDateString('he-IL')}</div>
+      </div>
+
+      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
+        <div class="stat-card">
+          <div class="stat-label">סה"כ עובדים</div>
+          <div class="stat-value blue">${rows.length}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">סה"כ שעות</div>
+          <div class="stat-value green">${rows.reduce((s,r)=>s+r.totalHours,0).toFixed(1)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">סה"כ חיסורים</div>
+          <div class="stat-value red">${rows.reduce((s,r)=>s+r.absCount,0)}</div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>עובד</th>
+              <th>לקוח</th>
+              <th>שעות מצופות</th>
+              <th>שעות בפועל</th>
+              <th>חיסורים</th>
+              <th>אחוז נוכחות</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(r => {
+              const workdays = getWorkdaysInMonth(y, m);
+              const expected = workdays * (r.emp.dailyHours || 8);
+              const pct = expected > 0 ? Math.round((r.totalHours / expected) * 100) : 0;
+              const color = pct >= 90 ? 'badge-green' : pct >= 70 ? 'badge-yellow' : 'badge-red';
+              return `<tr>
+                <td><div class="emp-cell"><div class="avatar">${empInitials(r.emp)}</div> ${empName(r.emp)}</div></td>
+                <td>${r.emp.client || '—'}</td>
+                <td>${expected.toFixed(0)} שע'</td>
+                <td><strong>${r.totalHours.toFixed(1)} שע'</strong></td>
+                <td>${r.absCount > 0 ? `<span class="badge badge-red">${r.absCount}</span>` : '—'}</td>
+                <td><span class="badge ${color}">${pct}%</span></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+
+      ${rows.some(r => r.empAbs.length) ? `
+      <div style="margin-top:20px">
+        <div style="font-weight:600;margin-bottom:10px;font-size:14px">פירוט חיסורים</div>
+        <table style="font-size:12px">
+          <thead><tr><th>עובד</th><th>תאריך</th><th>לקוח</th><th>ממלא מקום</th><th>הערה</th></tr></thead>
+          <tbody>
+            ${rows.flatMap(r => r.empAbs.map(a => {
+              const repl = a.replacementId ? employees.find(e => e.id === a.replacementId) : null;
+              return `<tr>
+                <td>${empName(r.emp)}</td>
+                <td>${new Date(a.date).toLocaleDateString('he-IL')}</td>
+                <td>${a.client || '—'}</td>
+                <td>${repl ? repl.fname+' '+repl.lname : '—'}</td>
+                <td>${a.note || ''}</td>
+              </tr>`;
+            })).join('')}
+          </tbody>
+        </table>
+      </div>` : ''}
+    </div>
+  `;
+}
+
+function getWorkdaysInMonth(y, m) {
+  const days = new Date(y, m, 0).getDate();
+  let count = 0;
+  for (let d = 1; d <= days; d++) {
+    const dow = new Date(y, m-1, d).getDay();
+    if (dow !== 6) count++; // not Saturday
+  }
+  return count;
+}
+
+function printReport() {
+  if (!document.getElementById('rpt-month').value) { showToast('בחר חודש תחילה'); return; }
+  window.print();
+}
+
+// ===== SELECTS UPDATE =====
+function updateAllSelects() {
+  const filterOpts = '<option value="">כל העובדים</option>' + validEmployees().map(e =>
+    `<option value="${e.id}">${e.fname} ${e.lname}</option>`).join('');
+  ['abs-filter-emp','rpt-emp','hours-filter-emp'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = filterOpts;
+  });
+
+  ['manual-emp'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = empOptions();
+  });
+
+  // Absences month filter
+  const absMonths = [...new Set(absences.map(a => a.date.slice(0,7)))].sort().reverse();
+  const mEl = document.getElementById('abs-filter-month');
+  if (mEl) mEl.innerHTML = '<option value="">כל החודשים</option>' +
+    absMonths.map(m => {
+      const [y,mo] = m.split('-');
+      return `<option value="${m}">${HEB_MONTHS[parseInt(mo)-1]} ${y}</option>`;
+    }).join('');
+
+  const now = new Date();
+  const rptEl = document.getElementById('rpt-month');
+  if (rptEl && !rptEl.value) {
+    rptEl.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  }
+}
+
+// ===== GREEN INVOICE — שליפת לקוחות =====
+async function loadGreenInvoiceClients() {
+  const statusEl = document.getElementById('clients-load-status');
+  statusEl.innerHTML = '<span style="color:var(--text-muted)">טוען...</span>';
+
+  // נסה שרת מקומי קודם, אחרי כן Render
+  const endpoints = [
+    'http://localhost:4000/api/clients',
+    'https://business-app-hf5y.onrender.com/api/clients'
+  ];
+
+  let clients = null;
+  let usedEndpoint = '';
+
+  for (const url of endpoints) {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+      if (!res.ok) continue;
+      const data = await res.json();
+      // תמיכה בשני מבנים: מערך ישיר או { items: [...] }
+      const arr = Array.isArray(data) ? data : (data.items || data.clients || []);
+      if (arr.length > 0) { clients = arr; usedEndpoint = url; break; }
+    } catch(e) { /* next */ }
+  }
+
+  if (!clients || !clients.length) {
+    statusEl.innerHTML = '<span style="color:var(--danger)">שגיאה · <button onclick="loadGreenInvoiceClients()" style="background:none;border:none;cursor:pointer;color:var(--accent);text-decoration:underline;font-size:11px;padding:0">נסה שנית</button></span>';
+    showToast('לא הצלחתי להגיע לשרת — וודא שהשרת פועל');
+    return;
+  }
+
+  applyClientsToUI(clients);
+  localStorage.setItem('nep_gi_clients', JSON.stringify(clients));
+  statusEl.innerHTML = `<span style="color:var(--accent)">✓ ${clients.length} לקוחות · <button onclick="loadGreenInvoiceClients()" style="background:none;border:none;cursor:pointer;color:var(--accent);text-decoration:underline;font-size:10px;padding:0">רענן</button></span>`;
+  showToast(`נטענו ${clients.length} לקוחות`);
+}
+
+function applyClientsToUI(clients) {
+  const optionsHtml = '<option value="">בחר לקוח...</option>' +
+    clients.map(c => `<option value="${c.id||c.name}">${c.name}</option>`).join('');
+
+  // datalist לכרטיס עובד
+  const dl = document.getElementById('emp-client-list');
+  if (dl) dl.innerHTML = clients.map(c => `<option value="${c.name}">`).join('');
+
+  // שדה הזנה ידנית
+  const sel = document.getElementById('manual-client');
+  const txt = document.getElementById('manual-client-text');
+  if (sel && txt) {
+    sel.innerHTML = optionsHtml;
+    sel.style.display = 'block';
+    txt.style.display = 'none';
+  }
+
+  // שדה לקוח בייבוא קובץ — החלף input ב-select אם עדיין input
+  const uploadEl = document.getElementById('upload-client-name');
+  if (uploadEl && uploadEl.tagName === 'INPUT') {
+    const uploadSel = document.createElement('select');
+    uploadSel.className = 'form-control';
+    uploadSel.id = 'upload-client-name';
+    uploadSel.style.maxWidth = '300px';
+    uploadSel.innerHTML = optionsHtml;
+    uploadEl.replaceWith(uploadSel);
+  } else if (uploadEl && uploadEl.tagName === 'SELECT') {
+    uploadEl.innerHTML = optionsHtml;
+  }
+}
+
+// Load cached clients on startup
+function loadCachedClients() {
+  const cached = localStorage.getItem('nep_gi_clients');
+  if (!cached) return;
+  try {
+    const clients = JSON.parse(cached);
+    if (!clients.length) return;
+    applyClientsToUI(clients);
+    document.getElementById('clients-load-status').innerHTML =
+      `<span style="color:var(--text-muted);font-size:10px">${clients.length} לקוחות (cache) · <button onclick="loadGreenInvoiceClients()" style="background:none;border:none;cursor:pointer;color:var(--accent);text-decoration:underline;font-size:10px;padding:0">רענן</button></span>`;
+  } catch(e) {}
+}
+
+// ===== EMPLOYEE ABSENCE CALENDAR (EAC) =====
+let eacEmpId = null;
+let eacDate = new Date();
+let eacPendingAbsences = new Set();
+
+function openEmpAbsCalendar(empId) {
+  eacEmpId = empId;
+  eacDate = new Date();
+  const emp = employees.find(e => e.id === empId);
+  if (!emp) return;
+  eacPendingAbsences = new Set(
+    absences.filter(a => a.empId === empId).map(a => a.date)
+  );
+  document.getElementById('eac-modal-title').textContent = `יומן חיסורים — ${empName(emp)}`;
+  renderEacCalendar();
+  openModal('modal-emp-abs-cal');
+}
+
+function renderEacCalendar() {
+  const y = eacDate.getFullYear();
+  const m = eacDate.getMonth() + 1;
+  const HEB_MONTHS_FULL = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+  document.getElementById('eac-month-title').textContent = `${HEB_MONTHS_FULL[m-1]} ${y}`;
+
+  const DAY_NAMES = ['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'];
+  document.getElementById('eac-day-names').innerHTML = DAY_NAMES.map((d,i) =>
+    `<div class="eac-hdr${i===6?' sh':''}">${d}</div>`).join('');
+
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const firstDow = new Date(y, m-1, 1).getDay();
+  const today = new Date().toISOString().slice(0,10);
+
+  let html = '';
+  for (let i = 0; i < firstDow; i++) html += `<div class="eac-cell empty"></div>`;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dow = new Date(y, m-1, d).getDay();
+    const isShabbat = dow === 6;
+    const isHoliday = !!HOLIDAYS[dateStr];
+    const isAbsent = eacPendingAbsences.has(dateStr);
+    const isToday = dateStr === today;
+
+    let cls = 'eac-cell';
+    if (isShabbat) cls += ' shabbat';
+    else if (isHoliday) cls += ' holiday';
+    else if (isAbsent) cls += ' absent';
+    else cls += ' normal';
+    if (isToday) cls += ' today-mark';
+
+    const onclick = (!isShabbat) ? `onclick="eacToggleDay('${dateStr}')"` : '';
+    const holidayLbl = HOLIDAYS[dateStr] ? `<div class="eac-holiday-lbl">${HOLIDAYS[dateStr]}</div>` : '';
+    const xMark = isAbsent ? `<div class="eac-x">✕</div>` : '';
+    html += `<div class="${cls}" id="eac-cell-${dateStr}" ${onclick}><span>${d}</span>${holidayLbl}${xMark}</div>`;
+  }
+
+  document.getElementById('eac-grid').innerHTML = html;
+  updateEacSummary();
+}
+
+function eacToggleDay(dateStr) {
+  if (eacPendingAbsences.has(dateStr)) {
+    eacPendingAbsences.delete(dateStr);
+  } else {
+    eacPendingAbsences.add(dateStr);
+  }
+  const cell = document.getElementById('eac-cell-' + dateStr);
+  if (!cell) return;
+  const isAbsent = eacPendingAbsences.has(dateStr);
+  const isHoliday = !!HOLIDAYS[dateStr];
+  cell.className = cell.className.replace(/ absent| normal| holiday/g, '');
+  if (isAbsent) {
+    cell.className += ' absent';
+    if (!cell.querySelector('.eac-x')) cell.insertAdjacentHTML('beforeend','<div class="eac-x">✕</div>');
+  } else {
+    cell.className += isHoliday ? ' holiday' : ' normal';
+    const x = cell.querySelector('.eac-x');
+    if (x) x.remove();
+  }
+  updateEacSummary();
+}
+
+function updateEacSummary() {
+  const count = eacPendingAbsences.size;
+  document.getElementById('eac-count').textContent = count;
+  if (count > 0) {
+    const sorted = [...eacPendingAbsences].sort();
+    document.getElementById('eac-dates-list').textContent =
+      sorted.map(d => new Date(d).toLocaleDateString('he-IL')).join(' | ');
+  } else {
+    document.getElementById('eac-dates-list').textContent = '';
+  }
+}
+
+function eacPrev() { eacDate.setMonth(eacDate.getMonth() - 1); renderEacCalendar(); }
+function eacNext() { eacDate.setMonth(eacDate.getMonth() + 1); renderEacCalendar(); }
+
+function saveEacAbsences() {
+  if (!eacEmpId) return;
+  const emp = employees.find(e => e.id === eacEmpId);
+  // הסר חיסורים קיימים שבוטלו
+  absences = absences.filter(a => {
+    if (a.empId !== eacEmpId) return true;
+    return eacPendingAbsences.has(a.date);
+  });
+  // הוסף חדשים
+  const existingDates = new Set(absences.filter(a => a.empId === eacEmpId).map(a => a.date));
+  for (const dateStr of eacPendingAbsences) {
+    if (!existingDates.has(dateStr)) {
+      const clients = emp.clients && emp.clients.length ? emp.clients : (emp.client ? [emp.client] : []);
+      absences.push({
+        id: Date.now().toString() + '_' + dateStr,
+        empId: eacEmpId,
+        date: dateStr,
+        client: clients[0] || '',
+        replacementId: null,
+        replPaid: null,
+        replAmount: 0,
+        replPayNote: '',
+        note: '',
+        createdAt: new Date().toISOString()
+      });
+    }
+  }
+  save();
+  closeModal('modal-emp-abs-cal');
+  renderCalendar(); renderAbsenceTable(); renderEmployees(); updateStats();
+  showToast(`✅ יומן עודכן — ${eacPendingAbsences.size} חיסורים`);
+}
+
+// ===== CALC TAB — חישוב לפי נוכחות =====
+let calcAbsentDays = new Set(); // סט של תאריכי היעדרות שסומנו
+
+function renderCalcCalendar() {
+  const empId = document.getElementById('calc-emp').value;
+  const monthVal = document.getElementById('calc-month').value;
+  const wrap = document.getElementById('calc-cal-wrap');
+  const info = document.getElementById('calc-info');
+
+  if (!empId || !monthVal) { wrap.style.display='none'; info.style.display='none'; return; }
+
+  const emp = employees.find(e => e.id === empId);
+  if (!emp) return;
+
+  if (emp.hoursType === 'report') {
+    info.style.display = 'block';
+    document.getElementById('calc-info-text').textContent = `${empName(emp)} מוגדר כ"דוח שעות" — לא ניתן לחשב לפי שעות יומיות.`;
+    wrap.style.display = 'none';
+    return;
+  }
+
+  const dailyH = emp.dailyHours || 8;
+  const [y, m] = monthVal.split('-').map(Number);
+
+  // אתחל את ימי ההיעדרות לחודש הזה (שמור קיימים אם אותו חודש)
+  // בכל פעם שמשנים חודש/עובד — אפס
+  calcAbsentDays = new Set();
+
+  info.style.display = 'block';
+  document.getElementById('calc-info-text').innerHTML =
+    `<strong>${empName(emp)}</strong> — ${dailyH} שע' ביום | לחץ על יום כדי לסמן שלא עבד`;
+
+  wrap.style.display = 'block';
+  buildCalcGrid(y, m, empId, dailyH);
+}
+
+function buildCalcGrid(y, m, empId, dailyH) {
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const firstDow = new Date(y, m-1, 1).getDay(); // 0=sun
+
+  // כותרות ימים (ראשון → שבת)
+  const DAY_NAMES = ['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'];
+  let html = DAY_NAMES.map((d,i) =>
+    `<div class="calc-day-hdr${i===6?' sh':''}">${d}</div>`).join('');
+
+  // תאים ריקים לפני תחילת החודש
+  for (let i = 0; i < firstDow; i++) html += `<div class="calc-day empty"></div>`;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dow = new Date(y, m-1, d).getDay();
+    const dateStr = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isShabbat = dow === 6;
+    const isHoliday = !!HOLIDAYS[dateStr];
+    const isAbsent = calcAbsentDays.has(dateStr);
+    const isFriday = dow === 5;
+
+    let cls = 'calc-day';
+    if (isShabbat) cls += ' shabbat';
+    else if (isHoliday) cls += ' holiday';
+    else if (isAbsent) cls += ' absent';
+    else cls += ' worked';
+
+    const onclick = (isShabbat) ? '' : `onclick="toggleCalcDay('${dateStr}',${y},${m},'${empId}',${dailyH})"`;
+    const holidayLabel = HOLIDAYS[dateStr] ? `<div style="font-size:9px;margin-top:2px;opacity:0.7">${HOLIDAYS[dateStr]}</div>` : '';
+    html += `<div class="${cls}" id="calc-cell-${dateStr}" ${onclick}>
+      ${d}${holidayLabel}
+      ${isAbsent ? '<div style="font-size:9px">✗</div>' : ''}
+    </div>`;
+  }
+
+  document.getElementById('calc-grid').innerHTML = html;
+  updateCalcResult(y, m, dailyH);
+}
+
+function toggleCalcDay(dateStr, y, m, empId, dailyH) {
+  const dow = new Date(dateStr).getDay();
+  if (dow === 6) return; // שבת — לא נגעים
+  if (calcAbsentDays.has(dateStr)) calcAbsentDays.delete(dateStr);
+  else calcAbsentDays.add(dateStr);
+  // עדכן תא
+  buildCalcGrid(y, m, empId, dailyH);
+}
+
+function updateCalcResult(y, m, dailyH) {
+  const daysInMonth = new Date(y, m, 0).getDate();
+  let totalWorkdays = 0, workedDays = 0, absentDays = 0, holidayDays = 0, shabbatDays = 0;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dow = new Date(y, m-1, d).getDay();
+    if (dow === 6) { shabbatDays++; continue; } // שבת
+    if (HOLIDAYS[dateStr]) { holidayDays++; continue; } // חג
+    totalWorkdays++;
+    if (calcAbsentDays.has(dateStr)) absentDays++;
+    else workedDays++;
+  }
+
+  const totalHours = workedDays * dailyH;
+  document.getElementById('calc-result-text').textContent =
+    `✅ סה"כ: ${totalHours} שעות (${workedDays} ימי עבודה × ${dailyH} שע')`;
+  document.getElementById('calc-breakdown').innerHTML =
+    `ימי עבודה בחודש: ${totalWorkdays} &nbsp;|&nbsp; נוכח: ${workedDays} &nbsp;|&nbsp; ` +
+    `חיסור: ${absentDays} &nbsp;|&nbsp; שבתות: ${shabbatDays} &nbsp;|&nbsp; חגים: ${holidayDays}`;
+  document.getElementById('calc-save-btn').style.display = workedDays > 0 ? 'inline-flex' : 'none';
+}
+
+function saveCalcHours() {
+  const empId = document.getElementById('calc-emp').value;
+  const monthVal = document.getElementById('calc-month').value;
+  if (!empId || !monthVal) return;
+  const emp = employees.find(e => e.id === empId);
+  const [y, m] = monthVal.split('-').map(Number);
+  const dailyH = emp?.dailyHours || 8;
+  const daysInMonth = new Date(y, m, 0).getDate();
+
+  let saved = 0;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dow = new Date(y, m-1, d).getDay();
+    if (dow === 6) continue;
+    if (HOLIDAYS[dateStr]) continue;
+    if (calcAbsentDays.has(dateStr)) continue;
+    // בדוק אם כבר קיים רשומה לאותו יום ועובד
+    const exists = hoursLog.find(h => h.empId === empId && h.date === dateStr && h.type === 'calc');
+    if (!exists) {
+      hoursLog.push({ id: Date.now().toString() + d, empId, date: dateStr,
+        hours: dailyH, client: emp?.client || '', note: 'חישוב נוכחות', type: 'calc',
+        createdAt: new Date().toISOString() });
+      saved++;
+    }
+  }
+  save();
+  showToast(`✅ נשמרו ${saved} ימים — ${saved * dailyH} שעות`);
+  renderHoursTable();
+}
+
+// ===== INIT =====
+async function init() {
+  document.getElementById('manual-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('abs-date-input').value = new Date().toISOString().slice(0,10);
+
+  // הצג מסך טעינה
+  showLoadingOverlay(true);
+
+  try {
+    // נסה לטעון מה-cloud
+    const resp = await fetch(`${API_BASE}/api/data`);
+    if (resp.ok) {
+      const data = await resp.json();
+      employees = data.employees || [];
+      absences  = data.absences  || [];
+      hoursLog  = data.hoursLog  || [];
+
+      // עדכן גם localStorage כ-cache
+      localStorage.setItem('nep_employees', JSON.stringify(employees));
+      localStorage.setItem('nep_absences',  JSON.stringify(absences));
+      localStorage.setItem('nep_hours',     JSON.stringify(hoursLog));
+    } else {
+      throw new Error('Server error');
+    }
+  } catch (err) {
+    // Fallback ל-localStorage אם השרת לא זמין
+    console.warn('Cloud load failed, using localStorage:', err.message);
+    employees = JSON.parse(localStorage.getItem('nep_employees') || '[]');
+    absences  = JSON.parse(localStorage.getItem('nep_absences')  || '[]');
+    hoursLog  = JSON.parse(localStorage.getItem('nep_hours')     || '[]');
+    setSyncStatus('error', '⚠️ עובד offline');
+  }
+
+  showLoadingOverlay(false);
+
+  if (employees.length === 0) {
+    setTimeout(() => {
+      const banner = document.createElement('div');
+      banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#185fa5;color:white;padding:12px 20px;z-index:999;display:flex;align-items:center;justify-content:space-between;font-family:Heebo,sans-serif;font-size:13px;direction:rtl';
+      banner.innerHTML = `
+        <span>📂 לא נמצאו עובדים — ייבא קובץ גיבוי JSON אם יש לך, או ייבא מחדש את ה-Excel</span>
+        <div style="display:flex;gap:8px">
+          <button onclick="document.getElementById('restore-input').click();this.parentElement.parentElement.remove()" style="background:white;color:#185fa5;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-family:Heebo,sans-serif;font-weight:600">📥 שחזור מגיבוי</button>
+          <button onclick="openImportModal();this.parentElement.parentElement.remove()" style="background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.4);padding:6px 14px;border-radius:6px;cursor:pointer;font-family:Heebo,sans-serif">📂 ייבוא Excel</button>
+          <button onclick="this.parentElement.parentElement.remove()" style="background:none;border:none;color:rgba(255,255,255,0.7);cursor:pointer;font-size:18px;padding:0 4px">×</button>
+        </div>
+      `;
+      document.body.appendChild(banner);
+    }, 500);
+  }
+
+  renderCalendar();
+  renderEmployees();
+  renderAbsenceTable();
+  renderHoursTable();
+  updateStats();
+  updateAllSelects();
+  loadCachedClients();
+
+  // Drag/drop — employees import
+  const drop = document.getElementById('import-drop');
+  if (drop) {
+    drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('dragover'); });
+    drop.addEventListener('dragleave', () => drop.classList.remove('dragover'));
+    drop.addEventListener('drop', e => {
+      e.preventDefault(); drop.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file) handleImport({ target: { files: [file] } });
+    });
+  }
+
+  // Drag/drop — hours upload
+  const hdrop = document.getElementById('hours-drop');
+  if (hdrop) {
+    hdrop.addEventListener('dragover', e => { e.preventDefault(); hdrop.classList.add('dragover'); });
+    hdrop.addEventListener('dragleave', () => hdrop.classList.remove('dragover'));
+    hdrop.addEventListener('drop', e => {
+      e.preventDefault(); hdrop.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file) handleHoursFile({ target: { files: [file] } });
+    });
+  }
+
+  showPage('employees');
+}
+
+function showLoadingOverlay(show) {
+  let el = document.getElementById('loading-overlay');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'loading-overlay';
+    el.style.cssText = 'position:fixed;inset:0;background:#1a1a2e;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:white;font-family:Heebo,sans-serif;gap:16px';
+    el.innerHTML = `
+      <div style="font-size:48px">🌿</div>
+      <div style="font-size:22px;font-weight:700;color:#9fe1cb">נפטון</div>
+      <div style="font-size:14px;color:rgba(255,255,255,0.6)">טוען נתונים...</div>
+      <div style="width:200px;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden">
+        <div style="height:100%;background:#0f6e56;border-radius:2px;animation:loadbar 1.5s infinite" id="load-bar"></div>
+      </div>
+      <style>@keyframes loadbar{0%{width:0%;margin-right:0}50%{width:60%}100%{width:0%;margin-right:100%}}</style>
+    `;
+    document.body.appendChild(el);
+  }
+  el.style.display = show ? 'flex' : 'none';
+}
+
+init();
+</script>
+</body>
+</html>
