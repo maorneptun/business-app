@@ -1,184 +1,185 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const axios = require('axios');
 const multer = require('multer');
-const fs = require('fs');
 const path = require('path');
+const { MongoClient } = require('mongodb');
 
 const app = express();
+const upload = multer({ storage: multer.memoryStorage() });
+
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
-const upload = multer({ dest: '/tmp/uploads/' });
+// ===== MongoDB =====
+const MONGO_URI = process.env.MONGODB_URI;
+let db;
 
-const ID = process.env.GREEN_INVOICE_API_KEY_ID;
-const SECRET = process.env.GREEN_INVOICE_API_KEY_SECRET;
-const BASE = 'https://api.greeninvoice.co.il/api/v1';
+async function connectDB() {
+  try {
+    const client = new MongoClient(MONGO_URI);
+    await client.connect();
+    db = client.db('neptun');
+    console.log('✅ MongoDB connected');
+  } catch (err) {
+    console.error('❌ MongoDB connection error:', err.message);
+  }
+}
+connectDB();
 
-let tok = null;
-let exp = null;
+// ===== Static Frontend =====
+app.use(express.static(path.join(__dirname, 'public')));
 
-// תנועות CSV בזיכרון
-let csvTransactions = [];
+// ===== DATA SYNC API =====
 
-async function getToken() {
-  if (tok && exp > Date.now()) return tok;
-  const r = await axios.post(BASE + '/account/token', { id: ID, secret: SECRET });
-  tok = r.data.token;
-  exp = Date.now() + 3500000;
-  return tok;
+// טען את כל הנתונים
+app.get('/api/data', async (req, res) => {
+  try {
+    const employees = await db.collection('employees').find({}).toArray();
+    const absences  = await db.collection('absences').find({}).toArray();
+    const hoursLog  = await db.collection('hoursLog').find({}).toArray();
+    res.json({ employees, absences, hoursLog });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// שמור את כל הנתונים (replace כל הקולקציה)
+app.post('/api/data', async (req, res) => {
+  try {
+    const { employees = [], absences = [], hoursLog = [] } = req.body;
+
+    // מחק והחלף
+    await db.collection('employees').deleteMany({});
+    await db.collection('absences').deleteMany({});
+    await db.collection('hoursLog').deleteMany({});
+
+    if (employees.length)  await db.collection('employees').insertMany(employees);
+    if (absences.length)   await db.collection('absences').insertMany(absences);
+    if (hoursLog.length)   await db.collection('hoursLog').insertMany(hoursLog);
+
+    res.json({ ok: true, employees: employees.length, absences: absences.length, hoursLog: hoursLog.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== GREEN INVOICE (MORNING) =====
+const GI_BASE = 'https://api.greeninvoice.co.il/api/v1';
+
+async function getGiToken() {
+  const resp = await fetch(`${GI_BASE}/account/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      id: process.env.GREEN_INVOICE_API_KEY_ID,
+      secret: process.env.GREEN_INVOICE_API_KEY_SECRET
+    })
+  });
+  const data = await resp.json();
+  return data.token;
 }
 
-// פרסר CSV של בנק הפועלים
-function parsePoalimCSV(content) {
-  // הסר BOM אם קיים
-  content = content.replace(/^\uFEFF/, '');
+app.get('/api/health', async (req, res) => {
+  try {
+    const token = await getGiToken();
+    res.json({ ok: !!token, mongo: !!db });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
 
-  const lines = content.split('\n').filter(l => l.trim());
-  const transactions = [];
+app.get('/api/clients', async (req, res) => {
+  try {
+    const token = await getGiToken();
+    const resp = await fetch(`${GI_BASE}/clients?page=1&pageSize=100`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await resp.json();
+    res.json(data.items || []);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-  // שורה ראשונה = headers, דלג עליה
-  for (let i = 1; i < lines.length; i++) {
-    const cols = lines[i].split(',');
-    if (cols.length < 8) continue;
+app.post('/api/invoice/create', async (req, res) => {
+  try {
+    const token = await getGiToken();
+    const resp = await fetch(`${GI_BASE}/documents`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(req.body)
+    });
+    const data = await resp.json();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-    const date = (cols[0] || '').trim();
-    const description = (cols[1] || '').trim();
-    const details = (cols[2] || '').trim();
-    const debit = parseFloat((cols[6] || '').trim()) || 0;
-    const credit = parseFloat((cols[7] || '').trim()) || 0;
-    const balance = parseFloat((cols[8] || '').trim()) || 0;
+// ===== CSV Upload =====
+let lastTransactions = [];
 
-    if (!date || (!debit && !credit)) continue;
+app.post('/api/transactions/upload', upload.single('file'), (req, res) => {
+  try {
+    const content = req.file.buffer.toString('utf-8');
+    const lines = content.split(/\r?\n/).filter(l => l.trim());
+    if (lines.length < 2) return res.status(400).json({ error: 'קובץ ריק' });
 
-    // זיהוי שם לקוח
-    let clientName = '';
+    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+    const rows = lines.slice(1).map(line => {
+      const cols = line.split(',').map(c => c.trim().replace(/"/g, ''));
+      const obj = {};
+      headers.forEach((h, i) => obj[h] = cols[i] || '');
+      return obj;
+    }).filter(r => Object.values(r).some(v => v));
 
-    if (details) {
-      // עדיפות 1: "המבצע: XXX" — השם האמיתי של הלקוח
-      const mbatzea = details.match(/המבצע:\s*(.+?)(?:\s+עבור:|\s+מזהה|\s+מח-ן|$)/);
-      if (mbatzea) {
-        clientName = mbatzea[1].trim();
+    lastTransactions = rows.map(r => {
+      const dateField = r['תאריך'] || r['date'] || '';
+      const descField = r['תיאור הפעולה'] || r['description'] || '';
+      const detailField = r['פרטים'] || r['details'] || '';
+      const creditField = r['זכות'] || r['credit'] || '';
+      const debitField  = r['חובה'] || r['debit'] || '';
+      const balField    = r['יתרה לאחר פעולה'] || r['balance'] || '';
+
+      let clientName = '';
+      const match = detailField.match(/המבצע[:\s]+([^|]+)/);
+      if (match) {
+        clientName = match[1].replace(/עבור:.*/, '').trim();
+      } else {
+        const systemWords = ['זיכוי מלאומי','זיכוי בינלאומי','זיכוי מהמזרחי','העברה',"העב'",'העברה/הפקדה','החזר'];
+        if (!systemWords.some(w => descField.includes(w))) clientName = descField;
+        else clientName = descField;
       }
 
-      // עדיפות 2: אם אין המבצע, ותיאור הוא שם חברה (לא "זיכוי X" / "העברה")
-      // למשל: "ש. קרני מהנדסי", "גב אקספרט בע"מ", "באבקום סנטרס ב"
-    }
+      const credit = parseFloat(creditField.replace(/,/g,'')) || 0;
+      const debit  = parseFloat(debitField.replace(/,/g,''))  || 0;
+      const balance = parseFloat(balField.replace(/,/g,''))   || 0;
 
-    // עדיפות 3: תיאור עמודה — אם זה שם חברה (לא מילת מערכת)
-    const systemWords = ['זיכוי מלאומי', 'זיכוי בינלאומי', 'זיכוי מהמזרחי', 'העברה', 'העב\'', 'העברה/הפקדה', 'החזר'];
-    const isSystemDesc = systemWords.some(w => description.includes(w));
-
-    if (!clientName && !isSystemDesc) {
-      clientName = description; // שם חברה אמיתי בעמודת תיאור
-    }
-
-    if (!clientName) clientName = description; // fallback
-
-    const isIncome = credit > 0;
-
-    transactions.push({
-      id: 'csv_' + date + '_' + i,
-      date: date,
-      description: description,
-      details: details,
-      clientName: clientName,
-      amount: isIncome ? credit : debit,
-      type: isIncome ? 'credit' : 'debit',
-      balance: balance,
-      canInvoice: isIncome,
-      done: false,
-      source: 'csv'
+      return { date: dateField, description: descField, details: detailField, clientName, credit, debit, balance, raw: r };
     });
-  }
 
-  return transactions;
-}
-
-// ===== ENDPOINTS =====
-
-app.get('/api/health', async function(req, res) {
-  try {
-    await getToken();
-    res.json({ status: 'ok', connected: true });
-  } catch(e) {
-    res.status(500).json({ error: e.message });
+    res.json({ ok: true, count: lastTransactions.length, transactions: lastTransactions });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
-// העלאת CSV
-app.post('/api/transactions/upload', upload.single('csv'), function(req, res) {
-  try {
-    if (!req.file) return res.status(400).json({ error: 'לא התקבל קובץ' });
-
-    const content = fs.readFileSync(req.file.path, 'utf8');
-    fs.unlinkSync(req.file.path); // מחק קובץ זמני
-
-    const parsed = parsePoalimCSV(content);
-    if (parsed.length === 0) {
-      return res.status(400).json({ error: 'לא נמצאו תנועות בקובץ' });
-    }
-
-    csvTransactions = parsed;
-    console.log('CSV imported:', parsed.length, 'transactions');
-
-    res.json({
-      success: true,
-      count: parsed.length,
-      transactions: parsed
-    });
-  } catch(e) {
-    console.error('CSV parse error:', e);
-    res.status(500).json({ error: e.message });
-  }
+app.get('/api/transactions', (req, res) => {
+  res.json(lastTransactions);
 });
 
-// קבלת תנועות (CSV בלבד)
-app.get('/api/transactions', function(req, res) {
-  res.json({ transactions: csvTransactions, source: 'csv' });
-});
-
-// רשימת לקוחות ממורנינג
-app.get('/api/clients', async function(req, res) {
-  try {
-    const t = await getToken();
-    const r = await axios.post(BASE + '/documents/search', { page: 1, pageSize: 100, type: [320, 305, 300] }, { headers: { Authorization: 'Bearer ' + t } });
-    const clients = [];
-    const seen = {};
-    (r.data.items || []).forEach(function(doc) {
-      if (doc.client && doc.client.name && !seen[doc.client.name]) {
-        seen[doc.client.name] = true;
-        clients.push({ id: doc.client.id, name: doc.client.name });
-      }
-    });
-    res.json({ items: clients });
-  } catch(e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-app.post('/api/webhook', function(req, res) {
-  console.log('Webhook:', JSON.stringify(req.body));
+app.post('/api/webhook', (req, res) => {
+  console.log('Webhook received:', req.body);
   res.json({ ok: true });
 });
 
-app.post('/api/invoice/create', async function(req, res) {
-  try {
-    const b = req.body;
-    const t = await getToken();
-    const r = await axios.post(BASE + '/documents', {
-      type: 320, lang: 'he', currency: 'ILS', vatType: 0,
-      client: { name: b.clientName, emails: b.clientEmail ? [b.clientEmail] : [], phone: b.clientPhone || '', add: true },
-      income: [{ description: b.description || 'שירותים', price: b.amount, currency: 'ILS', vatType: 0 }],
-      payment: [{ type: 1, price: b.amount, currency: 'ILS', date: new Date().toISOString().split('T')[0] }]
-    }, { headers: { Authorization: 'Bearer ' + t } });
-    res.json({ success: true, invoiceId: r.data.id, invoiceNumber: r.data.number });
-  } catch(e) {
-    res.status(500).json({ error: e.message });
+// ===== SPA Fallback =====
+app.get('*', (req, res) => {
+  if (!req.path.startsWith('/api')) {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
   }
 });
 
-app.listen(4000, function() {
-  console.log('Server running on port 4000');
-});
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
