@@ -92,11 +92,13 @@ app.get('/api/health', async (req, res) => {
 app.get('/api/clients', async (req, res) => {
   try {
     const token = await getGiToken();
-    const resp = await fetch(`${GI_BASE}/clients?page=1&pageSize=100`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    const data = await resp.json();
-    res.json(data.items || []);
+    const resp = await fetch(`${GI_BASE}/clients/search`, {
+  method: 'POST',
+  headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+  body: JSON.stringify({ page: 1, pageSize: 100 })
+});
+const data = await resp.json();
+res.json(data.items || []);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
