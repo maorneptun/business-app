@@ -5,33 +5,36 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ניהול עובדים — נפטון</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700;800&display=swap');
 
 :root {
-  --primary: #1c2230;
-  --accent: #2f6f62;
-  --accent-light: #e6f0ee;
-  --accent-mid: #3d8a79;
-  --danger: #c1503f;
-  --danger-light: #fbeae7;
-  --warning: #b45309;
-  --warning-light: #fffbeb;
-  --info: #3a6b8a;
-  --info-light: #e9f1f8;
-  --bg: #fafaf8;
+  --primary: #1d1d1f;
+  --accent: #5A86B3;
+  --accent-light: #eef3f8;
+  --accent-mid: #6a93bd;
+  --danger: #C98980;
+  --danger-light: #faf1ef;
+  --warning: #C9A066;
+  --warning-light: #fbf5ea;
+  --info: #5A86B3;
+  --info-light: #eef3f8;
+  --success: #7E9A6D;
+  --success-light: #f1f4ec;
+  --bg: #f5f5f7;
+  --bg-chip: #e9e9eb;
   --surface: #ffffff;
-  --border: #ecece5;
-  --border-strong: #d9d9cc;
-  --text: #181a17;
-  --text-muted: #8b8b83;
-  --shabbat: #fffbeb;
-  --shabbat-text: #b45309;
-  --holiday: #f5f0fa;
-  --holiday-text: #7c5cfc;
-  --radius: 13px;
-  --shadow: 0 1px 2px rgba(24,26,23,0.04);
-  --shadow-md: 0 4px 14px rgba(24,26,23,0.07);
-  --font: 'Rubik', sans-serif;
+  --border: #e5e5e7;
+  --border-strong: #d2d2d7;
+  --text: #1d1d1f;
+  --text-muted: #86868b;
+  --shabbat: #fff4e5;
+  --shabbat-text: #c93400;
+  --holiday: #f2e9fb;
+  --holiday-text: #7c3aed;
+  --radius: 14px;
+  --shadow: 0 1px 2px rgba(0,0,0,0.03);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.06);
+  --font: 'Assistant', system-ui, sans-serif;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -50,7 +53,8 @@ body {
 
 .sidebar {
   width: 240px;
-  background: var(--primary);
+  background: var(--surface);
+  border-left: 1px solid var(--border);
   padding: 0;
   flex-shrink: 0;
   display: flex;
@@ -62,28 +66,28 @@ body {
 
 .sidebar-logo {
   padding: 24px 20px 20px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  border-bottom: 1px solid var(--border);
 }
 .sidebar-logo h1 {
-  font-size: 17px; font-weight: 600; color: #fff;
+  font-size: 17px; font-weight: 800; color: var(--text);
   letter-spacing: -0.4px;
 }
-.sidebar-logo p { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 3px; letter-spacing: 0.3px; text-transform: uppercase; }
+.sidebar-logo p { font-size: 11px; color: var(--text-muted); margin-top: 3px; letter-spacing: 0.3px; text-transform: uppercase; }
 
-.sidebar-nav { padding: 8px 12px; flex: 1; }
+.sidebar-nav { padding: 10px 12px; flex: 1; }
 .nav-item {
   display: flex; align-items: center; gap: 10px;
   padding: 9px 12px;
   cursor: pointer;
-  color: rgba(255,255,255,0.5);
-  font-size: 13.5px;
-  font-weight: 400;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 500;
   transition: all 0.15s;
-  border-radius: 8px;
+  border-radius: 9px;
   margin-bottom: 2px;
 }
-.nav-item:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.9); }
-.nav-item.active { background: rgba(47,111,98,0.32); color: #8fd9c4; font-weight: 500; }
+.nav-item:hover { background: var(--bg); color: var(--text); }
+.nav-item.active { background: var(--accent-light); color: var(--accent); font-weight: 700; }
 .nav-icon { font-size: 15px; width: 20px; text-align: center; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; }
 .nav-icon svg { width: 17px; height: 17px; }
 
@@ -121,77 +125,78 @@ body {
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 24px;
 }
-.page-title { font-size: 22px; font-weight: 600; letter-spacing: -0.5px; color: var(--text); }
-.page-subtitle { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
+.page-title { font-size: 26px; font-weight: 800; letter-spacing: -0.4px; color: var(--text); }
+.page-subtitle { font-size: 13.5px; color: var(--text-muted); margin-top: 3px; font-weight: 500; }
 
 /* ====== BUTTONS ====== */
 .btn {
-  padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer;
-  font-family: var(--font); font-size: 13px; font-weight: 500;
+  padding: 9px 18px; border-radius: 10px; border: none; cursor: pointer;
+  font-family: var(--font); font-size: 13.5px; font-weight: 600;
   transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px;
   letter-spacing: -0.1px;
 }
-.btn-primary { background: var(--accent); color: white; box-shadow: 0 1px 2px rgba(47,111,98,0.3); }
-.btn-primary:hover { background: #255a4f; }
-.btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
-.btn-secondary:hover { background: var(--bg); }
+.btn-primary { background: var(--accent); color: white; box-shadow: 0 1px 2px rgba(90,134,179,0.3); }
+.btn-primary:hover { background: #4a729a; }
+.btn-secondary { background: var(--bg-chip); color: var(--text); border: none; }
+.btn-secondary:hover { background: var(--border); }
 .btn-danger { background: var(--danger); color: white; }
-.btn-danger:hover { background: #b91c1c; }
-.btn-sm { padding: 6px 12px; font-size: 12px; }
+.btn-danger:hover { background: #b8766d; }
+.btn-sm { padding: 7px 14px; font-size: 12.5px; }
 
 /* ====== CARDS ====== */
 .card {
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: none;
   border-radius: var(--radius);
   padding: 20px 24px;
   margin-bottom: 16px;
+  box-shadow: var(--shadow);
 }
-.card-title { font-size: 14px; font-weight: 600; margin-bottom: 16px; letter-spacing: -0.2px; }
+.card-title { font-size: 14.5px; font-weight: 700; margin-bottom: 16px; letter-spacing: -0.2px; }
 
 /* ====== FORM ====== */
 .form-group { margin-bottom: 14px; }
-.form-label { display: block; font-size: 12px; font-weight: 500; color: var(--text-muted); margin-bottom: 5px; letter-spacing: 0.2px; text-transform: uppercase; font-size: 11px; }
+.form-label { display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; letter-spacing: 0.2px; text-transform: uppercase; }
 .form-control {
-  width: 100%; padding: 9px 13px; border: 1px solid var(--border);
-  border-radius: 8px; font-family: var(--font); font-size: 13px;
-  background: var(--surface); color: var(--text); transition: all 0.15s;
+  width: 100%; padding: 10px 13px; border: 1px solid transparent;
+  border-radius: 10px; font-family: var(--font); font-size: 14px;
+  background: var(--bg-chip); color: var(--text); transition: all 0.15s;
 }
-.form-control:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(47,111,98,0.1); }
+.form-control:focus { outline: none; background: var(--surface); border-color: var(--accent); box-shadow: 0 0 0 3px rgba(90,134,179,0.15); }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
 
 /* ====== SEARCH ====== */
 .search-bar { position: relative; margin-bottom: 16px; }
 .search-bar input {
-  width: 100%; padding: 9px 13px 9px 36px;
-  border: 1px solid var(--border); border-radius: 8px;
-  font-family: var(--font); font-size: 13px; background: var(--surface);
-  transition: all 0.15s;
+  width: 100%; padding: 10px 13px 10px 36px;
+  border: none; border-radius: 10px;
+  font-family: var(--font); font-size: 14px; background: var(--bg-chip);
+  transition: all 0.15s; color: var(--text);
 }
-.search-bar input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(47,111,98,0.1); }
+.search-bar input:focus { outline: none; background: var(--surface); box-shadow: 0 0 0 3px rgba(90,134,179,0.15); }
 .search-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 14px; }
 
 /* ====== TABLE ====== */
-.table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.table-wrap { overflow-x: auto; border-radius: var(--radius); border: none; background: var(--surface); box-shadow: var(--shadow); }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 th {
-  text-align: right; padding: 11px 16px; font-weight: 500; font-size: 11.5px;
-  color: var(--text-muted); background: var(--bg);
+  text-align: right; padding: 12px 16px; font-weight: 600; font-size: 11.5px;
+  color: var(--text-muted); background: transparent;
   border-bottom: 1px solid var(--border); white-space: nowrap; letter-spacing: 0.1px;
 }
-td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+td { padding: 13px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
 tr:last-child td { border-bottom: none; }
 tr:hover td { background: var(--bg); }
 
 /* ====== BADGE ====== */
 .badge {
   display: inline-flex; align-items: center;
-  padding: 3px 9px; border-radius: 6px; font-size: 11.5px; font-weight: 500;
+  padding: 4px 11px; border-radius: 20px; font-size: 11px; font-weight: 700;
 }
-.badge-green { background: #dcfce7; color: #166534; }
-.badge-red { background: #fee2e2; color: #991b1b; }
-.badge-yellow { background: #fef9c3; color: #854d0e; }
+.badge-green { background: var(--success-light); color: #5c7a4a; }
+.badge-red { background: var(--danger-light); color: #a85d52; }
+.badge-yellow { background: var(--warning-light); color: #a07a3a; }
 .badge-blue { background: var(--info-light); color: var(--info); }
 
 /* ====== AVATAR ====== */
@@ -199,25 +204,25 @@ tr:hover td { background: var(--bg); }
   width: 34px; height: 34px; border-radius: 50%;
   background: var(--accent-light); color: var(--accent);
   display: inline-flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 600; flex-shrink: 0;
+  font-size: 12px; font-weight: 700; flex-shrink: 0;
 }
 .emp-cell { display: flex; align-items: center; gap: 10px; }
 
 /* ====== CALENDAR ====== */
 .calendar-wrap { user-select: none; }
 .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-.cal-header h3 { font-size: 15px; font-weight: 600; }
+.cal-header h3 { font-size: 15px; font-weight: 700; }
 .cal-nav { display: flex; gap: 8px; }
 .cal-nav button {
-  padding: 5px 10px; border: 1px solid var(--border); background: var(--surface);
+  padding: 5px 10px; border: none; background: var(--bg-chip);
   border-radius: 8px; cursor: pointer; font-size: 14px;
 }
-.cal-nav button:hover { background: var(--bg); }
+.cal-nav button:hover { background: var(--border); }
 .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-.cal-day-name { text-align: center; font-size: 11px; font-weight: 600; color: var(--text-muted); padding: 4px 0; }
+.cal-day-name { text-align: center; font-size: 11px; font-weight: 700; color: var(--text-muted); padding: 4px 0; }
 .cal-day-name.shabbat { color: var(--shabbat-text); }
 .cal-cell {
-  border-radius: 8px; padding: 6px 4px; text-align: center; font-size: 12px;
+  border-radius: 10px; padding: 6px 4px; text-align: center; font-size: 12px;
   cursor: pointer; transition: all 0.1s; min-height: 40px;
   display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
   border: 1px solid transparent;
@@ -233,29 +238,30 @@ tr:hover td { background: var(--bg); }
 .cal-cell.holiday .day-num { color: var(--holiday-text); }
 .cal-cell.has-absence { position: relative; }
 .cal-cell.has-absence::after { content: ''; position: absolute; bottom: 4px; width: 5px; height: 5px; border-radius: 50%; background: var(--danger); }
-.day-num { font-weight: 500; line-height: 1; }
+.day-num { font-weight: 600; line-height: 1; }
 .day-holiday-name { font-size: 9px; color: var(--holiday-text); margin-top: 2px; line-height: 1; }
 .cal-legend { display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
 .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-muted); }
-.legend-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+.legend-dot { width: 12px; height: 12px; border-radius: 4px; flex-shrink: 0; }
 
 /* ====== MODAL ====== */
 .modal-overlay {
   display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,0.35); z-index: 200;
+  background: rgba(0,0,0,0.32); z-index: 200;
   align-items: center; justify-content: center;
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(4px);
 }
 .modal-overlay.open { display: flex; }
 .modal {
-  background: var(--surface); border-radius: 16px;
+  background: var(--surface); border-radius: 20px;
   padding: 28px; width: 480px; max-width: 95vw;
   max-height: 90vh; overflow-y: auto;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.18);
 }
 .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-.modal-title { font-size: 16px; font-weight: 600; letter-spacing: -0.3px; }
-.modal-close { cursor: pointer; font-size: 20px; color: var(--text-muted); background: none; border: none; line-height: 1; }
+.modal-title { font-size: 17px; font-weight: 800; letter-spacing: -0.3px; }
+.modal-close { cursor: pointer; font-size: 22px; color: var(--text-muted); background: var(--bg-chip); border: none; border-radius: 50%; line-height: 1; padding: 8px; margin: -8px; min-width: 36px; min-height: 36px; display: inline-flex; align-items: center; justify-content: center; }
+.modal-close:hover { background: var(--border); }
 .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
 
 /* ====== STATS GRID ====== */
@@ -264,34 +270,38 @@ tr:hover td { background: var(--bg); }
 }
 .stat-card {
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: none;
   border-radius: var(--radius);
   padding: 18px 20px;
+  box-shadow: var(--shadow);
   transition: box-shadow 0.15s;
 }
 .stat-card:hover { box-shadow: var(--shadow-md); }
-.stat-label { font-size: 11.5px; color: var(--text-muted); margin-bottom: 8px; font-weight: 500; }
-.stat-value { font-size: 28px; font-weight: 600; letter-spacing: -1px; }
-.stat-value.green { color: var(--info); }
+.stat-label { font-size: 11.5px; color: var(--text-muted); margin-bottom: 8px; font-weight: 600; }
+.stat-value { font-size: 30px; font-weight: 800; letter-spacing: -1px; }
+.stat-value.green { color: var(--success); }
 .stat-value.red { color: var(--danger); }
 .stat-value.blue { color: var(--accent); }
 
-/* ====== TABS INNER ====== */
-.tabs-inner { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
-.tab-btn {
-  padding: 10px 18px; border: none; background: none; cursor: pointer;
-  font-family: var(--font); font-size: 13px; color: var(--text-muted);
-  border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s;
+/* ====== TABS INNER (segmented control) ====== */
+.tabs-inner {
+  display: flex; gap: 2px; border-bottom: none; margin-bottom: 20px;
+  background: var(--bg-chip); border-radius: 11px; padding: 3px; width: fit-content;
 }
-.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.tab-btn {
+  padding: 8px 20px; border: none; background: none; cursor: pointer;
+  font-family: var(--font); font-size: 13.5px; font-weight: 600; color: var(--text-muted);
+  border-bottom: none; margin-bottom: 0; border-radius: 8px; transition: all 0.15s;
+}
+.tab-btn.active { color: var(--text); background: var(--surface); box-shadow: 0 1px 3px rgba(0,0,0,0.08); font-weight: 700; }
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 
 /* ====== IMPORT ====== */
 .import-drop {
-  border: 2px dashed var(--border); border-radius: var(--radius);
+  border: 2px dashed var(--border-strong); border-radius: var(--radius);
   padding: 32px; text-align: center; cursor: pointer;
-  transition: all 0.15s; margin-bottom: 16px;
+  transition: all 0.15s; margin-bottom: 16px; background: var(--surface);
 }
 .import-drop:hover, .import-drop.dragover { border-color: var(--accent); background: var(--accent-light); }
 .import-drop p { color: var(--text-muted); font-size: 13px; margin-top: 8px; }
@@ -300,7 +310,7 @@ tr:hover td { background: var(--bg); }
 .hours-badge {
   display: inline-flex; align-items: center; gap: 4px;
   background: var(--info-light); color: var(--info);
-  padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; cursor: pointer;
+  padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; cursor: pointer;
 }
 .clock-entry { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); }
 .clock-entry:last-child { border-bottom: none; }
@@ -315,8 +325,8 @@ tr:hover td { background: var(--bg); }
 /* ====== TOAST ====== */
 .toast {
   position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px);
-  background: #111827; color: white; padding: 11px 22px; border-radius: 10px;
-  font-size: 13px; z-index: 300; transition: transform 0.25s;
+  background: #1d1d1f; color: white; padding: 12px 22px; border-radius: 12px;
+  font-size: 13.5px; font-weight: 600; z-index: 300; transition: transform 0.25s;
   box-shadow: 0 8px 24px rgba(0,0,0,0.2);
 }
 .toast.show { transform: translateX(-50%) translateY(0); }
@@ -329,60 +339,40 @@ tr:hover td { background: var(--bg); }
 .client-tag {
   display: inline-flex; align-items: center; gap: 5px;
   background: var(--accent-light); color: var(--accent);
-  border: 1px solid var(--border-strong); border-radius: 6px;
-  padding: 3px 10px 3px 8px; font-size: 12px; font-weight: 500;
+  border: none; border-radius: 20px;
+  padding: 4px 11px 4px 9px; font-size: 12px; font-weight: 600;
 }
 .client-tag .tag-x { cursor: pointer; font-size: 14px; line-height: 1; color: var(--accent); opacity: 0.6; }
 .client-tag .tag-x:hover { opacity: 1; }
 
 /* ====== CALC CALENDAR ====== */
 .calc-day {
-  border-radius: 8px; padding: 8px 4px; text-align: center; font-size: 12px;
+  border-radius: 10px; padding: 8px 4px; text-align: center; font-size: 12px;
   cursor: pointer; border: 2px solid transparent; transition: all 0.12s;
   min-height: 44px; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; font-weight: 500; user-select: none;
+  align-items: center; justify-content: center; font-weight: 600; user-select: none;
 }
-.calc-day.worked   { background: #dcfce7; border-color: #16a34a; color: #166534; }
-.calc-day.absent   { background: #fee2e2; border-color: var(--danger); color: #991b1b; text-decoration: line-through; }
+.calc-day.worked   { background: var(--success-light); border-color: var(--success); color: #5c7a4a; }
+.calc-day.absent   { background: var(--danger-light); border-color: var(--danger); color: #a85d52; text-decoration: line-through; }
 .calc-day.shabbat  { background: var(--shabbat); color: var(--shabbat-text); cursor: default; opacity: 0.7; }
 .calc-day.holiday  { background: var(--holiday); color: var(--holiday-text); opacity: 0.8; }
 .calc-day.empty    { background: none; cursor: default; }
-.calc-day-hdr      { text-align:center; font-size:11px; font-weight:600; color:var(--text-muted); padding:4px 0; }
+.calc-day-hdr      { text-align:center; font-size:11px; font-weight:700; color:var(--text-muted); padding:4px 0; }
 .calc-day-hdr.sh   { color: var(--shabbat-text); }
-
-/* ====== MOBILE ====== */
-@media (max-width: 700px) {
-  .sidebar { width: 100%; height: auto; position: relative; flex-direction: row; flex-wrap: wrap; }
-  .sidebar-logo { padding: 12px 16px 10px; flex: 1; }
-  .sidebar-nav { display: flex; flex-direction: row; padding: 0 8px; overflow-x: auto; width: 100%; }
-  .nav-item { padding: 10px 12px; border-radius: 0; margin-bottom: 0; white-space: nowrap; border-bottom: 2px solid transparent; }
-  .nav-item.active { border-bottom-color: #8fd9c4; background: rgba(47,111,98,0.22); }
-  .app { flex-direction: column; }
-  .main-content { margin-right: 0; }
-  .page { padding: 16px; }
-  .stats-grid { grid-template-columns: 1fr 1fr; }
-  .form-row, .form-row-3 { grid-template-columns: 1fr; }
-  .page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
-  .modal { width: 95vw !important; padding: 18px; }
-  .calc-grid { grid-template-columns: repeat(7,1fr); gap: 3px; }
-  .calc-day { min-height: 36px; font-size: 11px; padding: 4px 2px; }
-  table { font-size: 12px; }
-  th, td { padding: 8px 10px; }
-}
 
 /* ====== EMPLOYEE ROW ====== */
 .emp-row {
   display: flex; align-items: center; gap: 14px;
   padding: 14px 18px;
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: none;
   border-radius: var(--radius);
   margin-bottom: 8px;
   cursor: pointer;
+  box-shadow: var(--shadow);
   transition: all 0.15s;
 }
 .emp-row:hover {
-  border-color: var(--border-strong);
   background: var(--bg);
   box-shadow: var(--shadow-md);
 }
@@ -395,20 +385,20 @@ tr:hover td { background: var(--bg); }
 /* ====== EMP ABSENCE CALENDAR ====== */
 .emp-abs-modal { width: 560px; }
 .emp-abs-month-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-.emp-abs-month-nav h3 { font-size: 16px; font-weight: 600; }
+.emp-abs-month-nav h3 { font-size: 16px; font-weight: 700; }
 .emp-abs-month-nav .nav-btns { display: flex; gap: 6px; }
 .emp-abs-month-nav .nav-btns button {
-  padding: 5px 12px; border: 1px solid var(--border);
-  background: var(--surface); border-radius: 8px; cursor: pointer; font-size: 14px;
+  padding: 5px 12px; border: none;
+  background: var(--bg-chip); border-radius: 8px; cursor: pointer; font-size: 14px;
 }
-.emp-abs-month-nav .nav-btns button:hover { background: var(--bg); }
+.emp-abs-month-nav .nav-btns button:hover { background: var(--border); }
 
 .eac-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
-.eac-hdr { text-align: center; font-size: 11px; font-weight: 600; color: var(--text-muted); padding: 4px 0; }
+.eac-hdr { text-align: center; font-size: 11px; font-weight: 700; color: var(--text-muted); padding: 4px 0; }
 .eac-hdr.sh { color: var(--shabbat-text); }
 .eac-cell {
-  border-radius: 8px; padding: 7px 4px; text-align: center;
-  font-size: 13px; font-weight: 600;
+  border-radius: 10px; padding: 7px 4px; text-align: center;
+  font-size: 13px; font-weight: 700;
   min-height: 44px; display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   cursor: pointer; transition: all 0.12s;
@@ -417,10 +407,10 @@ tr:hover td { background: var(--bg); }
 .eac-cell.empty { cursor: default; }
 .eac-cell.shabbat { background: var(--shabbat); color: var(--shabbat-text); cursor: default; opacity: 0.7; border-color: transparent; }
 .eac-cell.holiday { background: var(--holiday); color: var(--holiday-text); opacity: 0.85; }
-.eac-cell.normal { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
-.eac-cell.normal:hover { background: #dcfce7; border-color: #16a34a; }
-.eac-cell.absent { background: var(--danger) !important; border-color: #b91c1c !important; color: white !important; }
-.eac-cell.absent:hover { background: #b91c1c !important; }
+.eac-cell.normal { background: var(--success-light); border-color: #dde3d4; color: #5c7a4a; }
+.eac-cell.normal:hover { background: #e6ebdf; border-color: var(--success); }
+.eac-cell.absent { background: var(--danger) !important; border-color: #b8766d !important; color: white !important; }
+.eac-cell.absent:hover { background: #b8766d !important; }
 .eac-cell.absent .eac-x { font-size: 10px; margin-top: 2px; opacity: 0.9; font-weight: 700; }
 .eac-cell.today-mark::after { content: '•'; position: absolute; bottom: 3px; font-size: 12px; color: var(--accent); font-weight: 900; }
 .eac-cell.absent.today-mark::after { color: rgba(255,255,255,0.7); }
@@ -428,14 +418,14 @@ tr:hover td { background: var(--bg); }
 .eac-legend { display: flex; gap: 14px; margin-top: 12px; flex-wrap: wrap; }
 .eac-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-muted); }
 .eac-legend-dot { width: 13px; height: 13px; border-radius: 4px; flex-shrink: 0; }
-.eac-summary { margin-top: 14px; padding: 10px 14px; background: var(--bg); border-radius: 8px; font-size: 13px; display: flex; gap: 20px; flex-wrap: wrap; }
+.eac-summary { margin-top: 14px; padding: 10px 14px; background: var(--bg); border-radius: 10px; font-size: 13px; display: flex; gap: 20px; flex-wrap: wrap; }
 .eac-summary span { color: var(--text-muted); }
 .eac-summary strong { color: var(--danger); }
 
 [title]:hover::after {
   content: attr(title); position: absolute;
-  background: rgba(17,24,39,0.9); color: #fff;
-  padding: 4px 10px; border-radius: 6px; font-size: 11px;
+  background: rgba(29,29,31,0.92); color: #fff;
+  padding: 4px 10px; border-radius: 8px; font-size: 11px;
   white-space: nowrap; pointer-events: none; z-index: 100;
   top: -28px; right: 50%; transform: translateX(50%);
 }
@@ -453,32 +443,35 @@ tr:hover td { background: var(--bg); }
   font-size: 20px; font-weight: 700; flex-shrink: 0;
 }
 .profile-name-row { display: flex; align-items: center; gap: 10px; }
-.profile-name { font-size: 22px; font-weight: 600; letter-spacing: -0.5px; }
+.profile-name { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
 .edit-pencil-btn {
   background: none; border: none; cursor: pointer; font-size: 16px;
   color: var(--text-muted); padding: 4px; border-radius: 6px; transition: all 0.15s;
 }
 .edit-pencil-btn:hover { background: var(--bg); color: var(--accent); }
 
-.profile-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
-.profile-tab-btn {
-  padding: 10px 20px; border: none; background: none; cursor: pointer;
-  font-family: var(--font); font-size: 13px; color: var(--text-muted);
-  border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s;
+.profile-tabs {
+  display: flex; gap: 2px; border-bottom: none; margin-bottom: 20px;
+  background: var(--bg-chip); border-radius: 11px; padding: 3px; width: fit-content;
 }
-.profile-tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.profile-tab-btn {
+  padding: 8px 18px; border: none; background: none; cursor: pointer;
+  font-family: var(--font); font-size: 13.5px; font-weight: 600; color: var(--text-muted);
+  border-bottom: none; margin-bottom: 0; border-radius: 8px; transition: all 0.15s;
+}
+.profile-tab-btn.active { color: var(--text); background: var(--surface); box-shadow: 0 1px 3px rgba(0,0,0,0.08); font-weight: 700; }
 .profile-tab-content { display: none; }
 .profile-tab-content.active { display: block; }
 
 .advance-row {
   display: flex; align-items: center; gap: 10px; padding: 12px 16px;
-  border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px;
-  background: var(--surface);
+  border: none; border-radius: var(--radius); margin-bottom: 8px;
+  background: var(--surface); box-shadow: var(--shadow);
 }
 .advance-row.paid-off { opacity: 0.5; }
-.advance-amount { font-size: 17px; font-weight: 700; color: var(--danger); }
+.advance-amount { font-size: 17px; font-weight: 800; color: var(--danger); }
 .advance-meta { font-size: 12px; color: var(--text-muted); }
-.advance-months-badge { background: #fef9c3; color: #854d0e; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; }
+.advance-months-badge { background: var(--warning-light); color: #a07a3a; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
 
 #page-inactive-employees { display: none; }
 #page-inactive-employees.active { display: block; }
@@ -508,6 +501,49 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
   body, .main-content, .page { background: white !important; }
   .card { box-shadow: none !important; border: 1px solid #ddd !important; }
 }
+
+/* ====== MOBILE — bottom tab bar, Apple style ====== */
+@media (max-width: 700px) {
+  .app { flex-direction: column; }
+  .main-content { margin-right: 0; padding-bottom: 78px; }
+  .page { padding: 16px; }
+
+  .sidebar {
+    width: 100%; height: 78px; position: fixed; bottom: 0; top: auto; left: 0; right: 0;
+    flex-direction: row; border-left: none; border-top: 1px solid var(--border);
+    background: rgba(255,255,255,0.94); backdrop-filter: blur(14px); z-index: 300;
+  }
+  .sidebar-logo { display: none; }
+  .sidebar-nav { display: flex; flex-direction: row; padding: 8px 4px 0; width: 100%; flex: 1; overflow-x: visible; }
+  .nav-item {
+    flex: 1; flex-direction: column; justify-content: center; gap: 3px;
+    padding: 4px 2px; border-radius: 0; margin-bottom: 0; white-space: nowrap;
+    border-bottom: none; font-size: 11px; font-weight: 600;
+  }
+  .nav-icon svg { width: 22px; height: 22px; }
+  .nav-item.active { background: none; color: var(--accent); }
+  .nav-item:hover { background: none; }
+
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .form-row, .form-row-3 { grid-template-columns: 1fr; }
+  .page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .page-header > div:last-child { width: 100%; flex-wrap: wrap; }
+  .modal { width: 95vw !important; padding: 18px; max-height: 88vh; overflow-y: auto; }
+  .calc-grid { grid-template-columns: repeat(7,1fr); gap: 3px; }
+  .calc-day { min-height: 36px; font-size: 11px; padding: 4px 2px; }
+  table { font-size: 12px; }
+  th, td { padding: 8px 10px; }
+
+  /* יעדי מגע נוחים יותר בנייד */
+  .btn, .btn-sm { min-height: 40px; padding: 9px 16px; }
+  #month-bar { flex-wrap: wrap; gap: 8px; padding: 10px 14px !important; height: auto !important; }
+  #month-bar > div { flex-wrap: wrap; gap: 8px !important; }
+  #active-month-label { min-height: 40px; }
+  .emp-row { padding: 16px 18px; }
+  .form-control { min-height: 42px; }
+  #abs-emp-buttons button, #abs-repl-buttons button, #edit-abs-repl-buttons button { min-height: 42px; padding: 10px; }
+}
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -587,11 +623,16 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
       </div>
     </div>
 
-    <div class="stats-grid">
+    <div class="stats-grid" style="grid-template-columns:1fr 1fr">
       <div class="stat-card"><div class="stat-label">עובדים פעילים</div><div class="stat-value blue" id="stat-active">0</div></div>
       <div class="stat-card"><div class="stat-label">חיסורים החודש</div><div class="stat-value red" id="stat-absences">0</div></div>
-      <div class="stat-card"><div class="stat-label">סה"כ שעות</div><div class="stat-value green" id="stat-total-hours">0</div></div>
-      
+    </div>
+
+    <!-- גרף חיסורי עובדים -->
+    <div class="card" id="abs-chart-card">
+      <div class="card-title">חיסורי עובדים <span id="abs-chart-month" style="color:var(--text-muted);font-weight:500"></span></div>
+      <div id="abs-chart-body"></div>
+      <div id="abs-chart-empty" style="display:none;text-align:center;padding:20px;color:var(--text-muted);font-size:13px">אין חיסורים בחודש זה</div>
     </div>
 
     <!-- חיפוש -->
@@ -1536,8 +1577,9 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
 
     <div class="form-group">
       <label class="form-label">עובד *</label>
-      <input type="text" class="form-control" id="abs-emp-search" placeholder="🔍 חיפוש עובד..." oninput="filterEmpSel('abs-emp-sel',this.value,'בחר עובד')" style="margin-bottom:5px">
-      <select class="form-control" id="abs-emp-sel" size="4" style="height:auto" onchange="onAbsEmpChange()"></select>
+      <input type="text" class="form-control" id="abs-emp-search" placeholder="🔍 חיפוש עובד..." oninput="renderAbsEmpButtons(this.value)" style="margin-bottom:5px">
+      <input type="hidden" id="abs-emp-sel" value="">
+      <div id="abs-emp-buttons" style="display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:6px"></div>
     </div>
 
     <div class="form-row">
@@ -1636,8 +1678,9 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
       <!-- מהמערכת -->
       <div id="repl-system-section">
         <div class="form-group" style="margin-bottom:0">
-          <input type="text" class="form-control" id="edit-abs-repl-search" placeholder="🔍 חיפוש שם עובד..." oninput="filterEmpSel('edit-abs-repl-sel',this.value,'אין ממלא מקום')" style="margin-bottom:5px">
-          <select class="form-control" id="edit-abs-repl-sel" size="4" style="height:auto" onchange="onEditReplChange()"></select>
+          <input type="text" class="form-control" id="edit-abs-repl-search" placeholder="🔍 חיפוש שם עובד..." oninput="renderEditReplButtons(this.value)" style="margin-bottom:5px">
+          <input type="hidden" id="edit-abs-repl-sel" value="">
+          <div id="edit-abs-repl-buttons" style="display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:6px"></div>
         </div>
       </div>
 
@@ -2632,18 +2675,52 @@ function updateStats() {
   const monthAbs = absences.filter(a => a.date.startsWith(activeMonth)).length;
   document.getElementById('stat-absences').textContent = monthAbs;
 
-  // סה"כ שעות לתשלום של כלל העובדים הפעילים
-  const totalHoursEl = document.getElementById('stat-total-hours');
-  if (totalHoursEl) {
-    const totalHours = activeEmps.reduce((sum, emp) => {
-      const stats = calcMonthStats(emp.id, activeMonth);
-      if (!stats) return sum;
-      return sum + stats.totalWork * stats.dailyH + stats.totalRepl;
-    }, 0);
-    totalHoursEl.textContent = Math.round(totalHours * 10) / 10;
+  renderAbsencesChart();
+  renderSettingsStats();
+}
+
+// ===== גרף חיסורי עובדים (עמוד הבית) =====
+function renderAbsencesChart() {
+  const body = document.getElementById('abs-chart-body');
+  const emptyEl = document.getElementById('abs-chart-empty');
+  const monthLabelEl = document.getElementById('abs-chart-month');
+  if (!body) return;
+
+  if (monthLabelEl) {
+    const [y, m] = activeMonth.split('-').map(Number);
+    const monthNames = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+    monthLabelEl.textContent = '— ' + monthNames[m - 1] + ' ' + y;
   }
 
-  renderSettingsStats();
+  const monthAbsences = absences.filter(a => a.date.startsWith(activeMonth));
+  const counts = {};
+  monthAbsences.forEach(a => { counts[a.empId] = (counts[a.empId] || 0) + 1; });
+
+  const rows = Object.keys(counts).map(empId => {
+    const emp = employees.find(e => e.id === empId);
+    return { name: emp ? (emp.fname + ' ' + (emp.lname || '')).trim() : 'לא ידוע', count: counts[empId] };
+  }).sort((a, b) => b.count - a.count).slice(0, 8);
+
+  if (!rows.length) {
+    body.innerHTML = '';
+    body.style.display = 'none';
+    if (emptyEl) emptyEl.style.display = 'block';
+    return;
+  }
+  body.style.display = 'block';
+  if (emptyEl) emptyEl.style.display = 'none';
+
+  const max = Math.max(...rows.map(r => r.count));
+  body.innerHTML = rows.map(r => {
+    const pct = Math.max(6, Math.round((r.count / max) * 100));
+    return '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">'
+      + '<div style="width:100px;flex-shrink:0;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + r.name + '</div>'
+      + '<div style="flex:1;background:var(--bg-chip);border-radius:8px;height:22px;position:relative;overflow:hidden">'
+      + '<div style="width:' + pct + '%;background:var(--danger);height:100%;border-radius:8px"></div>'
+      + '</div>'
+      + '<div style="width:22px;flex-shrink:0;font-size:13px;font-weight:700;color:var(--danger);text-align:left">' + r.count + '</div>'
+      + '</div>';
+  }).join('');
 }
 
 function getAbsencesThisMonth() {
@@ -2957,8 +3034,9 @@ function removeEmpClient(idx) {
 
 // ===== ABSENCES =====
 function openAbsenceModal(dateStr) {
-  document.getElementById('abs-emp-sel').innerHTML = empOptions('בחר עובד');
+  document.getElementById('abs-emp-sel').value = '';
   document.getElementById('abs-emp-search').value = '';
+  renderAbsEmpButtons('');
   document.getElementById('abs-repl-search').value = '';
   _selectedReplId = '';
   renderReplButtons(''); // אתחל כפתורי ממלא מקום
@@ -3237,14 +3315,16 @@ function openEditAbsenceModal(id) {
   document.getElementById('edit-abs-sub').textContent = new Date(a.date).toLocaleDateString('he-IL', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
   document.getElementById('edit-abs-note').value = a.note || '';
 
-  // מלא select עובדים
-  document.getElementById('edit-abs-repl-sel').innerHTML = empOptions('אין ממלא מקום');
+  // מלא רשימת עובדים
+  document.getElementById('edit-abs-repl-sel').value = '';
   document.getElementById('edit-abs-repl-search').value = '';
+  renderEditReplButtons('');
 
   // קבע סוג ממלא קיים
   if (a.replacementId) {
     setReplType('system');
     document.getElementById('edit-abs-repl-sel').value = a.replacementId;
+    renderEditReplButtons('');
     onEditReplChange(true);
   } else if (a.replExtName) {
     setReplType('external');
@@ -3289,6 +3369,33 @@ function setReplType(type) {
       : !!document.getElementById('edit-abs-repl-ext-name').value.trim();
     document.getElementById('edit-repl-details-section').style.display = hasSelection ? 'block' : 'none';
   }
+}
+
+function renderEditReplButtons(query) {
+  const container = document.getElementById('edit-abs-repl-buttons');
+  if (!container) return;
+  const q = (query || '').trim().toLowerCase();
+  const allEmps = validEmployees();
+  const filtered = q
+    ? allEmps.filter(e => (e.fname + ' ' + e.lname).toLowerCase().includes(q) || (e.eid || '').includes(q))
+    : allEmps;
+  const currentId = document.getElementById('edit-abs-repl-sel').value;
+  if (!filtered.length) {
+    container.innerHTML = '<div style="text-align:center;padding:10px;color:var(--text-muted);font-size:12px">לא נמצאו עובדים</div>';
+    return;
+  }
+  var html = '';
+  filtered.forEach(function(e) {
+    const sel = currentId === e.id;
+    html += '<button type="button" data-empid="' + e.id + '" onclick="selectEditRepl(this.dataset.empid)" style="text-align:right;padding:6px 10px;border-radius:6px;border:2px solid ' + (sel ? 'var(--accent)' : 'var(--border)') + ';background:' + (sel ? 'var(--accent-light)' : 'var(--surface)') + ';color:' + (sel ? 'var(--accent)' : 'var(--text)') + ';cursor:pointer;font-family:inherit;font-size:13px;font-weight:' + (sel ? '700' : '400') + '">' + e.fname + ' ' + e.lname + '</button>';
+  });
+  container.innerHTML = html;
+}
+
+function selectEditRepl(empId) {
+  document.getElementById('edit-abs-repl-sel').value = empId;
+  renderEditReplButtons(document.getElementById('edit-abs-repl-search').value);
+  onEditReplChange();
 }
 
 function onEditReplChange(skipHint) {
@@ -7320,6 +7427,36 @@ function fixReplacementHours() {
   save();
   showToast(fixed > 0 ? ('✅ תוקנו ' + fixed + ' רשומות חילוף') : 'הכל תקין');
   renderSettingsStats();
+}
+
+function renderAbsEmpButtons(query) {
+  const container = document.getElementById('abs-emp-buttons');
+  if (!container) return;
+  const q = (query || '').trim().toLowerCase();
+  const allEmps = validEmployees();
+  const filtered = q
+    ? allEmps.filter(e => (e.fname + ' ' + e.lname).toLowerCase().includes(q) || (e.eid || '').includes(q))
+    : allEmps;
+
+  const currentId = document.getElementById('abs-emp-sel').value;
+
+  if (!filtered.length) {
+    container.innerHTML = '<div style="text-align:center;padding:10px;color:var(--text-muted);font-size:12px">לא נמצאו עובדים</div>';
+    return;
+  }
+
+  var html = '';
+  filtered.forEach(function(e) {
+    const sel = currentId === e.id;
+    html += '<button type="button" data-empid="' + e.id + '" onclick="selectAbsEmp(this.dataset.empid)" style="text-align:right;padding:6px 10px;border-radius:6px;border:2px solid ' + (sel ? 'var(--accent)' : 'var(--border)') + ';background:' + (sel ? 'var(--accent-light)' : 'var(--surface)') + ';color:' + (sel ? 'var(--accent)' : 'var(--text)') + ';cursor:pointer;font-family:inherit;font-size:13px;font-weight:' + (sel ? '700' : '400') + '">' + e.fname + ' ' + e.lname + '</button>';
+  });
+  container.innerHTML = html;
+}
+
+function selectAbsEmp(empId) {
+  document.getElementById('abs-emp-sel').value = empId;
+  renderAbsEmpButtons(document.getElementById('abs-emp-search').value);
+  onAbsEmpChange();
 }
 
 function renderReplButtons(query) {
