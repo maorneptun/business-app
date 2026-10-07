@@ -571,6 +571,11 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
 .sup-billed{opacity:.55}
 .sup-tag{font-size:11px;background:var(--success-light);color:var(--success);border-radius:10px;padding:2px 8px;font-weight:700}
 .sup-items-panel{margin-top:10px;background:var(--bg);border-radius:12px;padding:12px 14px;display:none}
+
+.coll-h{display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;margin-bottom:0}
+.coll-h.open{margin-bottom:14px}
+.coll-chev{color:var(--text-muted);font-size:20px;line-height:1;transition:transform .2s;display:inline-block}
+.coll-h.open .coll-chev{transform:rotate(-90deg)}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -652,36 +657,43 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
 
     <div id="notices-area"></div>
 
+    <div class="stats-grid" style="display:flex;gap:14px;flex-wrap:wrap">
+      <div class="stat-card" style="flex:0 1 200px"><div class="stat-label">עובדים פעילים</div><div class="stat-value blue" id="stat-active">0</div></div>
+      <div class="stat-card" style="flex:0 1 200px"><div class="stat-label">חיסורים החודש</div><div class="stat-value red" id="stat-absences">0</div></div>
+      <div class="stat-card" id="stat-rem-card" style="flex:0 1 200px;cursor:pointer" onclick="openReminders()"><div class="stat-label">תזכורות להיום</div><div class="stat-value" style="color:var(--warning)" id="stat-rem">0</div></div>
+    </div>
+
     <div class="card" id="ai-card">
-      <div class="card-title">עוזר AI</div>
+      <div class="card-title coll-h" onclick="toggleCard('ai')"><span>✨ עוזר AI</span><span class="coll-chev" id="ai-chev">‹</span></div>
+      <div class="coll-body" id="ai-body" style="display:none">
       <div class="ai-box">
         <textarea id="ai-input" rows="1" placeholder="כתוב מה שבא… למשל: &quot;מחר דנה לא באה, רונית מחליפה אותה&quot; או &quot;תזכיר לי להעביר שכר ביום חמישי&quot;"></textarea>
         <button class="ai-send" id="ai-send" onclick="aiSend()">שלח</button>
       </div>
       <div id="ai-result"></div>
-    </div>
-
-    <div class="stats-grid" style="display:flex;gap:14px;flex-wrap:wrap">
-      <div class="stat-card" style="flex:0 1 200px"><div class="stat-label">עובדים פעילים</div><div class="stat-value blue" id="stat-active">0</div></div>
-      <div class="stat-card" style="flex:0 1 200px"><div class="stat-label">חיסורים החודש</div><div class="stat-value red" id="stat-absences">0</div></div>
+      </div>
     </div>
 
     <!-- חומרי ניקיון -->
     <div class="card" id="sup-card">
-      <div class="card-title">חומרי ניקיון <span id="sup-month" style="color:var(--text-muted);font-weight:500"></span></div>
+      <div class="card-title coll-h" onclick="toggleCard('sup')"><span>🧴 חומרי ניקיון <span id="sup-month" style="color:var(--text-muted);font-weight:500"></span></span><span class="coll-chev" id="sup-chev">‹</span></div>
+      <div class="coll-body" id="sup-body" style="display:none">
       <div class="sup-row">
         <select class="form-control" id="sup-client" style="flex:0 1 200px"></select>
         <input class="form-control" id="sup-text" placeholder="מה להוסיף? למשל: 3 סבון רצפות" onkeydown="if(event.key==='Enter')addSupply()" style="flex:1 1 220px">
         <button class="btn btn-primary" onclick="addSupply()">הוסף</button>
       </div>
       <div id="sup-list"></div>
+      </div>
     </div>
 
     <!-- גרף חיסורי עובדים -->
     <div class="card" id="abs-chart-card">
-      <div class="card-title">חיסורי עובדים <span id="abs-chart-month" style="color:var(--text-muted);font-weight:500"></span></div>
+      <div class="card-title coll-h" onclick="toggleCard('abs')"><span>חיסורי עובדים <span id="abs-chart-month" style="color:var(--text-muted);font-weight:500"></span></span><span class="coll-chev">‹</span></div>
+      <div class="coll-body" id="abs-body" style="display:none">
       <div id="abs-chart-body"></div>
       <div id="abs-chart-empty" style="display:none;text-align:center;padding:20px;color:var(--text-muted);font-size:13px">אין חיסורים בחודש זה</div>
+      </div>
     </div>
 
     <!-- חיפוש -->
@@ -1455,6 +1467,35 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
 <!-- ===== MODALS ===== -->
 
 <!-- Employee Edit Panel -->
+
+<div class="modal-overlay" id="modal-reminders">
+  <div class="modal" style="width:520px">
+    <div class="modal-header">
+      <div class="modal-title">⏰ תזכורות</div>
+      <button class="modal-close" onclick="closeModal('modal-reminders')">×</button>
+    </div>
+    <div class="sup-row" style="margin-bottom:8px">
+      <input class="form-control" id="rem-text" placeholder="מה להזכיר לך?" onkeydown="if(event.key==='Enter')addReminder()" style="flex:1 1 100%">
+    </div>
+    <div class="sup-row">
+      <input type="date" class="form-control" id="rem-date" style="flex:1 1 140px">
+      <input type="time" class="form-control" id="rem-time" style="flex:0 1 120px" title="שעה (אופציונלי)">
+      <button class="btn btn-primary" onclick="addReminder()">הוסף</button>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;cursor:pointer"><input type="checkbox" id="rem-wa" checked> שלח גם לקבוצת הוואטסאפ</label>
+    <div style="font-size:12px;color:var(--text-muted);margin:6px 0 0">בלי שעה — התזכורת תקפוץ כשתפתח את המערכת באותו יום. תזכורת עם שעה תקפוץ בזמן, כל עוד המערכת פתוחה בדפדפן.</div>
+    <div id="rem-list" style="margin-top:12px;max-height:50vh;overflow:auto"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-rem-alert">
+  <div class="modal" style="width:420px;border-top:6px solid #D9822B">
+    <div class="modal-header"><div class="modal-title">⏰ תזכורת</div></div>
+    <div id="rem-alert-list"></div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('modal-rem-alert')">סגור</button></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-edit-emp">
   <div class="modal" style="width:500px">
     <div class="modal-header">
@@ -2041,6 +2082,7 @@ let hoursLog = JSON.parse(localStorage.getItem('nep_hours') || '[]');
 let advances = JSON.parse(localStorage.getItem('nep_advances') || '[]');
 let notices = JSON.parse(localStorage.getItem('nep_notices') || '[]');
 let supplyLog = JSON.parse(localStorage.getItem('nep_supply_log') || '[]');
+let reminders = JSON.parse(localStorage.getItem('nep_reminders') || '[]');
 let savedMonths = JSON.parse(localStorage.getItem('nep_saved_months') || '[]');
 let currentProfileEmpId = null;
 let _currentReportEmpId = null;
@@ -2362,6 +2404,8 @@ function save() {
   localStorage.setItem('nep_saved_months', JSON.stringify(savedMonths));
   localStorage.setItem('nep_notices', JSON.stringify(notices));
   localStorage.setItem('nep_supply_log', JSON.stringify(supplyLog));
+  localStorage.setItem('nep_reminders', JSON.stringify(reminders));
+  scheduleRemSync();
 }
 
 function showToast(msg) {
@@ -2729,6 +2773,7 @@ function updateStats() {
   document.getElementById('stat-absences').textContent = monthAbs;
 
   renderAbsencesChart();
+  updateRemStat();
   try { renderSupplies(); } catch (e) { console.error(e); }
   renderSettingsStats();
 }
@@ -2796,6 +2841,10 @@ function aiShowPlan(data, origText) {
   (data.actions || []).forEach(a => {
     if (a.type === 'add_notice' && a.text) {
       acts.push({ type: 'add_notice', text: a.text, label: '📢 הודעה למערכת: ' + a.text });
+    } else if (a.type === 'add_reminder') {
+      if (!a.text || !/^\d{4}-\d{2}-\d{2}$/.test(a.date || '')) return;
+      const tm = /^\d{2}:\d{2}$/.test(a.time || '') ? a.time : '';
+      acts.push({ type: 'add_reminder', text: a.text, date: a.date, time: tm, label: '⏰ תזכורת: ' + a.text + ' · ' + _remDayLabel(a.date) + (tm ? ' ' + tm : '') });
     } else if (a.type === 'add_supply') {
       if (!a.client || !a.text) return;
       acts.push({ type: 'add_supply', client: a.client, text: a.text, label: '🧴 חומרי ניקיון: ' + a.text + ' · ' + a.client });
@@ -2830,6 +2879,7 @@ function aiConfirm() {
   _aiPending.forEach(a => {
     if (a.type === 'add_notice') { addNotice(a.text); n++; }
     else if (a.type === 'add_absence') { aiApplyAbsence(a); n++; }
+    else if (a.type === 'add_reminder') { remPush(a.text, a.date, a.time); n++; }
     else if (a.type === 'add_supply') { supplyPush(a.client, a.text, _isoLocal(new Date())); n++; }
   });
   _aiPending = null;
@@ -2838,7 +2888,7 @@ function aiConfirm() {
   document.getElementById('ai-result').innerHTML = '';
   try { renderCalendar(); } catch (e) {}
   try { renderAbsenceTable(); } catch (e) {}
-  updateStats();
+  updateStats(); updateRemStat();
   showToast('בוצע · ' + n + ' פעולות');
 }
 
@@ -2870,6 +2920,120 @@ function aiApplyAbsence(a) {
 }
 document.addEventListener('DOMContentLoaded', renderNotices);
 if (document.readyState !== 'loading') renderNotices();
+
+function toggleCard(k) {
+  const body = document.getElementById(k + '-body');
+  const h = body.previousElementSibling;
+  const open = body.style.display === 'none';
+  body.style.display = open ? 'block' : 'none';
+  h.classList.toggle('open', open);
+  if (open) {
+    const f = k === 'abs' ? null : document.getElementById(k === 'ai' ? 'ai-input' : 'sup-text');
+    if (f) f.focus();
+  }
+}
+// ===== תזכורות =====
+
+// סנכרון תזכורות לשרת (לשליחת וואטסאפ גם כשהאתר סגור)
+let _remSyncT = null, _remSyncLast = '';
+function scheduleRemSync() {
+  clearTimeout(_remSyncT);
+  _remSyncT = setTimeout(syncRemindersToServer, 1500);
+}
+function syncRemindersToServer() {
+  const payload = JSON.stringify({ reminders: reminders.map(r => ({ id: r.id, text: r.text, date: r.date, time: r.time, done: r.done, wa: r.wa !== false })) });
+  if (payload === _remSyncLast) return;
+  fetch('https://business-app-hf5y.onrender.com/api/reminders/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload })
+    .then(r => { if (r.ok) _remSyncLast = payload; }).catch(() => {});
+}
+function _remToday() { return _isoLocal(new Date()); }
+function _remNowHM() { const d = new Date(); return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); }
+function remPush(text, date, time, wa) {
+  const t = _remToday();
+  const dueNow = date < t || (date === t && (!time || time <= _remNowHM()));
+  reminders.push({ id: Date.now().toString() + Math.floor(Math.random()*100000), text, date, time: time || '', done: false, notified: dueNow, snoozeUntil: 0, wa: wa !== false });
+}
+function updateRemStat() {
+  const el = document.getElementById('stat-rem');
+  if (!el) return;
+  const t = _remToday();
+  el.textContent = reminders.filter(r => !r.done && r.date <= t).length;
+}
+function openReminders() {
+  document.getElementById('rem-date').value = _remToday();
+  document.getElementById('rem-time').value = '';
+  renderReminders();
+  openModal('modal-reminders');
+  setTimeout(() => document.getElementById('rem-text').focus(), 50);
+}
+function addReminder() {
+  const text = document.getElementById('rem-text').value.trim();
+  const date = document.getElementById('rem-date').value || _remToday();
+  const time = document.getElementById('rem-time').value;
+  if (!text) { showToast('נא לכתוב מה להזכיר'); return; }
+  remPush(text, date, time, document.getElementById('rem-wa').checked);
+  document.getElementById('rem-text').value = '';
+  document.getElementById('rem-time').value = '';
+  save(); renderReminders(); updateRemStat();
+  try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch (e) {}
+}
+function remDone(id) { const r = reminders.find(x => x.id === id); if (r) { r.done = true; save(); renderReminders(); updateRemStat(); } }
+function remUndo(id) { const r = reminders.find(x => x.id === id); if (r) { r.done = false; r.notified = false; save(); renderReminders(); updateRemStat(); } }
+function remDel(id) { reminders = reminders.filter(x => x.id !== id); save(); renderReminders(); updateRemStat(); }
+function _remDayLabel(d) {
+  const t = _remToday();
+  const tm = _isoLocal(new Date(Date.now() + 86400000));
+  if (d === t) return 'היום';
+  if (d === tm) return 'מחר';
+  return new Date(d + 'T12:00:00').toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'numeric' });
+}
+function renderReminders() {
+  const el = document.getElementById('rem-list');
+  if (!el) return;
+  const t = _remToday();
+  const open = reminders.filter(r => !r.done).sort((a, b) => (a.date + (a.time || '00:00')).localeCompare(b.date + (b.time || '00:00')));
+  const done = reminders.filter(r => r.done).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
+  const row = r => '<div class="sup-line' + (r.done ? ' sup-billed' : '') + '"><span>' +
+    (r.done ? '' : '<input type="checkbox" data-id="' + r.id + '" onchange="remDone(this.dataset.id)" style="margin-left:8px"> ') +
+    escHtml(r.text) + (r.time ? ' <b style="color:var(--text-muted)">· ' + r.time + '</b>' : '') + (r.wa !== false ? ' <span title="יישלח לוואטסאפ" style="font-size:12px">💬</span>' : '') + '</span><span>' +
+    (r.done ? '<button class="x" data-id="' + r.id + '" onclick="remUndo(this.dataset.id)" title="החזר">↩</button>' : '') +
+    '<button class="x" data-id="' + r.id + '" onclick="remDel(this.dataset.id)">✕</button></span></div>';
+  let h = '';
+  const groups = {};
+  open.forEach(r => (groups[r.date] = groups[r.date] || []).push(r));
+  Object.keys(groups).sort().forEach(d => {
+    const late = d < t;
+    h += '<div class="sup-grp"><div class="sup-grp-h"><span' + (late ? ' style="color:var(--danger)"' : '') + '>' + (late ? 'באיחור · ' : '') + _remDayLabel(d) + '</span></div>' + groups[d].map(row).join('') + '</div>';
+  });
+  if (!open.length) h = '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:13px">אין תזכורות פתוחות</div>';
+  if (done.length) h += '<div style="font-size:12px;color:var(--text-muted);margin:14px 0 4px">הושלמו לאחרונה</div>' + done.map(row).join('');
+  el.innerHTML = h;
+}
+function checkReminders() {
+  const t = _remToday(), hm = _remNowHM(), now = Date.now();
+  const due = reminders.filter(r => !r.done && !r.notified && (r.snoozeUntil || 0) <= now &&
+    (r.date < t || (r.date === t && (!r.time || r.time <= hm))));
+  if (!due.length) return;
+  due.forEach(r => { r.notified = true; });
+  save();
+  document.getElementById('rem-alert-list').innerHTML = due.map(r =>
+    '<div class="notice-bar" style="margin-bottom:8px"><span class="n-ico">⏰</span><div class="n-txt">' + escHtml(r.text) +
+    '<div class="n-date">' + (r.date < t ? 'באיחור · ' : '') + _remDayLabel(r.date) + (r.time ? ' · ' + r.time : '') + '</div></div>' +
+    '<button title="בוצע" data-id="' + r.id + '" onclick="remDone(this.dataset.id);this.closest(\'.notice-bar\').remove()">✓</button></div>' +
+    '<div style="text-align:left;margin:-2px 0 8px"><button class="btn btn-secondary btn-sm" data-id="' + r.id + '" onclick="remSnooze(this.dataset.id);this.parentNode.previousSibling.remove();this.parentNode.remove()">נדנד בעוד 10 דקות</button></div>'
+  ).join('');
+  openModal('modal-rem-alert');
+  try {
+    if ('Notification' in window && Notification.permission === 'granted') due.forEach(r => new Notification('⏰ תזכורת', { body: r.text }));
+  } catch (e) {}
+  updateRemStat();
+}
+function remSnooze(id) {
+  const r = reminders.find(x => x.id === id);
+  if (r) { r.notified = false; r.snoozeUntil = Date.now() + 10 * 60000; save(); }
+}
+setInterval(checkReminders, 20000);
+window.addEventListener('load', () => { updateRemStat(); scheduleRemSync(); setTimeout(checkReminders, 800); });
 
 // ===== חומרי ניקיון לפי לקוח (רשימה חופשית) =====
 function supClientNames() {

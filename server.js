@@ -198,6 +198,7 @@ app.post('/api/assistant', async (req, res) => {
 המשתמש כותב טקסט חופשי. עליך להחזיר פעולות באמצעות הכלי submit_actions בלבד:
 - add_notice: הודעה/תזכורת שתוצג בולטת בדף הבית. נסח אותה קצרה וברורה.
 - add_absence: עובד/ת שנעדר/ת בתאריך מסוים. אם צוין מחליף/ה (חילוף) – מלא replacementId. חשב תאריך מדויק YYYY-MM-DD לפי התאריך של היום ("היום", "מחר", "אתמול", "ביום שלישי הקרוב" וכו').
+- add_reminder: תזכורת לעתיד (text = מה להזכיר, date = YYYY-MM-DD מחושב לפי היום, time = HH:MM בפורמט 24 שעות רק אם צוינה שעה). הבדל מ-add_notice: תזכורת קשורה לזמן מסוים; הודעה היא פתק קבוע בדף הבית.
 - add_supply: רישום חומרי ניקיון שנמסרו ללקוח (client = שם לקוח מהרשימה בדיוק, text = מה נרשם, בניסוח קצר כפי שנכתב, כולל כמות, למשל "3 סבון רצפות").
 התאם שמות לעובדים ברשימה לפי id בלבד. אם השם לא ברור או לא קיים – אל תמציא id; הסבר ב-reply.
 hours: שעות המחליף/ה, רק אם צוין במפורש, אחרת השמט.
@@ -215,10 +216,11 @@ client: רק אם צוין במפורש. אפשר להחזיר כמה פעולו
             items: {
               type: 'object',
               properties: {
-                type: { type: 'string', enum: ['add_notice', 'add_absence', 'add_supply'] },
+                type: { type: 'string', enum: ['add_notice', 'add_absence', 'add_supply', 'add_reminder'] },
                 text: { type: 'string' },
                 empId: { type: 'string' },
                 date: { type: 'string' },
+                time: { type: 'string' },
                 replacementId: { type: 'string' },
                 hours: { type: 'number' },
                 client: { type: 'string' },
@@ -249,6 +251,86 @@ client: רק אם צוין במפורש. אפשר להחזיר כמה פעולו
     const block = (data.content || []).find(b => b.type === 'tool_use');
     if (!block) return res.status(502).json({ error: 'תשובה לא צפויה' });
     res.json(block.input);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== REMINDERS + WHATSAPP (GREEN-API) =====
+function israelNow() {
+  const s = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Jerusalem' }); // YYYY-MM-DD HH:MM:SS
+  return { date: s.slice(0, 10), hm: s.slice(11, 16) };
+}
+
+// סנכרון תזכורות מהדפדפן (שומר waSent שכבר נקבע בשרת)
+app.post('/api/reminders/sync', async (req, res) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'DB לא מוכן' });
+    const list = Array.isArray(req.body && req.body.reminders) ? req.body.reminders.slice(0, 500) : [];
+    const col = db.collection('reminders');
+    const ids = [];
+    for (const r of list) {
+      if (!r || !r.id || !r.text || !/^\d{4}-\d{2}-\d{2}$/.test(r.date || '')) continue;
+      ids.push(String(r.id));
+      await col.updateOne(
+        { id: String(r.id) },
+        { $set: { text: String(r.text).slice(0, 500), date: r.date, time: /^\d{2}:\d{2}$/.test(r.time || '') ? r.time : '', done: !!r.done, wa: r.wa !== false },
+          $setOnInsert: { waSent: false, createdAt: new Date() } },
+        { upsert: true }
+      );
+    }
+    await col.deleteMany({ id: { $nin: ids } });
+    res.json({ ok: true, count: ids.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+async function greenApi(method, pathPart, body) {
+  const base = process.env.GREEN_API_URL || 'https://api.green-api.com';
+  const url = `${base}/waInstance${process.env.GREEN_API_INSTANCE}/${pathPart}/${process.env.GREEN_API_TOKEN}`;
+  const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error('Green-API ' + r.status + ' ' + JSON.stringify(data));
+  return data;
+}
+function cronAuth(req, res) {
+  if (!process.env.CRON_SECRET || req.query.secret !== process.env.CRON_SECRET) { res.status(401).json({ error: 'unauthorized' }); return false; }
+  return true;
+}
+
+// נקרא כל דקה ע"י שירות cron חיצוני: שולח תזכורות שהגיע זמנן
+app.get('/api/reminders/tick', async (req, res) => {
+  try {
+    if (!cronAuth(req, res)) return;
+    if (!db) return res.status(503).json({ error: 'DB לא מוכן' });
+    const { date, hm } = israelNow();
+    const defHour = (process.env.REMINDER_DEFAULT_TIME || '08:00');
+    const due = await db.collection('reminders').find({ done: false, waSent: false, wa: true, date: { $lte: date } }).toArray();
+    let sent = 0, skipped = 0;
+    for (const r of due) {
+      if (r.date < date) { await db.collection('reminders').updateOne({ id: r.id }, { $set: { waSent: true, waNote: 'old' } }); skipped++; continue; }
+      const when = r.time || defHour;
+      if (when > hm) continue;
+      if (!process.env.WA_GROUP_ID || !process.env.GREEN_API_INSTANCE || !process.env.GREEN_API_TOKEN) { skipped++; continue; }
+      try {
+        await greenApi('POST', 'sendMessage', { chatId: process.env.WA_GROUP_ID, message: '⏰ תזכורת: ' + r.text });
+        await db.collection('reminders').updateOne({ id: r.id }, { $set: { waSent: true, waSentAt: new Date() } });
+        sent++;
+      } catch (e) { console.error('WA send failed:', e.message); }
+    }
+    res.json({ ok: true, now: date + ' ' + hm, due: due.length, sent, skipped });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// עזר: רשימת קבוצות וואטסאפ כדי למצוא את ה-chatId של הקבוצה
+app.get('/api/wa/groups', async (req, res) => {
+  try {
+    if (!cronAuth(req, res)) return;
+    const chats = await greenApi('GET', 'getChats');
+    res.json((chats || []).filter(c => c.id && c.id.endsWith('@g.us')).map(c => ({ id: c.id, name: c.name })));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
