@@ -696,6 +696,11 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
       </div>
     </div>
 
+    <!-- רשימת עובדים (מתקפלת) -->
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-title coll-h" onclick="toggleCard('emp')" style="margin-bottom:0 !important"><span>👥 רשימת עובדים <span id="emp-list-count" style="color:var(--text-muted);font-weight:500"></span></span><span class="coll-chev">‹</span></div>
+    </div>
+    <div class="coll-body" id="emp-body" style="display:none">
     <!-- חיפוש -->
     <div style="position:relative;margin-bottom:16px">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--text-muted);pointer-events:none"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
@@ -710,6 +715,7 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
     <div id="emp-empty" style="text-align:center;padding:40px;color:var(--text-muted);display:none">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:32px;height:32px;margin-bottom:8px;opacity:0.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       <p>לא נמצאו עובדים</p>
+    </div>
     </div>
   </div>
 
@@ -2774,6 +2780,7 @@ function updateStats() {
 
   renderAbsencesChart();
   updateRemStat();
+  const ec = document.getElementById('emp-list-count'); if (ec) ec.textContent = '(' + activeEmps.length + ')';
   try { renderSupplies(); } catch (e) { console.error(e); }
   renderSettingsStats();
 }
@@ -2923,12 +2930,13 @@ if (document.readyState !== 'loading') renderNotices();
 
 function toggleCard(k) {
   const body = document.getElementById(k + '-body');
-  const h = body.previousElementSibling;
+  const ps = body.previousElementSibling;
+  const h = ps.classList.contains('coll-h') ? ps : ps.querySelector('.coll-h');
   const open = body.style.display === 'none';
   body.style.display = open ? 'block' : 'none';
   h.classList.toggle('open', open);
   if (open) {
-    const f = k === 'abs' ? null : document.getElementById(k === 'ai' ? 'ai-input' : 'sup-text');
+    const f = (k === 'abs' || k === 'emp') ? null : document.getElementById(k === 'ai' ? 'ai-input' : 'sup-text');
     if (f) f.focus();
   }
 }
