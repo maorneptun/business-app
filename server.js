@@ -176,6 +176,84 @@ app.post('/api/webhook', (req, res) => {
   res.json({ ok: true });
 });
 
+// ===== AI ASSISTANT =====
+const aiHits = new Map();
+app.post('/api/assistant', async (req, res) => {
+  try {
+    const key = process.env.ANTHROPIC_API_KEY;
+    if (!key) return res.status(500).json({ error: 'חסר ANTHROPIC_API_KEY בשרת' });
+    // הגבלת קצב: 30 בקשות לשעה לכל IP
+    const ip = req.ip || 'x';
+    const now = Date.now();
+    const arr = (aiHits.get(ip) || []).filter(t => now - t < 3600000);
+    if (arr.length >= 30) return res.status(429).json({ error: 'יותר מדי בקשות, נסה מאוחר יותר' });
+    arr.push(now); aiHits.set(ip, arr);
+
+    const { text, today, weekday, employees = [], clients = [] } = req.body || {};
+    if (!text || typeof text !== 'string' || text.length > 2000) return res.status(400).json({ error: 'טקסט לא תקין' });
+
+    const system = `אתה עוזר בתוך מערכת ניהול עובדים של עסק ניקיון בעברית. התאריך היום: ${today} (${weekday}).
+רשימת העובדים הפעילים (JSON): ${JSON.stringify(employees)}.
+רשימת הלקוחות (JSON): ${JSON.stringify(clients)}.
+המשתמש כותב טקסט חופשי. עליך להחזיר פעולות באמצעות הכלי submit_actions בלבד:
+- add_notice: הודעה/תזכורת שתוצג בולטת בדף הבית. נסח אותה קצרה וברורה.
+- add_absence: עובד/ת שנעדר/ת בתאריך מסוים. אם צוין מחליף/ה (חילוף) – מלא replacementId. חשב תאריך מדויק YYYY-MM-DD לפי התאריך של היום ("היום", "מחר", "אתמול", "ביום שלישי הקרוב" וכו').
+- add_supply: רישום חומרי ניקיון שנמסרו ללקוח (client = שם לקוח מהרשימה בדיוק, text = מה נרשם, בניסוח קצר כפי שנכתב, כולל כמות, למשל "3 סבון רצפות").
+התאם שמות לעובדים ברשימה לפי id בלבד. אם השם לא ברור או לא קיים – אל תמציא id; הסבר ב-reply.
+hours: שעות המחליף/ה, רק אם צוין במפורש, אחרת השמט.
+client: רק אם צוין במפורש. אפשר להחזיר כמה פעולות. reply: משפט קצר בעברית שמסכם מה הבנת.`;
+
+    const tool = {
+      name: 'submit_actions',
+      description: 'החזרת הפעולות לביצוע',
+      input_schema: {
+        type: 'object',
+        properties: {
+          reply: { type: 'string' },
+          actions: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                type: { type: 'string', enum: ['add_notice', 'add_absence', 'add_supply'] },
+                text: { type: 'string' },
+                empId: { type: 'string' },
+                date: { type: 'string' },
+                replacementId: { type: 'string' },
+                hours: { type: 'number' },
+                client: { type: 'string' },
+                note: { type: 'string' }
+              },
+              required: ['type']
+            }
+          }
+        },
+        required: ['reply', 'actions']
+      }
+    };
+
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+      body: JSON.stringify({
+        model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-5',
+        max_tokens: 1024,
+        system,
+        tools: [tool],
+        tool_choice: { type: 'tool', name: 'submit_actions' },
+        messages: [{ role: 'user', content: text }]
+      })
+    });
+    const data = await r.json();
+    if (!r.ok) return res.status(502).json({ error: (data.error && data.error.message) || 'שגיאת AI' });
+    const block = (data.content || []).find(b => b.type === 'tool_use');
+    if (!block) return res.status(502).json({ error: 'תשובה לא צפויה' });
+    res.json(block.input);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ===== SPA Fallback =====
 app.get('*', (req, res) => {
   if (!req.path.startsWith('/api')) {

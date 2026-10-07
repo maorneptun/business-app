@@ -30,7 +30,7 @@
   --shabbat: #fff4e5;
   --shabbat-text: #c93400;
   --holiday: #f2e9fb;
-  --holiday-text: #7c3aed;
+  --holiday-text: #8A7CA8;
   --radius: 14px;
   --shadow: 0 1px 2px rgba(0,0,0,0.03);
   --shadow-md: 0 4px 16px rgba(0,0,0,0.06);
@@ -544,6 +544,33 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
   #abs-emp-buttons button, #abs-repl-buttons button, #edit-abs-repl-buttons button { min-height: 42px; padding: 10px; }
 }
 
+
+.notice-bar{display:flex;align-items:flex-start;gap:12px;background:#D9822B;color:#fff;border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:0 2px 10px rgba(217,130,43,.25)}
+.notice-bar .n-ico{font-size:18px;line-height:1.3}
+.notice-bar .n-txt{flex:1;font-size:15px;font-weight:700;line-height:1.45;white-space:pre-wrap}
+.notice-bar .n-date{font-size:11px;font-weight:600;opacity:.8;margin-top:2px}
+.notice-bar button{background:rgba(255,255,255,.22);border:0;color:#fff;border-radius:50%;width:26px;height:26px;cursor:pointer;font-size:14px;font-family:inherit;flex-shrink:0}
+.ai-box{display:flex;gap:8px;align-items:flex-end}
+.ai-box textarea{flex:1;resize:none;border:1px solid var(--border);border-radius:12px;padding:11px 13px;font-family:inherit;font-size:14px;background:var(--bg);min-height:46px;max-height:140px;direction:rtl}
+.ai-box textarea:focus{outline:none;border-color:var(--accent);background:#fff}
+.ai-send{background:var(--accent);color:#fff;border:0;border-radius:12px;padding:0 20px;height:46px;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer}
+.ai-send:disabled{opacity:.5;cursor:default}
+.ai-result{margin-top:12px;background:var(--bg);border-radius:12px;padding:14px;font-size:14px}
+.ai-result .ai-act{padding:9px 0;border-bottom:1px solid var(--border);line-height:1.5}
+.ai-result .ai-act:last-of-type{border-bottom:0}
+.ai-result .ai-btns{display:flex;gap:8px;margin-top:10px}
+
+.sup-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.sup-row .form-control{flex:1 1 150px;min-width:0}
+.sup-row input[type=number]{flex:0 0 80px}
+.sup-grp{background:var(--bg);border-radius:12px;padding:12px 14px;margin-top:10px}
+.sup-grp-h{display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:700;font-size:14px;flex-wrap:wrap}
+.sup-line{display:flex;justify-content:space-between;gap:8px;font-size:13px;padding:6px 0;border-top:1px solid var(--border);margin-top:6px;align-items:center}
+.sup-line:first-of-type{margin-top:8px}
+.sup-line .x{background:none;border:0;color:var(--text-muted);cursor:pointer;font-size:14px;padding:0 4px}
+.sup-billed{opacity:.55}
+.sup-tag{font-size:11px;background:var(--success-light);color:var(--success);border-radius:10px;padding:2px 8px;font-weight:700}
+.sup-items-panel{margin-top:10px;background:var(--bg);border-radius:12px;padding:12px 14px;display:none}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -623,9 +650,31 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
       </div>
     </div>
 
-    <div class="stats-grid" style="grid-template-columns:1fr 1fr">
-      <div class="stat-card"><div class="stat-label">עובדים פעילים</div><div class="stat-value blue" id="stat-active">0</div></div>
-      <div class="stat-card"><div class="stat-label">חיסורים החודש</div><div class="stat-value red" id="stat-absences">0</div></div>
+    <div id="notices-area"></div>
+
+    <div class="card" id="ai-card">
+      <div class="card-title">עוזר AI</div>
+      <div class="ai-box">
+        <textarea id="ai-input" rows="1" placeholder="כתוב מה שבא… למשל: &quot;מחר דנה לא באה, רונית מחליפה אותה&quot; או &quot;תזכיר לי להעביר שכר ביום חמישי&quot;"></textarea>
+        <button class="ai-send" id="ai-send" onclick="aiSend()">שלח</button>
+      </div>
+      <div id="ai-result"></div>
+    </div>
+
+    <div class="stats-grid" style="display:flex;gap:14px;flex-wrap:wrap">
+      <div class="stat-card" style="flex:0 1 200px"><div class="stat-label">עובדים פעילים</div><div class="stat-value blue" id="stat-active">0</div></div>
+      <div class="stat-card" style="flex:0 1 200px"><div class="stat-label">חיסורים החודש</div><div class="stat-value red" id="stat-absences">0</div></div>
+    </div>
+
+    <!-- חומרי ניקיון -->
+    <div class="card" id="sup-card">
+      <div class="card-title">חומרי ניקיון <span id="sup-month" style="color:var(--text-muted);font-weight:500"></span></div>
+      <div class="sup-row">
+        <select class="form-control" id="sup-client" style="flex:0 1 200px"></select>
+        <input class="form-control" id="sup-text" placeholder="מה להוסיף? למשל: 3 סבון רצפות" onkeydown="if(event.key==='Enter')addSupply()" style="flex:1 1 220px">
+        <button class="btn btn-primary" onclick="addSupply()">הוסף</button>
+      </div>
+      <div id="sup-list"></div>
     </div>
 
     <!-- גרף חיסורי עובדים -->
@@ -1087,7 +1136,7 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
         <div style="display:flex;align-items:center;gap:8px">
           <button onclick="shiftProfileHoursMonth(-1)" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 10px;cursor:pointer;font-size:14px">→</button>
           <button onclick="toggleProfileMonthPicker()" id="profile-month-btn"
-            style="font-size:14px;font-weight:700;color:var(--accent);min-width:120px;text-align:center;background:var(--accent-light);border:1px solid #b2ddd1;border-radius:8px;padding:5px 14px;cursor:pointer">
+            style="font-size:14px;font-weight:700;color:var(--accent);min-width:120px;text-align:center;background:var(--accent-light);border:1px solid #d7e0cd;border-radius:8px;padding:5px 14px;cursor:pointer">
             📅 <span id="profile-month-label">בחר חודש</span>
           </button>
           <button onclick="shiftProfileHoursMonth(1)" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 10px;cursor:pointer;font-size:14px">←</button>
@@ -1181,7 +1230,7 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
           <div>
             <label class="form-label" style="font-size:11px">סוג חיוב</label>
             <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;width:fit-content">
-              <button id="billing-type-hourly" onclick="setBillingType('hourly')" style="padding:8px 20px;font-size:13px;border:none;cursor:pointer;font-family:inherit;font-weight:600;background:var(--primary);color:white">לפי שעות</button>
+              <button id="billing-type-hourly" onclick="setBillingType('hourly')" style="padding:8px 20px;font-size:13px;border:none;cursor:pointer;font-family:inherit;font-weight:600;background:var(--accent);color:white">לפי שעות</button>
               <button id="billing-type-fixed" onclick="setBillingType('fixed')" style="padding:8px 20px;font-size:13px;border:none;cursor:pointer;font-family:inherit;font-weight:600;background:var(--bg);color:var(--text-muted)">סכום קבוע</button>
             </div>
           </div>
@@ -1285,7 +1334,7 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
       <div class="card" style="margin:0;padding:0;overflow:hidden">
         <div onclick="toggleSettingsSection('import')" class="settings-row" style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;cursor:pointer;user-select:none">
           <div style="display:flex;align-items:center;gap:12px">
-            <div style="width:34px;height:34px;border-radius:10px;background:#f0fdf4;display:flex;align-items:center;justify-content:center;font-size:17px;color:#16a34a"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:17px;height:17px"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
+            <div style="width:34px;height:34px;border-radius:10px;background:#f1f4ec;display:flex;align-items:center;justify-content:center;font-size:17px;color:#7E9A6D"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:17px;height:17px"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
             <div style="font-weight:700;font-size:14px">ייבוא עובדים</div>
           </div>
           <span id="settings-arrow-import" style="color:var(--text-muted);font-size:12px">▼</span>
@@ -1301,7 +1350,7 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
       <div class="card" style="margin:0;padding:0;overflow:hidden">
         <div onclick="toggleSettingsSection('stats')" class="settings-row" style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;cursor:pointer;user-select:none">
           <div style="display:flex;align-items:center;gap:12px">
-            <div style="width:34px;height:34px;border-radius:10px;background:#faf5ff;display:flex;align-items:center;justify-content:center;font-size:17px;color:#7c3aed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:17px;height:17px"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg></div>
+            <div style="width:34px;height:34px;border-radius:10px;background:#f3eff8;display:flex;align-items:center;justify-content:center;font-size:17px;color:#8A7CA8"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:17px;height:17px"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg></div>
             <div style="font-weight:700;font-size:14px">סטטיסטיקות</div>
           </div>
           <span id="settings-arrow-stats" style="color:var(--text-muted);font-size:12px">▼</span>
@@ -1332,7 +1381,7 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
       <div class="card" style="margin:0;padding:0;overflow:hidden">
         <div onclick="toggleSettingsSection('inactive')" class="settings-row" style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;cursor:pointer;user-select:none">
           <div style="display:flex;align-items:center;gap:12px">
-            <div style="width:34px;height:34px;border-radius:10px;background:#fef2f2;display:flex;align-items:center;justify-content:center;font-size:17px;color:var(--danger)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:17px;height:17px"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></svg></div>
+            <div style="width:34px;height:34px;border-radius:10px;background:#faf1ef;display:flex;align-items:center;justify-content:center;font-size:17px;color:var(--danger)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:17px;height:17px"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></svg></div>
             <div style="font-weight:700;font-size:14px">עובדים לא פעילים</div>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
@@ -1441,7 +1490,7 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
     </div>
 
     <!-- שעות לכל לקוח — מופיע כשיש יותר מלקוח אחד -->
-    <div id="emp-client-hours-section" style="display:none;background:var(--accent-light);border-radius:8px;padding:12px;margin-bottom:14px;border:1px solid #b2ddd1">
+    <div id="emp-client-hours-section" style="display:none;background:var(--accent-light);border-radius:8px;padding:12px;margin-bottom:14px;border:1px solid #d7e0cd">
       <div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:10px;display:flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:1em;height:1em;vertical-align:-2px"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> שעות יומיות לכל לקוח</div>
       <div id="emp-client-hours-inputs"></div>
       <div style="font-size:11px;color:var(--text-muted);margin-top:6px">* סה"כ השעות ייקבע לפי הסכום</div>
@@ -1521,8 +1570,8 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
     <!-- מקרא -->
     <div class="eac-legend">
       <div class="eac-legend-item"><div class="eac-legend-dot" style="background:var(--danger)"></div> חיסור</div>
-      <div class="eac-legend-item"><div class="eac-legend-dot" style="background:#fff0f0;border:2px solid #c0392b"></div> ❗ יום שהחליף</div>
-      <div class="eac-legend-item"><div class="eac-legend-dot" style="background:#f0faf5;border:2px solid #c3e8d6"></div> יום עבודה</div>
+      <div class="eac-legend-item"><div class="eac-legend-dot" style="background:#fff0f0;border:2px solid #a85d52"></div> ❗ יום שהחליף</div>
+      <div class="eac-legend-item"><div class="eac-legend-dot" style="background:#f1f4ec;border:2px solid #c3e8d6"></div> יום עבודה</div>
       <div class="eac-legend-item"><div class="eac-legend-dot" style="background:var(--shabbat)"></div> שבת / שישי</div>
       <div class="eac-legend-item"><div class="eac-legend-dot" style="background:var(--holiday)"></div> חג</div>
     </div>
@@ -1932,22 +1981,22 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
       </div>
       <!-- שדות ברירת מחדל משמרת ב' — מוצג רק לעובדי משמרות -->
       <div id="mr-shift2-bar" style="display:none;margin-top:10px;padding-top:10px;border-top:1px dashed #c7d2fe;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <span style="font-size:12px;font-weight:600;color:#7c3aed">🔀 משמרת ב' ברירת מחדל:</span>
+        <span style="font-size:12px;font-weight:600;color:#8A7CA8">🔀 משמרת ב' ברירת מחדל:</span>
         <div style="display:flex;align-items:center;gap:6px">
           <label style="font-size:12px;color:var(--text-muted)">כניסה</label>
-          <input type="text" id="mr-default-in2" value="14:00" placeholder="14:00" maxlength="5" style="padding:4px 8px;border:1px solid #c4b5fd;border-radius:6px;font-size:13px;width:80px;text-align:center;background:#fdf4ff" oninput="formatTimeInput(this)" onblur="saveMrDefaultTimes()">
+          <input type="text" id="mr-default-in2" value="14:00" placeholder="14:00" maxlength="5" style="padding:4px 8px;border:1px solid #b8a8cc;border-radius:6px;font-size:13px;width:80px;text-align:center;background:#f3eff8" oninput="formatTimeInput(this)" onblur="saveMrDefaultTimes()">
         </div>
         <div style="display:flex;align-items:center;gap:6px">
           <label style="font-size:12px;color:var(--text-muted)">יציאה</label>
-          <input type="text" id="mr-default-out2" value="22:00" placeholder="22:00" maxlength="5" style="padding:4px 8px;border:1px solid #c4b5fd;border-radius:6px;font-size:13px;width:80px;text-align:center;background:#fdf4ff" oninput="formatTimeInput(this)" onblur="saveMrDefaultTimes()">
+          <input type="text" id="mr-default-out2" value="22:00" placeholder="22:00" maxlength="5" style="padding:4px 8px;border:1px solid #b8a8cc;border-radius:6px;font-size:13px;width:80px;text-align:center;background:#f3eff8" oninput="formatTimeInput(this)" onblur="saveMrDefaultTimes()">
         </div>
-        <button onclick="applyDefaultTimes2()" style="background:#7c3aed;color:white;border:none;border-radius:7px;padding:6px 16px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">✓ החל על כל ימי העבודה</button>
-        <span id="mr-default-preview2" style="font-size:12px;color:#7c3aed;font-weight:600"></span>
+        <button onclick="applyDefaultTimes2()" style="background:#8A7CA8;color:white;border:none;border-radius:7px;padding:6px 16px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">✓ החל על כל ימי העבודה</button>
+        <span id="mr-default-preview2" style="font-size:12px;color:#8A7CA8;font-weight:600"></span>
       </div>
     </div>
     <div id="monthly-report-table"></div>
     <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end">
-      <button class="btn btn-primary" onclick="saveMonthSnapshotAndClose()" style="background:#16a34a;border-color:#16a34a">💾 שמור דוח</button>
+      <button class="btn btn-primary" onclick="saveMonthSnapshotAndClose()" style="background:#7E9A6D;border-color:#7E9A6D">💾 שמור דוח</button>
       <button class="btn btn-secondary" onclick="printMonthlyReport()">🖨️ הדפס</button>
       <button class="btn btn-secondary" onclick="closeModal('modal-monthly-report')">סגור</button>
     </div>
@@ -1990,6 +2039,8 @@ let clockOverrides = JSON.parse(localStorage.getItem('nep_clock_overrides') || '
 let mrWorkOverrides = JSON.parse(localStorage.getItem('nep_mr_work') || '{}'); // empId_date -> true = force workday
 let hoursLog = JSON.parse(localStorage.getItem('nep_hours') || '[]');
 let advances = JSON.parse(localStorage.getItem('nep_advances') || '[]');
+let notices = JSON.parse(localStorage.getItem('nep_notices') || '[]');
+let supplyLog = JSON.parse(localStorage.getItem('nep_supply_log') || '[]');
 let savedMonths = JSON.parse(localStorage.getItem('nep_saved_months') || '[]');
 let currentProfileEmpId = null;
 let _currentReportEmpId = null;
@@ -2309,6 +2360,8 @@ function save() {
   localStorage.setItem('nep_hours', JSON.stringify(hoursLog));
   localStorage.setItem('nep_advances', JSON.stringify(advances));
   localStorage.setItem('nep_saved_months', JSON.stringify(savedMonths));
+  localStorage.setItem('nep_notices', JSON.stringify(notices));
+  localStorage.setItem('nep_supply_log', JSON.stringify(supplyLog));
 }
 
 function showToast(msg) {
@@ -2676,7 +2729,210 @@ function updateStats() {
   document.getElementById('stat-absences').textContent = monthAbs;
 
   renderAbsencesChart();
+  try { renderSupplies(); } catch (e) { console.error(e); }
   renderSettingsStats();
+}
+
+// ===== הודעות מערכת + עוזר AI =====
+const AI_URL = 'https://business-app-hf5y.onrender.com/api/assistant';
+let _aiPending = null;
+
+function _isoLocal(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function renderNotices() {
+  const el = document.getElementById('notices-area');
+  if (!el) return;
+  el.innerHTML = notices.map(n =>
+    '<div class="notice-bar"><span class="n-ico">📢</span><div class="n-txt">' + escHtml(n.text) +
+    '<div class="n-date">' + escHtml(n.date || '') + '</div></div>' +
+    '<button title="הסר" data-id="' + n.id + '" onclick="removeNotice(this.dataset.id)">✕</button></div>'
+  ).join('');
+}
+function escHtml(t) {
+  return String(t == null ? '' : t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+function removeNotice(id) {
+  notices = notices.filter(n => n.id !== id);
+  save(); renderNotices();
+}
+function addNotice(text) {
+  const d = new Date();
+  notices.unshift({ id: Date.now().toString() + Math.floor(Math.random()*1000), text: text, date: d.toLocaleDateString('he-IL'), createdAt: d.toISOString() });
+  save(); renderNotices();
+}
+
+async function aiSend() {
+  const inp = document.getElementById('ai-input');
+  const text = inp.value.trim();
+  if (!text) return;
+  const btn = document.getElementById('ai-send');
+  const out = document.getElementById('ai-result');
+  btn.disabled = true; btn.textContent = 'חושב…';
+  out.innerHTML = '';
+  const now = new Date();
+  const days = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+  const payload = {
+    text: text,
+    today: _isoLocal(now),
+    weekday: 'יום ' + days[now.getDay()],
+    clients: supClientNames(),
+    employees: employees.filter(e => e.status === 'active').map(e => ({ id: e.id, name: empName(e), clients: e.clients || (e.client ? [e.client] : []), dailyHours: e.dailyHours || 8 }))
+  };
+  try {
+    const res = await fetch(AI_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'שגיאה');
+    aiShowPlan(data, text);
+  } catch (e) {
+    out.innerHTML = '<div class="ai-result" style="color:var(--danger)">לא הצלחתי לעבד את ההודעה: ' + escHtml(e.message) + '<br><span style="font-size:12px;color:var(--text-muted)">אם השרת היה ישן, נסה שוב בעוד חצי דקה.</span></div>';
+  }
+  btn.disabled = false; btn.textContent = 'שלח';
+}
+
+function aiShowPlan(data, origText) {
+  const out = document.getElementById('ai-result');
+  const acts = [];
+  (data.actions || []).forEach(a => {
+    if (a.type === 'add_notice' && a.text) {
+      acts.push({ type: 'add_notice', text: a.text, label: '📢 הודעה למערכת: ' + a.text });
+    } else if (a.type === 'add_supply') {
+      if (!a.client || !a.text) return;
+      acts.push({ type: 'add_supply', client: a.client, text: a.text, label: '🧴 חומרי ניקיון: ' + a.text + ' · ' + a.client });
+    } else if (a.type === 'add_absence') {
+      const emp = employees.find(e => e.id === a.empId);
+      if (!emp || !/^\d{4}-\d{2}-\d{2}$/.test(a.date || '')) return;
+      const repl = a.replacementId ? employees.find(e => e.id === a.replacementId) : null;
+      const hours = repl ? (parseFloat(a.hours) || emp.dailyHours || 8) : 0;
+      const client = a.client || emp.client || (emp.clients && emp.clients[0]) || '';
+      const dstr = new Date(a.date + 'T12:00:00').toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'numeric' });
+      let label = '🗓️ חיסור: ' + empName(emp) + ' · ' + dstr + (client ? ' · ' + client : '');
+      if (repl) label += '<br>↳ ממלאת מקום: ' + escHtml(empName(repl)) + ' · ' + hours + ' שעות';
+      acts.push({ type: 'add_absence', empId: emp.id, date: a.date, replacementId: repl ? repl.id : null, hours: hours, client: client, note: a.note || '', label: label, raw: true });
+    }
+  });
+  let h = '<div class="ai-result">';
+  if (data.reply) h += '<div style="margin-bottom:8px;font-weight:600">' + escHtml(data.reply) + '</div>';
+  if (!acts.length) {
+    h += '<div style="color:var(--text-muted)">לא זיהיתי פעולה לבצע. נסה לנסח אחרת.</div></div>';
+    out.innerHTML = h; _aiPending = null; return;
+  }
+  _aiPending = acts;
+  acts.forEach(a => { h += '<div class="ai-act">' + (a.raw ? a.label : escHtml(a.label)) + '</div>'; });
+  h += '<div class="ai-btns"><button class="btn btn-primary" onclick="aiConfirm()">אשר וקבע</button><button class="btn btn-secondary" onclick="aiCancel()">בטל</button></div></div>';
+  out.innerHTML = h;
+}
+function aiCancel() { _aiPending = null; document.getElementById('ai-result').innerHTML = ''; }
+
+function aiConfirm() {
+  if (!_aiPending) return;
+  let n = 0;
+  _aiPending.forEach(a => {
+    if (a.type === 'add_notice') { addNotice(a.text); n++; }
+    else if (a.type === 'add_absence') { aiApplyAbsence(a); n++; }
+    else if (a.type === 'add_supply') { supplyPush(a.client, a.text, _isoLocal(new Date())); n++; }
+  });
+  _aiPending = null;
+  save();
+  document.getElementById('ai-input').value = '';
+  document.getElementById('ai-result').innerHTML = '';
+  try { renderCalendar(); } catch (e) {}
+  try { renderAbsenceTable(); } catch (e) {}
+  updateStats();
+  showToast('בוצע · ' + n + ' פעולות');
+}
+
+function aiApplyAbsence(a) {
+  const emp = employees.find(e => e.id === a.empId);
+  // מניעת כפילות — חיסור קיים לאותו עובד ותאריך מוחלף
+  const old = absences.filter(x => x.empId === a.empId && x.date === a.date);
+  old.forEach(o => { hoursLog = hoursLog.filter(h => h.absenceId !== o.id); });
+  absences = absences.filter(x => !(x.empId === a.empId && x.date === a.date));
+  const newAbs = {
+    id: Date.now().toString() + Math.floor(Math.random()*1000),
+    empId: a.empId, date: a.date, client: a.client, replacementId: a.replacementId,
+    replPaid: a.replacementId ? 'unpaid' : null, replAmount: 0, replPayNote: '',
+    replHours: a.replacementId ? a.hours : 0, replClient: a.replacementId ? a.client : '',
+    note: a.note || '', createdAt: new Date().toISOString()
+  };
+  absences.push(newAbs);
+  if (a.replacementId) {
+    hoursLog = hoursLog.filter(h => !(h.empId === a.replacementId && h.date === a.date && h.type === 'replacement'));
+    if (a.hours > 0) {
+      hoursLog.push({
+        id: Date.now().toString() + '_repl' + Math.floor(Math.random()*1000),
+        empId: a.replacementId, date: a.date, hours: a.hours, client: a.client,
+        note: 'חילוף: ' + (emp ? empName(emp) : ''), type: 'replacement',
+        absenceId: newAbs.id, createdAt: new Date().toISOString()
+      });
+    }
+  }
+}
+document.addEventListener('DOMContentLoaded', renderNotices);
+if (document.readyState !== 'loading') renderNotices();
+
+// ===== חומרי ניקיון לפי לקוח (רשימה חופשית) =====
+function supClientNames() {
+  const set = [];
+  try { clientsData.forEach(c => { if (c.name && !set.includes(c.name)) set.push(c.name); }); } catch (e) {}
+  employees.forEach(e => {
+    const cl = (e.clients && e.clients.length) ? e.clients : (e.client ? [e.client] : []);
+    cl.forEach(n => { if (n && !set.includes(n)) set.push(n); });
+  });
+  return set.sort((a, b) => a.localeCompare(b, 'he'));
+}
+function supplyPush(client, text, date) {
+  supplyLog.push({ id: Date.now().toString() + Math.floor(Math.random()*100000), client, text, date, billed: false });
+}
+function addSupply() {
+  const client = document.getElementById('sup-client').value;
+  const inp = document.getElementById('sup-text');
+  const text = inp.value.trim();
+  if (!client) { showToast('נא לבחור לקוח'); return; }
+  if (!text) { showToast('נא לכתוב מה להוסיף'); return; }
+  supplyPush(client, text, _isoLocal(new Date()));
+  inp.value = '';
+  save(); renderSupplies();
+  inp.focus();
+}
+function delSupply(id) { supplyLog = supplyLog.filter(x => x.id !== id); save(); renderSupplies(); }
+function markSupplyBilled(client) {
+  supplyLog.forEach(x => { if (x.client === client && x.date.startsWith(activeMonth)) x.billed = true; });
+  save(); renderSupplies();
+}
+function copySupplySummary(client) {
+  const rows = supplyLog.filter(x => x.client === client && x.date.startsWith(activeMonth) && !x.billed);
+  const txt = 'חומרי ניקיון — ' + client + '\n' + rows.map(r => '• ' + r.text).join('\n');
+  if (navigator.clipboard) navigator.clipboard.writeText(txt).then(() => showToast('הרשימה הועתקה'), () => showToast(txt));
+  else showToast(txt);
+}
+function renderSupplies() {
+  const cSel = document.getElementById('sup-client');
+  if (!cSel) return;
+  const prevC = cSel.value;
+  const names = supClientNames();
+  cSel.innerHTML = '<option value="">בחר לקוח</option>' + names.map(n => '<option>' + escHtml(n) + '</option>').join('');
+  if (names.includes(prevC)) cSel.value = prevC;
+  const ml = document.getElementById('sup-month');
+  if (ml) {
+    const [y, m] = activeMonth.split('-').map(Number);
+    const mn = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+    ml.textContent = '— ' + mn[m-1] + ' ' + y;
+  }
+  const rows = supplyLog.filter(x => x.date.startsWith(activeMonth));
+  const byClient = {};
+  rows.forEach(r => (byClient[r.client] = byClient[r.client] || []).push(r));
+  const list = document.getElementById('sup-list');
+  const keys = Object.keys(byClient).sort((a, b) => a.localeCompare(b, 'he'));
+  if (!keys.length) { list.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:13px">אין רישומים בחודש זה</div>'; return; }
+  list.innerHTML = keys.map(c => {
+    const rs = byClient[c].sort((a, b) => a.date.localeCompare(b.date));
+    const open = rs.filter(r => !r.billed);
+    return '<div class="sup-grp"><div class="sup-grp-h"><span>' + escHtml(c) + '</span>' +
+      (open.length ? '' : '<span class="sup-tag">חויב</span>') + '</div>' +
+      rs.map(r => '<div class="sup-line' + (r.billed ? ' sup-billed' : '') + '"><span>' + escHtml(r.text) + ' <span style="color:var(--text-muted)">· ' + r.date.slice(8) + '/' + r.date.slice(5, 7) + '</span></span><button class="x" data-id="' + r.id + '" onclick="delSupply(this.dataset.id)">✕</button></div>').join('') +
+      (open.length ? '<div style="display:flex;gap:8px;margin-top:10px"><button class="btn btn-secondary btn-sm" data-c="' + escHtml(c) + '" onclick="copySupplySummary(this.dataset.c)">העתק רשימה לחיוב</button><button class="btn btn-secondary btn-sm" data-c="' + escHtml(c) + '" onclick="markSupplyBilled(this.dataset.c)">סמן כחויב</button></div>' : '') + '</div>';
+  }).join('');
 }
 
 // ===== גרף חיסורי עובדים (עמוד הבית) =====
@@ -2715,7 +2971,7 @@ function renderAbsencesChart() {
     const pct = Math.max(6, Math.round((r.count / max) * 100));
     return '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">'
       + '<div style="width:100px;flex-shrink:0;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + r.name + '</div>'
-      + '<div style="flex:1;background:var(--bg-chip);border-radius:8px;height:22px;position:relative;overflow:hidden">'
+      + '<div style="flex:0 1 320px;background:var(--bg-chip);border-radius:8px;height:22px;position:relative;overflow:hidden">'
       + '<div style="width:' + pct + '%;background:var(--danger);height:100%;border-radius:8px"></div>'
       + '</div>'
       + '<div style="width:22px;flex-shrink:0;font-size:13px;font-weight:700;color:var(--danger);text-align:left">' + r.count + '</div>'
@@ -3775,10 +4031,10 @@ function renderHoursTable() {
             <div style="font-size:20px;font-weight:700;color:var(--info)">${expectedHours}</div>
             <div style="font-size:11px;color:var(--text-muted)">${workdays} × ${dailyH}</div>
           </div>
-          <div style="background:var(--primary);border-radius:8px;padding:10px 14px">
-            <div style="font-size:11px;color:#9fe1cb;font-weight:500">סה"כ לתשלום</div>
-            <div style="font-size:22px;font-weight:700;color:white">${netHours}</div>
-            <div style="font-size:11px;color:rgba(255,255,255,0.5)">${workdays-absCount} ימים × ${dailyH} שע'</div>
+          <div style="background:#eef1f5;border-radius:8px;padding:10px 14px">
+            <div style="font-size:11px;color:#5c6b7a;font-weight:500">סה"כ לתשלום</div>
+            <div style="font-size:22px;font-weight:700;color:#2f3b4a">${netHours}</div>
+            <div style="font-size:11px;color:#8292a0">${workdays-absCount} ימים × ${dailyH} שע'</div>
           </div>
         </div>
         ${absCount > 0 ? `
@@ -4192,7 +4448,7 @@ function buildClientReport() {
     if (isHoliday) {
       rows += `<tr style="background:#f5f0e8">
         <td style="padding:7px 12px;font-size:13px">${d}/${m} ${dayName}</td>
-        <td colspan="4" style="padding:7px 12px;font-size:12px;color:#854d0e">${HOLIDAYS[dateStr] || 'חג'}</td>
+        <td colspan="4" style="padding:7px 12px;font-size:12px;color:#a07a3a">${HOLIDAYS[dateStr] || 'חג'}</td>
       </tr>`;
       continue;
     }
@@ -4216,9 +4472,9 @@ function buildClientReport() {
               <span style="font-size:13px">${empName(emp)}</span>
             </div>
           </td>
-          <td style="padding:7px 12px"><span style="background:#fde8e3;color:#d85a30;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600">חיסור</span></td>
+          <td style="padding:7px 12px"><span style="background:#faf1ef;color:#a85d52;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600">חיסור</span></td>
           <td style="padding:7px 12px;font-size:13px;color:var(--primary);font-weight:500">${repl || a.replExtName ? replName : '<span style="color:var(--text-muted)">ללא ממלא</span>'}</td>
-          <td style="padding:7px 12px;text-align:center">${replHrs !== '—' ? '<span style="background:#fce7f3;color:#9d174d;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:600">'+replHrs+" שע'</span>" : '—'}</td>
+          <td style="padding:7px 12px;text-align:center">${replHrs !== '—' ? '<span style="background:#f6eef2;color:#96637d;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:600">'+replHrs+" שע'</span>" : '—'}</td>
         </tr>`;
       });
     } else {
@@ -4235,9 +4491,9 @@ function buildClientReport() {
               <span style="font-size:13px">${empName(emp)}</span>
             </div>
           </td>
-          <td style="padding:7px 12px"><span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600">עבודה ✓</span></td>
+          <td style="padding:7px 12px"><span style="background:#f1f4ec;color:#5c7a4a;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600">עבודה ✓</span></td>
           <td style="padding:7px 12px;color:var(--text-muted);font-size:12px">—</td>
-          <td style="padding:7px 12px;text-align:center;font-size:13px;font-weight:600;color:#0f6e56">${dailyH} שע'</td>
+          <td style="padding:7px 12px;text-align:center;font-size:13px;font-weight:600;color:#5c7a4a">${dailyH} שע'</td>
         </tr>`;
       });
     }
@@ -4250,7 +4506,7 @@ function buildClientReport() {
         <div class="stat-card"><div class="stat-label">ימי עבודה</div><div class="stat-value green">${totalWork}</div></div>
         <div class="stat-card"><div class="stat-label">חיסורים</div><div class="stat-value red">${totalAbs}</div></div>
         <div class="stat-card"><div class="stat-label">ימים עם חילוף</div><div class="stat-value blue">${totalRepl}</div></div>
-        <div class="stat-card"><div class="stat-label">סה"כ שעות</div><div class="stat-value" style="color:#0f6e56">${Math.round(totalHours*10)/10}</div></div>
+        <div class="stat-card"><div class="stat-label">סה"כ שעות</div><div class="stat-value" style="color:#5c7a4a">${Math.round(totalHours*10)/10}</div></div>
       </div>
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
@@ -4274,7 +4530,7 @@ function buildClientReport() {
             <tbody>${rows}
               <tr style="background:var(--bg);border-top:2px solid var(--border);font-weight:700">
                 <td colspan="4" style="padding:10px 12px;font-size:13px">סה"כ</td>
-                <td style="padding:10px 12px;text-align:center;font-size:14px;color:#0f6e56">${Math.round(totalHours*10)/10} שע'</td>
+                <td style="padding:10px 12px;text-align:center;font-size:14px;color:#5c7a4a">${Math.round(totalHours*10)/10} שע'</td>
               </tr>
             </tbody>
           </table>
@@ -4301,7 +4557,7 @@ function printClientReport() {
       table { width: 100%; border-collapse: collapse; }
       th { background: #f5f5f5; padding: 8px 12px; text-align: right; border-bottom: 2px solid #ddd; font-size: 13px; }
       td { padding: 9px 12px; border-bottom: 1px solid #eee; font-size: 13px; }
-      .repl-hrs { background: #fce7f3; color: #9d174d; padding: 2px 8px; border-radius: 6px; font-weight: 600; }
+      .repl-hrs { background: #f6eef2; color: #96637d; padding: 2px 8px; border-radius: 6px; font-weight: 600; }
       .footer { margin-top: 30px; font-size: 11px; color: #999; text-align: left; }
     </style></head><body>
     <h2>${client}</h2>
@@ -4562,7 +4818,7 @@ function renderEacCalendar() {
     const onclick = (!isShabbat) ? `onclick="eacToggleDay('${dateStr}')"` : '';
     const holidayLbl = HOLIDAYS[dateStr] ? `<div class="eac-holiday-lbl">${HOLIDAYS[dateStr]}</div>` : '';
     const xMark = isAbsent ? `<div class="eac-x">✕</div>` : '';
-    const replMark = isRepl ? `<div style="font-size:9px;color:#c0392b;font-weight:700">חילוף</div>` : '';
+    const replMark = isRepl ? `<div style="font-size:9px;color:#a85d52;font-weight:700">חילוף</div>` : '';
     html += `<div class="${cls}" id="eac-cell-${dateStr}" ${onclick}><span>${d}</span>${holidayLbl}${xMark}${replMark}</div>`;
   }
 
@@ -5186,7 +5442,7 @@ function renderProfileHours() {
     html += '<div style="font-size:11px;color:var(--text-muted)">' + dailyH + " שע' ביום</div></div>";
 
     // חיסורים
-    var absCol = absCount > 0 ? 'var(--danger-light)' : '#f0faf5';
+    var absCol = absCount > 0 ? 'var(--danger-light)' : '#f1f4ec';
     var absTxt = absCount > 0 ? 'var(--danger)' : 'var(--accent)';
     html += '<div style="background:' + absCol + ';border-radius:10px;padding:12px;text-align:center;cursor:pointer" onclick="openMiniCalendar(\'abs\',' + py + ',' + pm + ')">';
     html += '<div style="font-size:11px;color:' + absTxt + ';font-weight:500">חיסורים</div>';
@@ -5195,17 +5451,17 @@ function renderProfileHours() {
 
     // חילופים — כחול, ליד חיסורים
     if (replCount2 > 0) {
-      html += '<div style="background:#e8f4ff;border-radius:10px;padding:12px;text-align:center;cursor:pointer;border:2px solid #185fa5" onclick="switchProfileTab(\'replacements\')">'
-        + '<div style="font-size:11px;color:#185fa5;font-weight:500">🔄 חילופים</div>'
-        + '<div style="font-size:24px;font-weight:800;color:#185fa5">' + replCount2 + '</div>'
+      html += '<div style="background:#e8f4ff;border-radius:10px;padding:12px;text-align:center;cursor:pointer;border:2px solid #5A86B3" onclick="switchProfileTab(\'replacements\')">'
+        + '<div style="font-size:11px;color:#5A86B3;font-weight:500">🔄 חילופים</div>'
+        + '<div style="font-size:24px;font-weight:800;color:#5A86B3">' + replCount2 + '</div>'
         + '<div style="font-size:11px;color:var(--text-muted)">ימי חילוף</div></div>';
     }
 
     // לתשלום
-    html += '<div style="background:var(--primary);border-radius:10px;padding:12px;text-align:center;cursor:pointer" onclick="openMonthlyReport(' + py + ',' + pm + ')">';
-    html += '<div style="font-size:11px;color:#9fe1cb;font-weight:500">לתשלום 📋</div>';
-    html += '<div style="font-size:24px;font-weight:800;color:white">' + netHours + '</div>';
-    html += '<div style="font-size:11px;color:rgba(255,255,255,0.8)">לחץ לדוח מפורט</div></div>';
+    html += '<div style="background:#eef1f5;border-radius:10px;padding:12px;text-align:center;cursor:pointer" onclick="openMonthlyReport(' + py + ',' + pm + ')">';
+    html += '<div style="font-size:11px;color:#5c6b7a;font-weight:500">לתשלום 📋</div>';
+    html += '<div style="font-size:24px;font-weight:800;color:#2f3b4a">' + netHours + '</div>';
+    html += '<div style="font-size:11px;color:#8292a0">לחץ לדוח מפורט</div></div>';
 
     // מפרעה
     if (advDeduction > 0) {
@@ -5267,9 +5523,9 @@ function renderProfileHours() {
     var abs2 = h.type === 'replacement' ? absences.find(function(a){ return a.id === h.absenceId; }) : null;
     var isPaid = abs2 && abs2.replPaid === 'paid';
     var isReplEntry = h.type === 'replacement';
-    var rowStyle = isPaid ? 'opacity:0.5' : (isReplEntry ? 'background:#fff8f8;border-right:3px solid #c0392b' : '');
+    var rowStyle = isPaid ? 'opacity:0.5' : (isReplEntry ? 'background:#fff8f8;border-right:3px solid #a85d52' : '');
     var row = '<tr style="' + rowStyle + '">';
-    row += '<td style="' + (isReplEntry ? 'font-weight:600;color:#c0392b' : '') + '">' + d.toLocaleDateString('he-IL') + (isReplEntry ? ' 🔄' : '') + '</td>';
+    row += '<td style="' + (isReplEntry ? 'font-weight:600;color:#a85d52' : '') + '">' + d.toLocaleDateString('he-IL') + (isReplEntry ? ' 🔄' : '') + '</td>';
     row += '<td><span class="badge ' + (isReplEntry ? 'badge-red' : 'badge-blue') + '">' + h.hours + " שע'</span>" + (isPaid ? '<span style="font-size:10px;color:var(--warning);margin-right:4px">⚠️ שולם</span>' : '') + '</td>';
     row += '<td style="font-size:12px">' + (h.client || '—') + '</td>';
     row += '<td><span class="badge ' + (srcBdg[h.type]||'badge-yellow') + '" style="font-size:10px">' + (srcLbl[h.type]||h.type) + '</span></td>';
@@ -5886,8 +6142,8 @@ function renderSettingsStats() {
   const inactiveCount = employees.filter(e => e.status === 'inactive').length;
   const stats = [
     { label: 'עובדים פעילים', value: activeCount, color: 'var(--accent)', bg: 'var(--accent-light)' },
-    { label: 'חיסורים', value: absences.length, color: '#dc2626', bg: '#fef2f2' },
-    { label: 'רשומות שעות', value: hoursLog.length, color: '#7c3aed', bg: '#faf5ff' },
+    { label: 'חיסורים', value: absences.length, color: '#C98980', bg: '#faf1ef' },
+    { label: 'רשומות שעות', value: hoursLog.length, color: '#8A7CA8', bg: '#f3eff8' },
     { label: 'מפרעות', value: advances.length, color: '#d97706', bg: '#fffbeb' },
   ];
   el.innerHTML = stats.map(s => `
@@ -5989,31 +6245,31 @@ function renderMiniCalendar() {
       if (isFri && !isSat && !isHoliday && !isAbs) {
         // Friday — toggle workday status
         if (isFridayWorkday || includeFriday) {
-          bg = '#d4f5e9'; color = '#0f6e56'; fontWeight = '600'; border = '1px solid #0f6e56';
+          bg = '#f1f4ec'; color = '#5c7a4a'; fontWeight = '600'; border = '1px solid #5c7a4a';
         } else {
-          bg = '#fff8e6'; color = '#b8860b'; border = '1px dashed #e0a800';
+          bg = '#fff8e6'; color = '#b8860b'; border = '1px dashed #C9A066';
         }
         cursor = 'pointer';
         _miniCalDates.push(dateStr);
         onclick = ' onclick="toggleFridayWorkday(_miniCalDates[' + (_miniCalDates.length-1) + '])"';
       } else if (isWorkday) {
-        bg = '#d4f5e9'; color = '#0f6e56'; fontWeight = '600'; border = '1px solid #0f6e56';
+        bg = '#f1f4ec'; color = '#5c7a4a'; fontWeight = '600'; border = '1px solid #5c7a4a';
         cursor = 'pointer';
         _miniCalDates.push(dateStr);
         onclick = ' onclick="addAbsenceFromCal(_miniCalDates[' + (_miniCalDates.length-1) + '])"';
       } else if (isAbs) {
-        bg = '#fde8e3'; color = '#d85a30'; border = '2px solid #d85a30'; cursor = 'pointer';
+        bg = '#faf1ef'; color = '#a85d52'; border = '2px solid #a85d52'; cursor = 'pointer';
         _miniCalDates.push(dateStr);
         onclick = ' onclick="toggleAbsenceFromCal(_miniCalDates[' + (_miniCalDates.length-1) + '])"';
       }
     } else {
       if (isAbs) {
-        bg = '#fde8e3'; color = '#d85a30'; fontWeight = '700'; border = '2px solid #d85a30';
+        bg = '#faf1ef'; color = '#a85d52'; fontWeight = '700'; border = '2px solid #a85d52';
         cursor = 'pointer';
         _miniCalDates.push(dateStr);
         onclick = ' onclick="toggleAbsenceFromCal(_miniCalDates[' + (_miniCalDates.length-1) + '])"'
       } else if (isWorkday) {
-        bg = '#f0faf5'; color = 'var(--text-muted)';
+        bg = '#f1f4ec'; color = 'var(--text-muted)';
         cursor = 'pointer';
         _miniCalDates.push(dateStr);
         onclick = ' onclick="addAbsenceFromCal(_miniCalDates[' + (_miniCalDates.length-1) + '])"'
@@ -6039,14 +6295,14 @@ function renderMiniCalendar() {
 
   if (_miniCalMode === 'work') {
     legend.innerHTML =
-      '<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#d4f5e9;border:1px solid #0f6e56;border-radius:3px;display:inline-block"></span>יום עבודה — לחץ לרישום חיסור</span>' +
-      '<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#fde8e3;border:2px solid #d85a30;border-radius:3px;display:inline-block"></span>חיסור — לחץ לביטול</span>' +
-      '<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#fff8e6;border:1px dashed #e0a800;border-radius:3px;display:inline-block"></span>שישי — לחץ להדלקה/כיבוי</span>' +
+      '<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#f1f4ec;border:1px solid #5c7a4a;border-radius:3px;display:inline-block"></span>יום עבודה — לחץ לרישום חיסור</span>' +
+      '<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#faf1ef;border:2px solid #a85d52;border-radius:3px;display:inline-block"></span>חיסור — לחץ לביטול</span>' +
+      '<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#fff8e6;border:1px dashed #C9A066;border-radius:3px;display:inline-block"></span>שישי — לחץ להדלקה/כיבוי</span>' +
       '<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#f5f5f7;border-radius:3px;display:inline-block"></span>שבת/חג</span>';
   } else {
     legend.innerHTML =
-      '<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#fde8e3;border:2px solid #d85a30;border-radius:3px;display:inline-block"></span>חיסור — לחץ לביטול</span>' +
-      '<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#f0faf5;border-radius:3px;display:inline-block"></span>יום עבודה — לחץ להוסיף חיסור</span>' +
+      '<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#faf1ef;border:2px solid #a85d52;border-radius:3px;display:inline-block"></span>חיסור — לחץ לביטול</span>' +
+      '<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#f1f4ec;border-radius:3px;display:inline-block"></span>יום עבודה — לחץ להוסיף חיסור</span>' +
       '<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#f5f5f7;border-radius:3px;display:inline-block"></span>שישי/שבת/חג</span>';
   }
 }
@@ -6233,9 +6489,9 @@ function openMonthlyReport(y, m) {
         noteCell = clients.map(function(c){ return c + (emp.clientHours[c] ? ' ' + emp.clientHours[c] + " שע'" : ''); }).join(' | ');
       } else { noteCell = clients[0] || ''; }
       var origLabel = isSat ? 'שבת' : (isHoliday ? (HOLIDAYS[dateStr] || 'חג') : (isFri ? 'שישי' : ''));
-      statusCell = '<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600">עבדה ✓</span>' +
+      statusCell = '<span style="background:#f1f4ec;color:#5c7a4a;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600">עבדה ✓</span>' +
         (origLabel ? ' <span style="font-size:10px;color:#9ca3af">(' + origLabel + ')</span>' : '') +
-        ' <button data-wk="' + workKey + '" onclick="toggleMrWork(this.dataset.wk)" title="בטל סימון" style="background:none;border:none;cursor:pointer;font-size:10px;color:#ef4444;padding:0 2px">✕</button>';
+        ' <button data-wk="' + workKey + '" onclick="toggleMrWork(this.dataset.wk)" title="בטל סימון" style="background:none;border:none;cursor:pointer;font-size:10px;color:#C98980;padding:0 2px">✕</button>';
       totalWork++;
     } else if (isSat) {
       rowBg = 'background:#f0f0f5';
@@ -6245,7 +6501,7 @@ function openMonthlyReport(y, m) {
     } else if (isHoliday) {
       rowBg = 'background:#f5f0e8';
       fontStyle = 'color:#999';
-      statusCell = '<span style="background:#fef9c3;color:#854d0e;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600">' + (HOLIDAYS[dateStr] || 'חג') + '</span>' +
+      statusCell = '<span style="background:#fef9c3;color:#a07a3a;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600">' + (HOLIDAYS[dateStr] || 'חג') + '</span>' +
         ' <button data-wk="' + workKey + '" onclick="toggleMrWork(this.dataset.wk)" title="סמן כיום עבודה" style="background:#f3f4f6;border:1px solid #e5e7eb;border-radius:4px;cursor:pointer;font-size:10px;color:#6b7280;padding:1px 5px">+ עבדה</button>';
     } else if (isFri && !isFridayWork) {
       rowBg = 'background:#f8f8f0';
@@ -6256,7 +6512,7 @@ function openMonthlyReport(y, m) {
       var absObj = absByDate[dateStr];
       var replEmp = absObj.replacementId ? employees.find(function(e){ return e.id === absObj.replacementId; }) : null;
       rowBg = 'background:#fdf0ee';
-      statusCell = '<span style="background:#fde8e3;color:#d85a30;padding:2px 8px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer" onclick="closeModal(\'modal-monthly-report\');setTimeout(function(){openEditAbsenceModal(\''+absByDate[dateStr].id+'\')},150);" title="ערוך חיסור">חיסור ✏️</span>';
+      statusCell = '<span style="background:#faf1ef;color:#a85d52;padding:2px 8px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer" onclick="closeModal(\'modal-monthly-report\');setTimeout(function(){openEditAbsenceModal(\''+absByDate[dateStr].id+'\')},150);" title="ערוך חיסור">חיסור ✏️</span>';
       if (replEmp) {
         noteCell = 'מולא ע"י ' + empName(replEmp) + (absObj.replHours ? ' · ' + absObj.replHours + " שע'" : '');
       }
@@ -6273,10 +6529,10 @@ function openMonthlyReport(y, m) {
         ? '<span style="font-size:10px;background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:10px;margin-right:4px">שולם בנפרד</span>'
         : '';
       var _absIdForEdit = replObj.id || '';
-      statusCell = '<span style="background:#fce7f3;color:#9d174d;padding:2px 8px;border-radius:10px;font-size:12px;font-weight:600">🔄 חילוף</span>' +
+      statusCell = '<span style="background:#f6eef2;color:#96637d;padding:2px 8px;border-radius:10px;font-size:12px;font-weight:600">🔄 חילוף</span>' +
         replStatusLabel +
         (absentEmpObj ? ' <span style="font-size:11px;color:#6b7280">במקום ' + empName(absentEmpObj) + '</span>' : '') +
-        ' <button data-absid="' + _absIdForEdit + '" onclick="editReplHoursInline(this.dataset.absid)" style="background:none;border:1px solid #e9d5ff;border-radius:4px;cursor:pointer;font-size:10px;color:#7c3aed;padding:1px 6px;margin-right:4px">✏️ שעות</button>';
+        ' <button data-absid="' + _absIdForEdit + '" onclick="editReplHoursInline(this.dataset.absid)" style="background:none;border:1px solid #e2dae8;border-radius:4px;cursor:pointer;font-size:10px;color:#8A7CA8;padding:1px 6px;margin-right:4px">✏️ שעות</button>';
       noteCell = replObj.replClient || replObj.client || '';
       hours = dailyH + replHrs;
       totalWork++;
@@ -6301,8 +6557,8 @@ function openMonthlyReport(y, m) {
       } else {
         noteCell = clients[0] || '';
       }
-      statusCell = '<span style="background:#e8f8f0;color:#0f6e56;padding:2px 8px;border-radius:10px;font-size:12px;cursor:pointer" onclick="openMrDayEdit(\''+dateStr+'\',\''+empId+'\')" title="ערוך יום">עבודה ✓</span>' +
-        ' <button data-wk="' + workKey + '" onclick="removeWorkDay(this.dataset.wk)" title="הסר יום עבודה" style="background:none;border:none;cursor:pointer;font-size:10px;color:#ef4444;padding:0 2px">✕</button>';
+      statusCell = '<span style="background:#f1f4ec;color:#5c7a4a;padding:2px 8px;border-radius:10px;font-size:12px;cursor:pointer" onclick="openMrDayEdit(\''+dateStr+'\',\''+empId+'\')" title="ערוך יום">עבודה ✓</span>' +
+        ' <button data-wk="' + workKey + '" onclick="removeWorkDay(this.dataset.wk)" title="הסר יום עבודה" style="background:none;border:none;cursor:pointer;font-size:10px;color:#C98980;padding:0 2px">✕</button>';
       totalWork++;
     }
 
@@ -6340,11 +6596,11 @@ function openMonthlyReport(y, m) {
       var _paidLabel = _isPaidH ? '<span style="font-size:10px;opacity:0.6;margin-right:2px">(שולם)</span>' : '';
       var _replHrsH = _replObjH ? (_replObjH.replHours || 0) : 0;
       var _breakdownLabel = _replHrsH > 0
-        ? '<span style="font-size:10px;color:#9d174d;margin-right:4px">(' + dailyH + '+' + _replHrsH + ' חילוף)</span>'
+        ? '<span style="font-size:10px;color:#96637d;margin-right:4px">(' + dailyH + '+' + _replHrsH + ' חילוף)</span>'
         : '';
       hoursDisplay =
         '<div style="display:flex;align-items:center;gap:6px">' +
-        '<span style="background:#e8f8f0;color:#0f6e56;padding:2px 7px;border-radius:6px;font-size:13px;font-weight:600">' + dailyH + '</span>' +
+        '<span style="background:#f1f4ec;color:#5c7a4a;padding:2px 7px;border-radius:6px;font-size:13px;font-weight:600">' + dailyH + '</span>' +
         '<span style="color:#9ca3af;font-size:11px">+</span>' +
         '<input type="number" ' +
         'value="' + (_replHrsH || '') + '" ' +
@@ -6353,8 +6609,8 @@ function openMonthlyReport(y, m) {
         'data-date="' + dateStr + '" ' +
         'data-type="repl" ' +
         'oninput="saveInlineHours(this)" onblur="saveInlineHours(this)" onkeydown="if(event.key===\'Enter\'){this.blur()}" ' +
-        'style="width:40px;padding:2px 4px;border:1px solid #e9d5ff;border-radius:6px;font-size:13px;font-weight:600;color:#9d174d;background:#fdf4ff;text-align:center" />' +
-        '<span style="font-size:10px;color:#9d174d;white-space:nowrap;margin-right:2px">חילוף</span>' +
+        'style="width:40px;padding:2px 4px;border:1px solid #e2dae8;border-radius:6px;font-size:13px;font-weight:600;color:#96637d;background:#f3eff8;text-align:center" />' +
+        '<span style="font-size:10px;color:#96637d;white-space:nowrap;margin-right:2px">חילוף</span>' +
         _paidLabel +
         '</div>';
     } else if ((!isWeekend && !isHoliday) || forcedWork) {
@@ -6386,9 +6642,9 @@ function openMonthlyReport(y, m) {
 
     if (isClockableDay) {
       var inBorderColor = (override && override.timeIn) ? 'var(--info)' : '#d1d5db';
-      var outBorderColor = (override && override.timeOut) ? '#dc2626' : '#d1d5db';
+      var outBorderColor = (override && override.timeOut) ? '#C98980' : '#d1d5db';
       var inColor = (override && override.timeIn) ? 'var(--info)' : '#374151';
-      var outColor = (override && override.timeOut) ? '#dc2626' : '#374151';
+      var outColor = (override && override.timeOut) ? '#C98980' : '#374151';
       var inWeight = (override && override.timeIn) ? '600' : '400';
       var outWeight = (override && override.timeOut) ? '600' : '400';
       var inputBase = 'width:80px;padding:3px 6px;border-radius:6px;font-size:12px;background:white;text-align:center;';
@@ -6409,13 +6665,13 @@ function openMonthlyReport(y, m) {
       var in2Val = override ? (override.timeIn2 || '') : '';
       var out2Val = override ? (override.timeOut2 || '') : '';
       if (isClockableDay) {
-        var in2BorderColor = (override && override.timeIn2) ? '#7c3aed' : '#d1d5db';
-        var out2BorderColor = (override && override.timeOut2) ? '#9f1239' : '#d1d5db';
-        var in2Color = (override && override.timeIn2) ? '#7c3aed' : '#374151';
-        var out2Color = (override && override.timeOut2) ? '#9f1239' : '#374151';
+        var in2BorderColor = (override && override.timeIn2) ? '#8A7CA8' : '#d1d5db';
+        var out2BorderColor = (override && override.timeOut2) ? '#96637d' : '#d1d5db';
+        var in2Color = (override && override.timeIn2) ? '#8A7CA8' : '#374151';
+        var out2Color = (override && override.timeOut2) ? '#96637d' : '#374151';
         var in2Weight = (override && override.timeIn2) ? '600' : '400';
         var out2Weight = (override && override.timeOut2) ? '600' : '400';
-        var inputBase2 = 'width:80px;padding:3px 6px;border-radius:6px;font-size:12px;background:#fdf4ff;text-align:center;';
+        var inputBase2 = 'width:80px;padding:3px 6px;border-radius:6px;font-size:12px;background:#f3eff8;text-align:center;';
         clockIn2Cell = '<input type="text" value="' + in2Val + '" placeholder="14:00" maxlength="5" ' +
           'style="' + inputBase2 + 'border:1px solid ' + in2BorderColor + ';color:' + in2Color + ';font-weight:' + in2Weight + '" ' +
           'data-ck="' + clockKey + '" data-field="in2" oninput="formatTimeInput(this)" onblur="saveClockOverride(this)">';
@@ -6447,7 +6703,7 @@ function openMonthlyReport(y, m) {
     rows += '<td style="padding:6px 8px">' + clockInCell + '</td>';
     rows += '<td style="padding:6px 8px">' + clockOutCell + '</td>';
     if (isShifts) {
-      rows += '<td style="padding:6px 8px;border-right:2px solid #e9d5ff">' + clockIn2Cell + '</td>';
+      rows += '<td style="padding:6px 8px;border-right:2px solid #e2dae8">' + clockIn2Cell + '</td>';
       rows += '<td style="padding:6px 8px">' + clockOut2Cell + '</td>';
     }
     rows += '<td style="padding:5px 8px;min-width:120px">' + noteCellHtml + '</td>';
@@ -6457,9 +6713,9 @@ function openMonthlyReport(y, m) {
   var netHours = Math.round(netHoursSum * 10) / 10;
   var replCount = Object.keys(replByDate).length;
   var replCard = replCount > 0
-    ? '<div style="background:#fce7f3;border-radius:10px;padding:12px;text-align:center">' +
-        '<div style="font-size:11px;color:#9d174d;font-weight:500">🔄 חילופים</div>' +
-        '<div style="font-size:22px;font-weight:800;color:#9d174d">' + replCount + '</div>' +
+    ? '<div style="background:#f6eef2;border-radius:10px;padding:12px;text-align:center">' +
+        '<div style="font-size:11px;color:#96637d;font-weight:500">🔄 חילופים</div>' +
+        '<div style="font-size:22px;font-weight:800;color:#96637d">' + replCount + '</div>' +
         '<div style="font-size:11px;color:#6b7280">ימי חילוף</div></div>'
     : '';
   document.getElementById('monthly-report-summary').innerHTML =
@@ -6470,9 +6726,9 @@ function openMonthlyReport(y, m) {
       '<div style="font-size:11px;color:var(--danger);font-weight:500">חיסורים</div>' +
       '<div style="font-size:22px;font-weight:800;color:var(--danger)">' + totalAbs + '</div></div>' +
     replCard +
-    '<div style="background:var(--primary);border-radius:10px;padding:12px;text-align:center">' +
-      '<div style="font-size:11px;color:#9fe1cb;font-weight:500">לתשלום</div>' +
-      '<div style="font-size:22px;font-weight:800;color:white">' + netHours + " שע'</div></div>";
+    '<div style="background:#eef1f5;border-radius:10px;padding:12px;text-align:center">' +
+      '<div style="font-size:11px;color:#5c6b7a;font-weight:500">לתשלום</div>' +
+      '<div style="font-size:22px;font-weight:800;color:#2f3b4a">' + netHours + " שע'</div></div>";
 
   document.getElementById('monthly-report-table').innerHTML =
     '<table style="width:100%;border-collapse:collapse">' +
@@ -6481,9 +6737,9 @@ function openMonthlyReport(y, m) {
       '<th style="padding:8px 10px;text-align:right;font-size:12px;color:var(--text-muted)">סטטוס</th>' +
       '<th style="padding:8px 10px;text-align:right;font-size:12px;color:var(--text-muted)">שעות</th>' +
       '<th style="padding:8px 10px;text-align:right;font-size:12px;color:var(--info)">⬇ כניסה</th>' +
-      '<th style="padding:8px 10px;text-align:right;font-size:12px;color:#dc2626">⬆ יציאה</th>' +
-      (isShifts ? '<th style="padding:8px 10px;text-align:right;font-size:12px;color:#7c3aed;border-right:2px solid #e9d5ff">&#x2B07; כניסה ב</th>' +
-      '<th style="padding:8px 10px;text-align:right;font-size:12px;color:#9f1239">&#x2B06; יציאה ב</th>' : '') +
+      '<th style="padding:8px 10px;text-align:right;font-size:12px;color:#C98980">⬆ יציאה</th>' +
+      (isShifts ? '<th style="padding:8px 10px;text-align:right;font-size:12px;color:#8A7CA8;border-right:2px solid #e2dae8">&#x2B07; כניסה ב</th>' +
+      '<th style="padding:8px 10px;text-align:right;font-size:12px;color:#96637d">&#x2B06; יציאה ב</th>' : '') +
       '<th style="padding:8px 10px;text-align:right;font-size:12px;color:var(--text-muted)">הערה</th>' +
     '</tr></thead>' +
     '<tbody>' + rows + '</tbody>' +
@@ -6727,8 +6983,8 @@ function saveClockOverride(inputEl) {
   var val = raw ? parseTime24(raw) : null;
 
   if (raw && !val) {
-    inputEl.style.borderColor = '#fca5a5';
-    inputEl.style.color = '#dc2626';
+    inputEl.style.borderColor = '#e0bdb8';
+    inputEl.style.color = '#C98980';
     showToast('פורמט שעה לא תקין — הזן כ: 08:00 או 1500');
     return;
   }
@@ -6754,11 +7010,11 @@ function saveClockOverride(inputEl) {
     if (field === 'in') {
       inputEl.style.borderColor = 'var(--info)'; inputEl.style.color = 'var(--info)';
     } else if (field === 'out') {
-      inputEl.style.borderColor = '#dc2626'; inputEl.style.color = '#dc2626';
+      inputEl.style.borderColor = '#C98980'; inputEl.style.color = '#C98980';
     } else if (field === 'in2') {
-      inputEl.style.borderColor = '#7c3aed'; inputEl.style.color = '#7c3aed';
+      inputEl.style.borderColor = '#8A7CA8'; inputEl.style.color = '#8A7CA8';
     } else {
-      inputEl.style.borderColor = '#9f1239'; inputEl.style.color = '#9f1239';
+      inputEl.style.borderColor = '#96637d'; inputEl.style.color = '#96637d';
     }
     inputEl.style.fontWeight = '600';
   }
@@ -6837,7 +7093,7 @@ function updateRowHoursFromClock(inputEl, ck) {
   if (hasError || totalMins === 0) {
     if (!timeIn || !timeOut) return; // אין מה להציג
     tds[2].textContent = '⚠️';
-    tds[2].style.color = '#dc2626';
+    tds[2].style.color = '#C98980';
     tds[2].style.fontWeight = '700';
     return;
   }
@@ -6850,7 +7106,7 @@ function updateRowHoursFromClock(inputEl, ck) {
   if (_inp) { _inp.value = decimalHours; }
   else { tds[2].textContent = display; }
   tds[2].style.fontWeight = '700';
-  tds[2].style.color = '#0f6e56';
+  tds[2].style.color = '#5c7a4a';
 
   updateMonthlyReportTotal();
 }
@@ -6948,8 +7204,8 @@ function applyDefaultTimes(overrideOut) {
     var isManual = clockOverrides[ck] && clockOverrides[ck].timeOut && !clockOverrides[ck]._isDefault;
     if (!isManual) {
       el.value = defOut;
-      el.style.borderColor = '#fca5a5';
-      el.style.color = '#dc2626';
+      el.style.borderColor = '#e0bdb8';
+      el.style.color = '#C98980';
       el.style.fontWeight = '500';
       if (!clockOverrides[ck]) clockOverrides[ck] = {};
       clockOverrides[ck].timeOut = defOut;
@@ -6997,8 +7253,8 @@ function applyDefaultTimes2() {
     var isManual = clockOverrides[ck] && clockOverrides[ck].timeIn2 && !clockOverrides[ck]._isDefault2;
     if (!isManual) {
       el.value = defIn2;
-      el.style.borderColor = '#c4b5fd';
-      el.style.color = '#7c3aed';
+      el.style.borderColor = '#b8a8cc';
+      el.style.color = '#8A7CA8';
       el.style.fontWeight = '500';
       if (!clockOverrides[ck]) clockOverrides[ck] = {};
       clockOverrides[ck].timeIn2 = defIn2;
@@ -7012,7 +7268,7 @@ function applyDefaultTimes2() {
     if (!isManual) {
       el.value = defOut2;
       el.style.borderColor = '#fda4af';
-      el.style.color = '#9f1239';
+      el.style.color = '#96637d';
       el.style.fontWeight = '500';
       if (!clockOverrides[ck]) clockOverrides[ck] = {};
       clockOverrides[ck].timeOut2 = defOut2;
@@ -7341,11 +7597,11 @@ function init() {
     // הצג באנר שחזור
     setTimeout(() => {
       const banner = document.createElement('div');
-      banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#185fa5;color:white;padding:12px 20px;z-index:999;display:flex;align-items:center;justify-content:space-between;font-family:Inter,sans-serif;font-size:13px;direction:rtl';
+      banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#5A86B3;color:white;padding:12px 20px;z-index:999;display:flex;align-items:center;justify-content:space-between;font-family:Inter,sans-serif;font-size:13px;direction:rtl';
       banner.innerHTML = `
         <span>📂 לא נמצאו עובדים — ייבא קובץ גיבוי JSON אם יש לך, או ייבא מחדש את ה-Excel</span>
         <div style="display:flex;gap:8px">
-          <button onclick="document.getElementById('restore-input').click();this.parentElement.parentElement.remove()" style="background:white;color:#185fa5;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-family:Inter,sans-serif;font-weight:600">📥 שחזור מגיבוי</button>
+          <button onclick="document.getElementById('restore-input').click();this.parentElement.parentElement.remove()" style="background:white;color:#5A86B3;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-family:Inter,sans-serif;font-weight:600">📥 שחזור מגיבוי</button>
           <button onclick="openImportModal();this.parentElement.parentElement.remove()" style="background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.4);padding:6px 14px;border-radius:6px;cursor:pointer;font-family:'Inter',sans-serif">📂 ייבוא Excel</button>
           <button onclick="this.parentElement.parentElement.remove()" style="background:none;border:none;color:rgba(255,255,255,0.7);cursor:pointer;font-size:18px;padding:0 4px">×</button>
         </div>
@@ -7578,7 +7834,7 @@ function _doSaveReplHours(overlay, abs) {
 // ===== עריכת שעות ישירות בדוח =====
 function saveInlineHours(input) {
   var newHours = parseFloat(input.value);
-  if (isNaN(newHours) || newHours < 0) { input.style.borderColor = '#ef4444'; return; }
+  if (isNaN(newHours) || newHours < 0) { input.style.borderColor = '#C98980'; return; }
   input.style.borderColor = '';
   var type = input.dataset.type;
   var dateStr = input.dataset.date;
@@ -7637,11 +7893,11 @@ function saveInlineHours(input) {
   save();
   // עדכן סיכום בלבד — בלי לרענן את כל הדוח (שלא יאבד focus)
   _refreshReportSummary();
-  input.style.background = '#f0fdf4';
-  input.style.borderColor = type === 'repl' ? '#9d174d' : 'var(--accent)';
+  input.style.background = '#f1f4ec';
+  input.style.borderColor = type === 'repl' ? '#96637d' : 'var(--accent)';
   setTimeout(function(){
-    input.style.background = type === 'repl' ? '#fdf4ff' : (newHours ? 'var(--accent-light)' : 'transparent');
-    input.style.borderColor = type === 'repl' ? '#e9d5ff' : (newHours ? 'var(--accent)' : 'var(--border)');
+    input.style.background = type === 'repl' ? '#f3eff8' : (newHours ? 'var(--accent-light)' : 'transparent');
+    input.style.borderColor = type === 'repl' ? '#e2dae8' : (newHours ? 'var(--accent)' : 'var(--border)');
   }, 800);
 }
 
@@ -7659,9 +7915,9 @@ function _refreshReportSummary() {
   var netHours = stats.netHours || 0;
   var replDays = absences.filter(function(a){ return a.replacementId === _currentReportEmpId && a.date.startsWith(_currentReportMonth); }).length;
   var replCard = replDays > 0
-    ? '<div style="background:#fce7f3;border-radius:10px;padding:12px;text-align:center">' +
-      '<div style="font-size:11px;color:#9d174d;font-weight:500">🔄 חילופים</div>' +
-      '<div style="font-size:22px;font-weight:800;color:#9d174d">' + replDays + '</div>' +
+    ? '<div style="background:#f6eef2;border-radius:10px;padding:12px;text-align:center">' +
+      '<div style="font-size:11px;color:#96637d;font-weight:500">🔄 חילופים</div>' +
+      '<div style="font-size:22px;font-weight:800;color:#96637d">' + replDays + '</div>' +
       '<div style="font-size:11px;color:#6b7280">ימי חילוף</div></div>'
     : '';
   cards.innerHTML =
@@ -7672,9 +7928,9 @@ function _refreshReportSummary() {
       '<div style="font-size:11px;color:var(--danger);font-weight:500">חיסורים</div>' +
       '<div style="font-size:22px;font-weight:800;color:var(--danger)">' + totalAbs + '</div></div>' +
     replCard +
-    '<div style="background:var(--primary);border-radius:10px;padding:12px;text-align:center">' +
-      '<div style="font-size:11px;color:#9fe1cb;font-weight:500">לתשלום</div>' +
-      '<div style="font-size:22px;font-weight:800;color:white">' + netHours + " שע'</div></div>";
+    '<div style="background:#eef1f5;border-radius:10px;padding:12px;text-align:center">' +
+      '<div style="font-size:11px;color:#5c6b7a;font-weight:500">לתשלום</div>' +
+      '<div style="font-size:22px;font-weight:800;color:#2f3b4a">' + netHours + " שע'</div></div>";
 }
 
 // ===== CLIENTS MODULE =====
@@ -7832,9 +8088,9 @@ function applyGIItems() {
 function setBillingType(type) {
   document.getElementById('field-hourly').style.display = type === 'hourly' ? 'block' : 'none';
   document.getElementById('field-fixed').style.display = type === 'fixed' ? 'block' : 'none';
-  document.getElementById('billing-type-hourly').style.background = type === 'hourly' ? 'var(--primary)' : 'var(--bg)';
+  document.getElementById('billing-type-hourly').style.background = type === 'hourly' ? 'var(--accent)' : 'var(--bg)';
   document.getElementById('billing-type-hourly').style.color = type === 'hourly' ? 'white' : 'var(--text-muted)';
-  document.getElementById('billing-type-fixed').style.background = type === 'fixed' ? 'var(--primary)' : 'var(--bg)';
+  document.getElementById('billing-type-fixed').style.background = type === 'fixed' ? 'var(--accent)' : 'var(--bg)';
   document.getElementById('billing-type-fixed').style.color = type === 'fixed' ? 'white' : 'var(--text-muted)';
   if (!currentClientId) return;
   const idx = clientsData.findIndex(c => c.id === currentClientId);
