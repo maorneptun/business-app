@@ -481,6 +481,18 @@ tr:hover td { background: var(--bg); }
   font-family: var(--font) !important;
 }
 
+
+/* Date inputs shown as dd/mm/yyyy (overlay over the native picker) */
+.dmy-wrap { position: relative; display: block; min-width: 0; }
+.dmy-wrap > input[type="date"] { width: 100%; color: transparent; cursor: pointer; }
+.dmy-wrap > input[type="date"]::-webkit-datetime-edit { color: transparent; }
+.dmy-wrap > .dmy-text {
+  position: absolute; inset: 0; display: flex; align-items: center;
+  pointer-events: none; direction: ltr; justify-content: flex-start;
+  color: var(--text); white-space: nowrap; overflow: hidden;
+}
+.dmy-wrap > .dmy-text.empty { color: var(--text-muted); }
+
 /* Force 24-hour time display on all time inputs */
 input[type="time"] {
   -webkit-locale: "he-IL";
@@ -2076,6 +2088,9 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
 <div class="toast" id="toast"></div>
 
 <script>
+function todayISO(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+</script>
+<script>
 // ===== STATE =====
 let employees = JSON.parse(localStorage.getItem('nep_employees') || '[]');
 // migration: עובדים ללא status → active
@@ -2697,7 +2712,7 @@ function exportData() {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `neptun-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.download = `neptun-backup-${todayISO()}.json`;
   a.click();
   showToast(`✅ גיבוי נשמר — ${employees.length} עובדים, ${absences.length} חיסורים`);
 }
@@ -2788,6 +2803,7 @@ function updateStats() {
 // ===== הודעות מערכת + עוזר AI =====
 const AI_URL = 'https://business-app-hf5y.onrender.com/api/assistant';
 let _aiPending = null;
+let _aiHistory = [];
 
 function _isoLocal(d) {
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
@@ -2814,6 +2830,16 @@ function addNotice(text) {
   save(); renderNotices();
 }
 
+function aiContext() {
+  const nm = id => { const e = employees.find(x => x.id === id); return e ? empName(e) : ''; };
+  return {
+    month: activeMonth,
+    absences: absences.filter(a => a.date.startsWith(activeMonth)).slice(0, 300).map(a => ({ id: a.id, emp: nm(a.empId), empId: a.empId, date: a.date, client: a.client || '', replacement: a.replacementId ? nm(a.replacementId) : null, replHours: a.replHours || 0 })),
+    reminders: reminders.filter(r => !r.done).slice(0, 60).map(r => ({ id: r.id, text: r.text, date: r.date, time: r.time || '' })),
+    supplies: supplyLog.filter(x => x.date.startsWith(activeMonth)).slice(0, 150).map(x => ({ id: x.id, client: x.client, text: x.text, date: x.date })),
+    advances: advances.filter(a => a.status === 'active').slice(0, 60).map(a => ({ emp: nm(a.empId), amount: a.amount, months: a.months, date: a.date }))
+  };
+}
 async function aiSend() {
   const inp = document.getElementById('ai-input');
   const text = inp.value.trim();
@@ -2829,12 +2855,16 @@ async function aiSend() {
     today: _isoLocal(now),
     weekday: 'יום ' + days[now.getDay()],
     clients: supClientNames(),
+    history: _aiHistory.slice(-6),
+    context: aiContext(),
     employees: employees.filter(e => e.status === 'active').map(e => ({ id: e.id, name: empName(e), clients: e.clients || (e.client ? [e.client] : []), dailyHours: e.dailyHours || 8 }))
   };
   try {
     const res = await fetch(AI_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'שגיאה');
+    _aiHistory.push({ role: 'user', content: text }, { role: 'assistant', content: (data.reply || '') + (data.actions && data.actions.length ? ' [הוצעו ' + data.actions.length + ' פעולות]' : '') });
+    if (_aiHistory.length > 8) _aiHistory = _aiHistory.slice(-8);
     aiShowPlan(data, text);
   } catch (e) {
     out.innerHTML = '<div class="ai-result" style="color:var(--danger)">לא הצלחתי לעבד את ההודעה: ' + escHtml(e.message) + '<br><span style="font-size:12px;color:var(--text-muted)">אם השרת היה ישן, נסה שוב בעוד חצי דקה.</span></div>';
@@ -2848,6 +2878,25 @@ function aiShowPlan(data, origText) {
   (data.actions || []).forEach(a => {
     if (a.type === 'add_notice' && a.text) {
       acts.push({ type: 'add_notice', text: a.text, label: '📢 הודעה למערכת: ' + a.text });
+    } else if (a.type === 'delete_absence') {
+      const ab = absences.find(x => x.id === a.absenceId);
+      if (!ab) return;
+      const e = employees.find(x => x.id === ab.empId);
+      acts.push({ type: 'delete_absence', absenceId: ab.id, label: '🗑️ ביטול חיסור: ' + (e ? empName(e) : '') + ' · ' + new Date(ab.date + 'T12:00:00').toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'numeric' }) });
+    } else if (a.type === 'delete_reminder') {
+      const r = reminders.find(x => x.id === a.reminderId);
+      if (!r) return;
+      acts.push({ type: 'delete_reminder', reminderId: r.id, label: '🗑️ מחיקת תזכורת: ' + r.text });
+    } else if (a.type === 'delete_supply') {
+      const x = supplyLog.find(y => y.id === a.supplyId);
+      if (!x) return;
+      acts.push({ type: 'delete_supply', supplyId: x.id, label: '🗑️ מחיקת רישום חומרים: ' + x.text + ' · ' + x.client });
+    } else if (a.type === 'add_advance') {
+      const e = employees.find(x => x.id === a.empId);
+      const amt = parseFloat(a.amount);
+      if (!e || !amt || amt <= 0) return;
+      const mo = Math.max(1, parseInt(a.months) || 1);
+      acts.push({ type: 'add_advance', empId: e.id, amount: amt, months: mo, label: '💵 מפרעה: ' + empName(e) + ' · ' + amt + ' ₪' + (mo > 1 ? ' ב-' + mo + ' חודשים' : '') });
     } else if (a.type === 'add_reminder') {
       if (!a.text || !/^\d{4}-\d{2}-\d{2}$/.test(a.date || '')) return;
       const tm = /^\d{2}:\d{2}$/.test(a.time || '') ? a.time : '';
@@ -2870,7 +2919,8 @@ function aiShowPlan(data, origText) {
   let h = '<div class="ai-result">';
   if (data.reply) h += '<div style="margin-bottom:8px;font-weight:600">' + escHtml(data.reply) + '</div>';
   if (!acts.length) {
-    h += '<div style="color:var(--text-muted)">לא זיהיתי פעולה לבצע. נסה לנסח אחרת.</div></div>';
+    if (!data.reply) h += '<div style="color:var(--text-muted)">לא זיהיתי פעולה לבצע. נסה לנסח אחרת.</div>';
+    h += '</div>';
     out.innerHTML = h; _aiPending = null; return;
   }
   _aiPending = acts;
@@ -2886,6 +2936,15 @@ function aiConfirm() {
   _aiPending.forEach(a => {
     if (a.type === 'add_notice') { addNotice(a.text); n++; }
     else if (a.type === 'add_absence') { aiApplyAbsence(a); n++; }
+    else if (a.type === 'delete_absence') {
+      absences = absences.filter(x => x.id !== a.absenceId);
+      hoursLog = hoursLog.filter(h => h.absenceId !== a.absenceId); n++;
+    }
+    else if (a.type === 'delete_reminder') { reminders = reminders.filter(x => x.id !== a.reminderId); n++; }
+    else if (a.type === 'delete_supply') { supplyLog = supplyLog.filter(x => x.id !== a.supplyId); n++; }
+    else if (a.type === 'add_advance') {
+      advances.push({ id: Date.now().toString() + Math.floor(Math.random()*1000), empId: a.empId, amount: a.amount, months: a.months, date: _isoLocal(new Date()), note: '', status: 'active', createdAt: new Date().toISOString() }); n++;
+    }
     else if (a.type === 'add_reminder') { remPush(a.text, a.date, a.time); n++; }
     else if (a.type === 'add_supply') { supplyPush(a.client, a.text, _isoLocal(new Date())); n++; }
   });
@@ -2893,6 +2952,7 @@ function aiConfirm() {
   save();
   document.getElementById('ai-input').value = '';
   document.getElementById('ai-result').innerHTML = '';
+  _aiHistory = [];
   try { renderCalendar(); } catch (e) {}
   try { renderAbsenceTable(); } catch (e) {}
   updateStats(); updateRemStat();
@@ -4361,7 +4421,7 @@ function confirmHoursImport() {
       const parts = dateStr.split('/');
       if (parts.length === 3) parsedDate = `${parts[2].length===2?'20'+parts[2]:parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
     }
-    if (!parsedDate || parsedDate === 'Invalid Date') parsedDate = new Date().toISOString().slice(0,10);
+    if (!parsedDate || parsedDate === 'Invalid Date') parsedDate = todayISO();
     hoursLog.push({
       id: Date.now().toString() + Math.random(),
       empId: emp ? emp.id : '_unknown_' + empName,
@@ -4389,7 +4449,7 @@ function addPdfRow() {
   div.style.cssText = 'display:grid;grid-template-columns:2fr 1.2fr 1fr 1.5fr auto;gap:8px;margin-bottom:8px;align-items:end';
   div.innerHTML = `
     <div><label class="form-label">עובד</label><select class="form-control" style="font-size:12px">${empOptions()}</select></div>
-    <div><label class="form-label">תאריך</label><input type="date" class="form-control" style="font-size:12px" value="${new Date().toISOString().slice(0,10)}"></div>
+    <div><label class="form-label">תאריך</label><input type="date" class="form-control" style="font-size:12px" value="${todayISO()}"></div>
     <div><label class="form-label">שעות</label><input type="number" class="form-control" style="font-size:12px" placeholder="8" min="0" max="24" step="0.5"></div>
     <div><label class="form-label">הערה</label><input type="text" class="form-control" style="font-size:12px" placeholder="..."></div>
     <button class="btn btn-secondary btn-sm" onclick="document.getElementById('${id}').remove()" style="margin-bottom:0">✕</button>
@@ -4959,7 +5019,7 @@ function renderEacCalendar() {
 
   const daysInMonth = new Date(y, m, 0).getDate();
   const firstDow = new Date(y, m-1, 1).getDay();
-  const today = new Date().toISOString().slice(0,10);
+  const today = todayISO();
 
   let html = '';
   for (let i = 0; i < firstDow; i++) html += `<div class="eac-cell empty"></div>`;
@@ -5998,7 +6058,7 @@ function renderProfileAdvances() {
 
 function openAddAdvanceModal() {
   document.getElementById('adv-amount').value = '';
-  document.getElementById('adv-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('adv-date').value = todayISO();
   document.getElementById('adv-months').value = '2';
   document.getElementById('adv-note').value = '';
   document.getElementById('adv-preview').style.display = 'none';
@@ -6031,7 +6091,7 @@ function saveAdvance() {
     empId: currentProfileEmpId,
     amount: amt,
     months: parseInt(document.getElementById('adv-months').value) || 1,
-    date: document.getElementById('adv-date').value || new Date().toISOString().slice(0,10),
+    date: document.getElementById('adv-date').value || todayISO(),
     note: document.getElementById('adv-note').value.trim(),
     status: 'active',
     createdAt: new Date().toISOString()
@@ -6148,7 +6208,7 @@ const _origSaveEditAbsence = saveEditAbsence;
 function openProfileAddHours() {
   const form = document.getElementById('profile-add-hours-form');
   form.style.display = form.style.display === 'none' ? 'block' : 'none';
-  document.getElementById('profile-hours-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('profile-hours-date').value = todayISO();
   document.getElementById('profile-hours-count').value = '';
   document.getElementById('profile-hours-note').value = '';
 }
@@ -6203,7 +6263,7 @@ function saveProfileHours() {
 // ===== QUICK REPLACEMENT MODAL =====
 function openQuickReplacementModal() {
   // reuse the existing absence modal but pre-fill today's date
-  openAbsenceModal(new Date().toISOString().slice(0,10));
+  openAbsenceModal(todayISO());
 }
 
 // ===== REPLACEMENTS DASHBOARD =====
@@ -7595,7 +7655,7 @@ function switchReportTab(tab) {
     var clientOpts = '<option value="">כל הלקוחות</option>' + allClients.map(function(c){ return '<option value="' + c + '">' + c + '</option>'; }).join('');
     document.getElementById('clock-add-client').innerHTML = clientOpts;
     // default date to today
-    document.getElementById('clock-add-date').value = new Date().toISOString().slice(0,10);
+    document.getElementById('clock-add-date').value = todayISO();
     buildClockReport();
   }
   if (tab === 'client') {
@@ -7781,8 +7841,8 @@ function init() {
       document.body.appendChild(banner);
     }, 500);
   }
-  document.getElementById('manual-date').value = new Date().toISOString().slice(0,10);
-  document.getElementById('abs-date-input').value = new Date().toISOString().slice(0,10);
+  document.getElementById('manual-date').value = todayISO();
+  document.getElementById('abs-date-input').value = todayISO();
 
   renderActiveMonthLabel();
   renderCalendar();
@@ -8466,5 +8526,54 @@ init();
   </div>
 </div>
 
+<script>
+/* ===== Date inputs: display dd/mm/yyyy (value stays yyyy-mm-dd) ===== */
+(function(){
+  function fmt(v){ var p=(v||'').split('-'); return p.length===3 && p[0] ? p[2]+'/'+p[1]+'/'+p[0] : ''; }
+  function refresh(inp){
+    var o=inp._dmy; if(!o) return;
+    var t=fmt(inp.value); o.textContent=t||'dd/mm/yyyy'; o.classList.toggle('empty',!t);
+  }
+  function enhance(inp){
+    if(inp._dmy || inp.type!=='date' || !inp.parentNode) return;
+    var cs=getComputedStyle(inp);
+    var w=document.createElement('span'); w.className='dmy-wrap';
+    w.style.flex=cs.flexGrow+' '+cs.flexShrink+' '+cs.flexBasis;
+    if(inp.style.maxWidth) w.style.maxWidth=inp.style.maxWidth;
+    if(inp.style.margin) w.style.margin=inp.style.margin;
+    inp.parentNode.insertBefore(w,inp); w.appendChild(inp);
+    inp.style.flex=''; inp.style.maxWidth=''; inp.style.margin='';
+    var o=document.createElement('span'); o.className='dmy-text';
+    o.style.paddingLeft=cs.paddingLeft; o.style.paddingRight=cs.paddingRight;
+    o.style.fontSize=cs.fontSize; o.style.fontFamily=cs.fontFamily;
+    w.appendChild(o); inp._dmy=o; refresh(inp);
+    inp.addEventListener('input',function(){refresh(inp)});
+    inp.addEventListener('change',function(){refresh(inp)});
+    inp.addEventListener('click',function(){ try{ inp.showPicker(); }catch(e){} });
+    inp.addEventListener('keydown',function(e){
+      if(e.key==='Tab'||e.key==='Escape') return;
+      e.preventDefault();
+      if(e.key==='Backspace'||e.key==='Delete'){ inp.value=''; inp.dispatchEvent(new Event('input',{bubbles:true})); inp.dispatchEvent(new Event('change',{bubbles:true})); }
+      else if(e.key==='Enter'||e.key===' '||e.key==='ArrowDown'){ try{ inp.showPicker(); }catch(_){} }
+    });
+  }
+  // keep overlay in sync when code sets .value / .valueAsDate
+  ['value','valueAsDate','valueAsNumber'].forEach(function(k){
+    var d=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,k); if(!d||!d.set) return;
+    Object.defineProperty(HTMLInputElement.prototype,k,{configurable:true,enumerable:d.enumerable,
+      get:function(){return d.get.call(this)},
+      set:function(v){ d.set.call(this,v); if(this._dmy) refresh(this); }});
+  });
+  function scan(root){
+    if(root.nodeType!==1) return;
+    if(root.matches && root.matches('input[type="date"]')) enhance(root);
+    if(root.querySelectorAll) root.querySelectorAll('input[type="date"]').forEach(enhance);
+  }
+  scan(document.body);
+  new MutationObserver(function(ms){ ms.forEach(function(m){ m.addedNodes.forEach(scan); }); })
+    .observe(document.body,{childList:true,subtree:true});
+  document.addEventListener('reset',function(e){ setTimeout(function(){ scan(e.target); e.target.querySelectorAll && e.target.querySelectorAll('input[type="date"]').forEach(refresh); }); },true);
+})();
+</script>
 </body>
 </html>
