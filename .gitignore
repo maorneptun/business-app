@@ -1,0 +1,13 @@
+# סודות והגדרות מקומיות
+.env
+.env.*
+node_modules/
+
+# קבצי עבודה ועותקים ישנים — לא לאתר
+SKILL.md
+copy_skill.bat
+files.zip
+backend/
+business-app.html
+neptun_index.html
+employees-module*.html
