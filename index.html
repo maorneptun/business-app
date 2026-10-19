@@ -579,6 +579,11 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
 .sup-grp-h{display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:700;font-size:14px;flex-wrap:wrap}
 .sup-line{display:flex;justify-content:space-between;gap:8px;font-size:13px;padding:6px 0;border-top:1px solid var(--border);margin-top:6px;align-items:center}
 .sup-line:first-of-type{margin-top:8px}
+.rem-mini{margin-top:6px;display:flex;flex-direction:column;gap:3px}
+.rem-mini-row{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text);cursor:pointer;min-width:0}
+.rem-mini-row span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rem-mini-row input{margin:0;flex:0 0 auto}
+.rem-mini-more{font-size:11px;color:var(--text-muted)}
 .sup-line .sup-date{display:inline-block;font-size:11.5px;font-weight:600;color:var(--text-muted);background:var(--bg-chip);border-radius:6px;padding:1px 6px;margin-left:6px;direction:ltr}
 .sup-line .x{background:none;border:0;color:var(--text-muted);cursor:pointer;font-size:14px;padding:0 4px}
 .sup-billed{opacity:.55}
@@ -673,12 +678,7 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
     <div class="stats-grid" style="display:flex;gap:14px;flex-wrap:wrap">
       <div class="stat-card" style="flex:0 1 200px"><div class="stat-label">עובדים פעילים</div><div class="stat-value blue" id="stat-active">0</div></div>
       <div class="stat-card" style="flex:0 1 200px"><div class="stat-label">חיסורים החודש</div><div class="stat-value red" id="stat-absences">0</div></div>
-      <div class="stat-card" id="stat-rem-card" style="flex:0 1 200px;cursor:pointer" onclick="openReminders()"><div class="stat-label">תזכורות להיום</div><div class="stat-value" style="color:var(--warning)" id="stat-rem">0</div></div>
-    </div>
-
-    <div class="card" id="rem-today-card" style="display:none">
-      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center"><span>⏰ תזכורות להיום</span><button class="btn btn-secondary btn-sm" onclick="openReminders()">+ תזכורת</button></div>
-      <div id="rem-today-list"></div>
+      <div class="stat-card" id="stat-rem-card" style="flex:0 1 200px;cursor:pointer" onclick="openReminders()"><div class="stat-label">תזכורות להיום</div><div class="stat-value" style="color:var(--warning)" id="stat-rem">0</div><div id="rem-today-list" class="rem-mini"></div></div>
     </div>
 
     <div class="card" id="ai-card">
@@ -3071,14 +3071,12 @@ function updateRemStat() {
   const el = document.getElementById('stat-rem');
   if (el) el.textContent = today.length;
   // כרטיס בדף הבית עם התזכורות עצמן
-  const card = document.getElementById('rem-today-card'), list = document.getElementById('rem-today-list');
-  if (!card || !list) return;
-  card.style.display = today.length ? '' : 'none';
-  list.innerHTML = today.map(r => '<div class="sup-line"><span><input type="checkbox" title="בוצע" data-id="' + r.id + '" onchange="remDone(this.dataset.id)" style="margin-left:8px"> ' +
-    (r.date < t ? '<b style="color:var(--danger)">באיחור · </b>' : '') + escHtml(r.text) +
-    (r.time ? ' <b style="color:var(--text-muted)">· ' + r.time + '</b>' : '') +
-    (r.repeat === 'daily' ? ' <span title="חוזר כל יום" style="font-size:12px">🔁</span>' : '') + '</span>' +
-    '<button class="x" title="מחק" data-id="' + r.id + '" onclick="remDel(this.dataset.id)">✕</button></div>').join('');
+  const list = document.getElementById('rem-today-list');
+  if (!list) return;
+  const shown = today.slice(0, 3);
+  list.innerHTML = shown.map(r => '<label class="rem-mini-row" title="' + escHtml(r.text) + '" onclick="event.stopPropagation()"><input type="checkbox" title="בוצע" data-id="' + r.id + '" onchange="remDone(this.dataset.id)"><span' + (r.date < t ? ' style="color:var(--danger)"' : '') + '>' +
+    escHtml(r.text) + (r.time && r.time !== '00:00' ? ' · ' + r.time : '') + (r.repeat === 'daily' ? ' 🔁' : '') + '</span></label>').join('') +
+    (today.length > 3 ? '<div class="rem-mini-more">ועוד ' + (today.length - 3) + '…</div>' : '');
 }
 function openReminders() {
   document.getElementById('rem-date').value = _remToday();
