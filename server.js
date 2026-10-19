@@ -181,7 +181,8 @@ const aiHits = new Map();
 app.post('/api/assistant', async (req, res) => {
   try {
     const key = process.env.ANTHROPIC_API_KEY;
-    if (!key) return res.status(500).json({ error: 'חסר ANTHROPIC_API_KEY בשרת' });
+    const gKey = process.env.GEMINI_API_KEY;
+    if (!key && !gKey) return res.status(500).json({ error: 'חסר מפתח AI בשרת (GEMINI_API_KEY או ANTHROPIC_API_KEY)' });
     // הגבלת קצב: 30 בקשות לשעה לכל IP
     const ip = req.ip || 'x';
     const now = Date.now();
@@ -189,20 +190,33 @@ app.post('/api/assistant', async (req, res) => {
     if (arr.length >= 30) return res.status(429).json({ error: 'יותר מדי בקשות, נסה מאוחר יותר' });
     arr.push(now); aiHits.set(ip, arr);
 
-    const { text, today, weekday, employees = [], clients = [] } = req.body || {};
+    const { text, today, weekday, employees = [], clients = [], context = {}, history = [] } = req.body || {};
     if (!text || typeof text !== 'string' || text.length > 2000) return res.status(400).json({ error: 'טקסט לא תקין' });
 
-    const system = `אתה עוזר בתוך מערכת ניהול עובדים של עסק ניקיון בעברית. התאריך היום: ${today} (${weekday}).
-רשימת העובדים הפעילים (JSON): ${JSON.stringify(employees)}.
-רשימת הלקוחות (JSON): ${JSON.stringify(clients)}.
-המשתמש כותב טקסט חופשי. עליך להחזיר פעולות באמצעות הכלי submit_actions בלבד:
-- add_notice: הודעה/תזכורת שתוצג בולטת בדף הבית. נסח אותה קצרה וברורה.
-- add_absence: עובד/ת שנעדר/ת בתאריך מסוים. אם צוין מחליף/ה (חילוף) – מלא replacementId. חשב תאריך מדויק YYYY-MM-DD לפי התאריך של היום ("היום", "מחר", "אתמול", "ביום שלישי הקרוב" וכו').
-- add_reminder: תזכורת לעתיד (text = מה להזכיר, date = YYYY-MM-DD מחושב לפי היום, time = HH:MM בפורמט 24 שעות רק אם צוינה שעה). הבדל מ-add_notice: תזכורת קשורה לזמן מסוים; הודעה היא פתק קבוע בדף הבית.
-- add_supply: רישום חומרי ניקיון שנמסרו ללקוח (client = שם לקוח מהרשימה בדיוק, text = מה נרשם, בניסוח קצר כפי שנכתב, כולל כמות, למשל "3 סבון רצפות").
-התאם שמות לעובדים ברשימה לפי id בלבד. אם השם לא ברור או לא קיים – אל תמציא id; הסבר ב-reply.
-hours: שעות המחליף/ה, רק אם צוין במפורש, אחרת השמט.
-client: רק אם צוין במפורש. אפשר להחזיר כמה פעולות. reply: משפט קצר בעברית שמסכם מה הבנת.`;
+    const system = `אתה עוזר חכם בתוך מערכת ניהול עובדים של עסק ניקיון בעברית. התאריך היום: ${today} (${weekday}). אתה מדבר עם בעל העסק, מאור, בשפה קצרה וברורה.
+
+נתוני המערכת (JSON):
+עובדים פעילים: ${JSON.stringify(employees)}
+לקוחות: ${JSON.stringify(clients)}
+חודש פעיל: ${context.month || ''}
+חיסורים בחודש הפעיל (כולל חילוף): ${JSON.stringify(context.absences || [])}
+תזכורות פתוחות: ${JSON.stringify(context.reminders || [])}
+חומרי ניקיון שנרשמו בחודש: ${JSON.stringify(context.supplies || [])}
+מפרעות פעילות: ${JSON.stringify(context.advances || [])}
+
+אתה עונה תמיד דרך הכלי submit_actions:
+- reply: תשובה בעברית. אם זו שאלה על הנתונים – ענה מתוך הנתונים שלמעלה בלבד, בקצרה, ובלי להמציא. אם המידע לא קיים אצלך (למשל שעות עבודה רגילות), אמור שאין לך אותו. אם ביקשו פעולה – סכם במשפט מה הבנת.
+- actions: פעולות לביצוע. ריק אם זו רק שאלה.
+סוגי פעולות:
+- add_notice: פתק קבוע בולט בדף הבית (text).
+- add_absence: חיסור (empId, date YYYY-MM-DD). אם יש מחליף/ה – replacementId. hours רק אם צוין במפורש. client רק אם צוין. לטווח תאריכים או כמה ימים – החזר פעולה נפרדת לכל יום.
+- delete_absence: ביטול חיסור קיים (absenceId מתוך רשימת החיסורים).
+- add_reminder: תזכורת (text, date, time HH:MM רק אם צוינה שעה).
+- delete_reminder: מחיקת תזכורת (reminderId).
+- add_supply: חומרי ניקיון ללקוח (client מהרשימה בדיוק, text קצר כולל כמות).
+- delete_supply: מחיקת רישום חומרים (supplyId).
+- add_advance: מפרעה לעובד (empId, amount בש"ח, months מספר חודשי פריסה אם צוין, אחרת 1).
+כללים: התאם עובדים ולקוחות לפי id/שם מהרשימות בלבד. אם יש כמה התאמות או שאין התאמה – אל תנחש; השאר actions ריק ובקש הבהרה ב-reply. תאריכים יחסיים ("מחר", "ביום שלישי הקרוב", "בשבוע הבא") חשב מהתאריך של היום. אם המשתמש מתקן אותך ("לא, התכוונתי ל...") – השתמש בהיסטוריית השיחה והחזר את הפעולות המתוקנות.`;
 
     const tool = {
       name: 'submit_actions',
@@ -216,7 +230,7 @@ client: רק אם צוין במפורש. אפשר להחזיר כמה פעולו
             items: {
               type: 'object',
               properties: {
-                type: { type: 'string', enum: ['add_notice', 'add_absence', 'add_supply', 'add_reminder'] },
+                type: { type: 'string', enum: ['add_notice', 'add_absence', 'delete_absence', 'add_reminder', 'delete_reminder', 'add_supply', 'delete_supply', 'add_advance'] },
                 text: { type: 'string' },
                 empId: { type: 'string' },
                 date: { type: 'string' },
@@ -224,6 +238,11 @@ client: רק אם צוין במפורש. אפשר להחזיר כמה פעולו
                 replacementId: { type: 'string' },
                 hours: { type: 'number' },
                 client: { type: 'string' },
+                absenceId: { type: 'string' },
+                reminderId: { type: 'string' },
+                supplyId: { type: 'string' },
+                amount: { type: 'number' },
+                months: { type: 'number' },
                 note: { type: 'string' }
               },
               required: ['type']
@@ -234,23 +253,60 @@ client: רק אם צוין במפורש. אפשר להחזיר כמה פעולו
       }
     };
 
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
+    const hist = (Array.isArray(history) ? history.slice(-6) : [])
+      .filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content)
+      .map(m => ({ role: m.role, content: m.content.slice(0, 1500) }));
+
+    if (key) {
+      // ===== Claude =====
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+        body: JSON.stringify({
+          model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-5',
+          max_tokens: 2048,
+          system,
+          tools: [tool],
+          tool_choice: { type: 'tool', name: 'submit_actions' },
+          messages: hist.concat([{ role: 'user', content: text }])
+        })
+      });
+      const data = await r.json();
+      if (!r.ok) return res.status(502).json({ error: (data.error && data.error.message) || 'שגיאת AI' });
+      const block = (data.content || []).find(b => b.type === 'tool_use');
+      if (!block) return res.status(502).json({ error: 'תשובה לא צפויה' });
+      return res.json(block.input);
+    }
+
+    // ===== Gemini (חינמי) =====
+    const toGem = (s) => {
+      if (Array.isArray(s)) return s.map(toGem);
+      if (s && typeof s === 'object') {
+        const o = {};
+        for (const k of Object.keys(s)) o[k] = (k === 'type' && typeof s[k] === 'string') ? s[k].toUpperCase() : toGem(s[k]);
+        return o;
+      }
+      return s;
+    };
+    const model = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+    const gr = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: 'POST',
-      headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+      headers: { 'x-goog-api-key': gKey, 'content-type': 'application/json' },
       body: JSON.stringify({
-        model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-5',
-        max_tokens: 1024,
-        system,
-        tools: [tool],
-        tool_choice: { type: 'tool', name: 'submit_actions' },
-        messages: [{ role: 'user', content: text }]
+        systemInstruction: { parts: [{ text: system }] },
+        contents: hist.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }))
+          .concat([{ role: 'user', parts: [{ text }] }]),
+        tools: [{ functionDeclarations: [{ name: tool.name, description: tool.description, parameters: toGem(tool.input_schema) }] }],
+        toolConfig: { functionCallingConfig: { mode: 'ANY', allowedFunctionNames: [tool.name] } }
       })
     });
-    const data = await r.json();
-    if (!r.ok) return res.status(502).json({ error: (data.error && data.error.message) || 'שגיאת AI' });
-    const block = (data.content || []).find(b => b.type === 'tool_use');
-    if (!block) return res.status(502).json({ error: 'תשובה לא צפויה' });
-    res.json(block.input);
+    const gd = await gr.json().catch(() => ({}));
+    if (!gr.ok) return res.status(502).json({ error: (gd.error && gd.error.message) || 'שגיאת AI' });
+    const parts = (gd.candidates && gd.candidates[0] && gd.candidates[0].content && gd.candidates[0].content.parts) || [];
+    const fc = parts.find(p => p.functionCall);
+    if (!fc) return res.status(502).json({ error: 'תשובה לא צפויה מ-AI' });
+    const args = fc.functionCall.args || {};
+    return res.json({ reply: args.reply || '', actions: Array.isArray(args.actions) ? args.actions : [] });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
