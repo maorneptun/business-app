@@ -328,12 +328,12 @@ app.post('/api/reminders/sync', async (req, res) => {
     for (const r of list) {
       if (!r || !r.id || !r.text || !/^\d{4}-\d{2}-\d{2}$/.test(r.date || '')) continue;
       ids.push(String(r.id));
-      await col.updateOne(
-        { id: String(r.id) },
-        { $set: { text: String(r.text).slice(0, 500), date: r.date, time: /^\d{2}:\d{2}$/.test(r.time || '') ? r.time : '', done: !!r.done, wa: r.wa !== false },
-          $setOnInsert: { waSent: false, createdAt: new Date() } },
-        { upsert: true }
-      );
+      const time = /^\d{2}:\d{2}$/.test(r.time || '') ? r.time : '';
+      const set = { text: String(r.text).slice(0, 500), date: r.date, time, done: !!r.done, wa: r.wa !== false, repeat: r.repeat === 'daily' ? 'daily' : '' };
+      const prev = await col.findOne({ id: String(r.id) });
+      // תאריך/שעה השתנו (למשל תזכורת יומית שעברה ליום הבא) — לשלוח שוב
+      if (!prev || prev.date !== set.date || (prev.time || '') !== time) set.waSent = false;
+      await col.updateOne({ id: String(r.id) }, { $set: set, $setOnInsert: { createdAt: new Date() } }, { upsert: true });
     }
     await col.deleteMany({ id: { $nin: ids } });
     res.json({ ok: true, count: ids.length });
@@ -362,9 +362,15 @@ app.get('/api/reminders/tick', async (req, res) => {
     if (!db) return res.status(503).json({ error: 'DB לא מוכן' });
     const { date, hm } = israelNow();
     const defHour = (process.env.REMINDER_DEFAULT_TIME || '08:00');
-    const due = await db.collection('reminders').find({ done: false, waSent: false, wa: true, date: { $lte: date } }).toArray();
+    const due = await db.collection('reminders').find({ done: false, wa: true, date: { $lte: date }, $or: [{ waSent: { $ne: true } }, { repeat: 'daily' }] }).toArray();
     let sent = 0, skipped = 0;
     for (const r of due) {
+      // תזכורת יומית — מתגלגלת להיום גם אם האתר לא נפתח
+      if (r.repeat === 'daily' && r.date < date) {
+        await db.collection('reminders').updateOne({ id: r.id }, { $set: { date, waSent: false } });
+        r.date = date; r.waSent = false;
+      }
+      if (r.waSent) continue;
       if (r.date < date) { await db.collection('reminders').updateOne({ id: r.id }, { $set: { waSent: true, waNote: 'old' } }); skipped++; continue; }
       const when = r.time || defHour;
       if (when > hm) continue;

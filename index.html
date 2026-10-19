@@ -676,6 +676,11 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
       <div class="stat-card" id="stat-rem-card" style="flex:0 1 200px;cursor:pointer" onclick="openReminders()"><div class="stat-label">תזכורות להיום</div><div class="stat-value" style="color:var(--warning)" id="stat-rem">0</div></div>
     </div>
 
+    <div class="card" id="rem-today-card" style="display:none">
+      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center"><span>⏰ תזכורות להיום</span><button class="btn btn-secondary btn-sm" onclick="openReminders()">+ תזכורת</button></div>
+      <div id="rem-today-list"></div>
+    </div>
+
     <div class="card" id="ai-card">
       <div class="card-title coll-h" onclick="toggleCard('ai')"><span>✨ עוזר AI</span><span class="coll-chev" id="ai-chev">‹</span></div>
       <div class="coll-body" id="ai-body" style="display:none">
@@ -1513,7 +1518,7 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
       <input type="time" class="form-control" id="rem-time" style="flex:0 1 120px" title="שעה (אופציונלי)">
       <button class="btn btn-primary" onclick="addReminder()">הוסף</button>
     </div>
-    <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;cursor:pointer"><input type="checkbox" id="rem-wa" checked> שלח גם לקבוצת הוואטסאפ</label>
+    <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:10px"><label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" id="rem-daily"> 🔁 חוזר כל יום</label><label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" id="rem-wa" checked> שלח גם לקבוצת הוואטסאפ</label></div>
     <div style="font-size:12px;color:var(--text-muted);margin:6px 0 0">בלי שעה — התזכורת תקפוץ כשתפתח את המערכת באותו יום. תזכורת עם שעה תקפוץ בזמן, כל עוד המערכת פתוחה בדפדפן.</div>
     <div id="rem-list" style="margin-top:12px;max-height:50vh;overflow:auto"></div>
   </div>
@@ -2274,6 +2279,7 @@ function _checkDayChange() {
   ['sup-date', 'cp-sup-date', 'rem-date'].forEach(id => { const el = document.getElementById(id); if (el) el.value = t; });
   const cur = t.slice(0, 7);
   if (activeMonth !== cur) goToCurrentMonth(); else { saveActiveMonth(); try { renderSupplies(); updateStats(); } catch (e) {} }
+  try { updateRemStat(); checkReminders(); } catch (e) {}
 }
 setInterval(_checkDayChange, 60000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) _checkDayChange(); });
@@ -3038,23 +3044,41 @@ function scheduleRemSync() {
   _remSyncT = setTimeout(syncRemindersToServer, 1500);
 }
 function syncRemindersToServer() {
-  const payload = JSON.stringify({ reminders: reminders.map(r => ({ id: r.id, text: r.text, date: r.date, time: r.time, done: r.done, wa: r.wa !== false })) });
+  const payload = JSON.stringify({ reminders: reminders.map(r => ({ id: r.id, text: r.text, date: r.date, time: r.time, done: r.done, wa: r.wa !== false, repeat: r.repeat || '' })) });
   if (payload === _remSyncLast) return;
   fetch('https://business-app-hf5y.onrender.com/api/reminders/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload })
     .then(r => { if (r.ok) _remSyncLast = payload; }).catch(() => {});
 }
 function _remToday() { return _isoLocal(new Date()); }
 function _remNowHM() { const d = new Date(); return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); }
-function remPush(text, date, time, wa) {
+function remPush(text, date, time, wa, repeat) {
   const t = _remToday();
   const dueNow = date < t || (date === t && (!time || time <= _remNowHM()));
-  reminders.push({ id: Date.now().toString() + Math.floor(Math.random()*100000), text, date, time: time || '', done: false, notified: dueNow, snoozeUntil: 0, wa: wa !== false });
+  reminders.push({ id: Date.now().toString() + Math.floor(Math.random()*100000), text, date, time: time || '', done: false, notified: dueNow, snoozeUntil: 0, wa: wa !== false, repeat: repeat || '' });
 }
+// תזכורת יומית שתאריכה עבר — עוברת להיום
+function rollDailyReminders() {
+  const t = _remToday(); let ch = false;
+  reminders.forEach(r => { if (r.repeat === 'daily' && !r.done && r.date < t) { r.date = t; r.notified = false; r.snoozeUntil = 0; ch = true; } });
+  if (ch) save();
+}
+function _remTomorrow() { return _isoLocal(new Date(Date.now() + 86400000)); }
 function updateRemStat() {
-  const el = document.getElementById('stat-rem');
-  if (!el) return;
+  rollDailyReminders();
   const t = _remToday();
-  el.textContent = reminders.filter(r => !r.done && r.date <= t).length;
+  const today = reminders.filter(r => !r.done && r.date <= t)
+    .sort((a, b) => (a.date + (a.time || '00:00')).localeCompare(b.date + (b.time || '00:00')));
+  const el = document.getElementById('stat-rem');
+  if (el) el.textContent = today.length;
+  // כרטיס בדף הבית עם התזכורות עצמן
+  const card = document.getElementById('rem-today-card'), list = document.getElementById('rem-today-list');
+  if (!card || !list) return;
+  card.style.display = today.length ? '' : 'none';
+  list.innerHTML = today.map(r => '<div class="sup-line"><span><input type="checkbox" title="בוצע" data-id="' + r.id + '" onchange="remDone(this.dataset.id)" style="margin-left:8px"> ' +
+    (r.date < t ? '<b style="color:var(--danger)">באיחור · </b>' : '') + escHtml(r.text) +
+    (r.time ? ' <b style="color:var(--text-muted)">· ' + r.time + '</b>' : '') +
+    (r.repeat === 'daily' ? ' <span title="חוזר כל יום" style="font-size:12px">🔁</span>' : '') + '</span>' +
+    '<button class="x" title="מחק" data-id="' + r.id + '" onclick="remDel(this.dataset.id)">✕</button></div>').join('');
 }
 function openReminders() {
   document.getElementById('rem-date').value = _remToday();
@@ -3068,13 +3092,21 @@ function addReminder() {
   const date = document.getElementById('rem-date').value || _remToday();
   const time = document.getElementById('rem-time').value;
   if (!text) { showToast('נא לכתוב מה להזכיר'); return; }
-  remPush(text, date, time, document.getElementById('rem-wa').checked);
+  const dly = document.getElementById('rem-daily');
+  remPush(text, date, time, document.getElementById('rem-wa').checked, dly && dly.checked ? 'daily' : '');
+  if (dly) dly.checked = false;
   document.getElementById('rem-text').value = '';
   document.getElementById('rem-time').value = '';
   save(); renderReminders(); updateRemStat();
   try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch (e) {}
 }
-function remDone(id) { const r = reminders.find(x => x.id === id); if (r) { r.done = true; save(); renderReminders(); updateRemStat(); } }
+function remDone(id) {
+  const r = reminders.find(x => x.id === id);
+  if (!r) return;
+  if (r.repeat === 'daily') { r.date = _remTomorrow(); r.notified = false; r.snoozeUntil = 0; showToast('✅ בוצע — יחזור מחר'); }
+  else r.done = true;
+  save(); renderReminders(); updateRemStat();
+}
 function remUndo(id) { const r = reminders.find(x => x.id === id); if (r) { r.done = false; r.notified = false; save(); renderReminders(); updateRemStat(); } }
 function remDel(id) { reminders = reminders.filter(x => x.id !== id); save(); renderReminders(); updateRemStat(); }
 function _remDayLabel(d) {
@@ -3087,12 +3119,13 @@ function _remDayLabel(d) {
 function renderReminders() {
   const el = document.getElementById('rem-list');
   if (!el) return;
+  rollDailyReminders();
   const t = _remToday();
   const open = reminders.filter(r => !r.done).sort((a, b) => (a.date + (a.time || '00:00')).localeCompare(b.date + (b.time || '00:00')));
   const done = reminders.filter(r => r.done).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
   const row = r => '<div class="sup-line' + (r.done ? ' sup-billed' : '') + '"><span>' +
     (r.done ? '' : '<input type="checkbox" data-id="' + r.id + '" onchange="remDone(this.dataset.id)" style="margin-left:8px"> ') +
-    escHtml(r.text) + (r.time ? ' <b style="color:var(--text-muted)">· ' + r.time + '</b>' : '') + (r.wa !== false ? ' <span title="יישלח לוואטסאפ" style="font-size:12px">💬</span>' : '') + '</span><span>' +
+    escHtml(r.text) + (r.time ? ' <b style="color:var(--text-muted)">· ' + r.time + '</b>' : '') + (r.repeat === 'daily' ? ' <span title="חוזר כל יום" style="font-size:12px">🔁</span>' : '') + (r.wa !== false ? ' <span title="יישלח לוואטסאפ" style="font-size:12px">💬</span>' : '') + '</span><span>' +
     (r.done ? '<button class="x" data-id="' + r.id + '" onclick="remUndo(this.dataset.id)" title="החזר">↩</button>' : '') +
     '<button class="x" data-id="' + r.id + '" onclick="remDel(this.dataset.id)">✕</button></span></div>';
   let h = '';
@@ -3107,6 +3140,7 @@ function renderReminders() {
   el.innerHTML = h;
 }
 function checkReminders() {
+  rollDailyReminders();
   const t = _remToday(), hm = _remNowHM(), now = Date.now();
   const due = reminders.filter(r => !r.done && !r.notified && (r.snoozeUntil || 0) <= now &&
     (r.date < t || (r.date === t && (!r.time || r.time <= hm))));
