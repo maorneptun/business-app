@@ -1295,7 +1295,7 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
 
       <!-- חומרי ניקיון ללקוח -->
       <div class="card" style="margin-bottom:16px;padding:20px">
-        <div style="font-weight:700;font-size:14px;margin-bottom:14px">🧴 חומרי ניקיון</div>
+        <div style="font-weight:700;font-size:14px;margin-bottom:14px">🧴 חומרי ניקיון <span id="cp-sup-month" style="color:var(--text-muted);font-weight:500"></span></div>
         <div class="sup-row">
           <input class="form-control" id="cp-sup-text" placeholder="מה להוסיף? למשל: 3 סבון רצפות" onkeydown="if(event.key==='Enter')addClientSupply()" style="flex:1 1 220px">
           <input type="date" class="form-control" id="cp-sup-date" title="תאריך" style="flex:0 1 150px">
@@ -2158,6 +2158,7 @@ function renderActiveMonthLabel() {
   const curMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
   const btn = document.getElementById('btn-go-today');
   if (btn) btn.style.display = activeMonth !== curMonth ? 'inline-block' : 'none';
+  try { renderClientSupplies(); } catch (e) {}
 }
 
 
@@ -3216,7 +3217,7 @@ function renderSupplies() {
   if (list) list.innerHTML = '<div style="padding:10px 2px 0;color:var(--text-muted);font-size:12px">הרישומים נשמרים בכרטיס של כל לקוח (לקוחות ← שם הלקוח).</div>';
   renderClientSupplies();
 }
-// חומרי ניקיון בכרטיס הלקוח — כל ההיסטוריה, מקובצת לפי חודש
+// חומרי ניקיון בכרטיס הלקוח — החודש הפעיל בלבד
 function renderClientSupplies() {
   const el = document.getElementById('client-profile-supplies');
   if (!el || !currentClientId) return;
@@ -3224,18 +3225,16 @@ function renderClientSupplies() {
   if (!c) return;
   const dEl = document.getElementById('cp-sup-date');
   if (dEl && !dEl.value) dEl.value = todayISO();
-  const rows = supplyLog.filter(x => x.client === c.name);
-  if (!rows.length) { el.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:8px 0">אין רישומי חומרי ניקיון ללקוח זה</div>'; return; }
-  const byMonth = {};
-  rows.forEach(r => (byMonth[r.date.slice(0, 7)] = byMonth[r.date.slice(0, 7)] || []).push(r));
-  el.innerHTML = Object.keys(byMonth).sort().reverse().map(mk => {
-    const [y, m] = mk.split('-').map(Number);
-    const rs = byMonth[mk].sort((a, b) => a.date.localeCompare(b.date));
-    const open = rs.filter(r => !r.billed);
-    return '<div class="sup-grp"><div class="sup-grp-h"><span>' + _HEB_MN[m-1] + ' ' + y + ' <span style="color:var(--text-muted);font-weight:500;font-size:12px">(' + rs.length + ')</span></span>' +
-      (open.length ? '' : '<span class="sup-tag">חויב</span>') + '</div>' +
-      rs.map(_supLine).join('') + (open.length ? _supActions(c.name, mk) : '') + '</div>';
-  }).join('');
+  // רק החודש הפעיל (לפי הבחירה בראש הדף)
+  const [y, m] = activeMonth.split('-').map(Number);
+  const mLabel = _HEB_MN[m-1] + ' ' + y;
+  const hEl = document.getElementById('cp-sup-month'); if (hEl) hEl.textContent = '— ' + mLabel;
+  const rs = supplyLog.filter(x => x.client === c.name && x.date.startsWith(activeMonth)).sort((a, b) => a.date.localeCompare(b.date));
+  if (!rs.length) { el.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:10px 0 0">אין רישומים ב' + mLabel + '</div>'; return; }
+  const open = rs.filter(r => !r.billed);
+  el.innerHTML = '<div class="sup-grp"><div class="sup-grp-h"><span>' + rs.length + ' פריטים</span>' +
+    (open.length ? '' : '<span class="sup-tag">חויב</span>') + '</div>' +
+    rs.map(_supLine).join('') + (open.length ? _supActions(c.name, activeMonth) : '') + '</div>';
 }
 
 // ===== גרף חיסורי עובדים (עמוד הבית) =====
