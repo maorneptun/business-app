@@ -627,8 +627,94 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
 @media (max-width: 700px){
   .sidebar{height:calc(78px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom)}
   .main-content{padding-bottom:calc(78px + env(safe-area-inset-bottom))}
-  body{padding-top:env(safe-area-inset-top)}
 }
+
+/* ===== נייד: שכבת עיצוב ושימושיות ===== */
+html { -webkit-text-size-adjust: 100%; }
+.toast { opacity: 0; pointer-events: none; transition: transform .25s, opacity .25s; }
+.toast.show { opacity: 1; }
+@media (hover: none) { tr:hover td { background: transparent; } .stat-card:hover { box-shadow: var(--shadow); } }
+@media (max-width: 700px) {
+  body { -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; padding-top: 0 !important; }
+  /* שדות בגודל 16px — מונע את הזום האוטומטי של אייפון */
+  input, select, textarea, .form-control { font-size: 16px !important; }
+  .page { padding: 14px 14px 28px; }
+  .page-title { font-size: 24px; }
+  .page-header { margin-bottom: 14px; }
+  .btn { white-space: nowrap; }
+  .btn:active, .nav-item:active, .emp-row:active, tr[onclick]:active { opacity: .7; }
+
+  /* סרגל עליון */
+  #month-bar { padding: calc(8px + env(safe-area-inset-top)) 14px 8px !important; height: auto !important; flex-wrap: nowrap !important;
+    background: rgba(255,255,255,.92) !important; -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); z-index: 250; }
+  #month-bar > div { flex-wrap: nowrap !important; }
+  #active-month-label { min-height: 38px; padding: 5px 14px !important; }
+
+  /* כרטיסי סטטיסטיקה: שניים בשורה, התזכורות לרוחב מלא */
+  #page-employees .stats-grid { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 10px !important; margin-bottom: 14px; }
+  #page-employees .stats-grid .stat-card { flex: none !important; width: auto !important; max-width: none !important; min-width: 0; }
+  #stat-rem-card { grid-column: 1 / -1; }
+  .stats-grid { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)) !important; gap: 10px !important; }
+  #settings-stats { grid-template-columns: 1fr 1fr !important; }
+  .stat-card { padding: 14px 16px; }
+  .stat-value { font-size: 26px; }
+
+  /* כרטיסים מתקפלים בדף הבית */
+  .card { padding: 16px; margin-bottom: 12px; }
+  .coll-h { gap: 8px; }
+  .coll-h .btn, .coll-h .btn-sm { padding: 8px 12px !important; min-height: 38px; font-size: 13px; }
+
+  /* לשוניות: שורה אחת עם גלילה */
+  .tabs-inner, .profile-tabs { width: 100% !important; overflow-x: auto; scrollbar-width: none; flex-wrap: nowrap; box-sizing: border-box; }
+  .tabs-inner::-webkit-scrollbar, .profile-tabs::-webkit-scrollbar { display: none; }
+  .tab-btn, .profile-tab-btn { flex: 1 0 auto; white-space: nowrap; padding: 9px 10px; font-size: 13px; }
+  .profile-tab-btn { padding: 8px 8px; font-size: 12.5px; }
+
+  /* פרופיל עובד: שם וכפתור חזור באותה שורה */
+  #page-emp-profile .page-header { flex-direction: row !important; align-items: center !important; justify-content: space-between; }
+  #page-emp-profile .page-header > div:last-child { width: auto !important; }
+  #page-emp-profile .profile-name { font-size: 22px; }
+
+  /* טבלאות הופכות לכרטיסים */
+  .table-wrap { overflow: visible; background: transparent; box-shadow: none; }
+  table.m-cards, table.m-cards tbody { display: block; width: 100%; }
+  table.m-cards thead { display: none; }
+  table.m-cards tr { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; padding: 14px 16px; margin-bottom: 10px;
+    background: var(--surface); border-radius: 14px; box-shadow: var(--shadow); position: relative; }
+  .card table.m-cards tr { box-shadow: none; background: var(--bg); }
+  table.m-cards td { display: block; padding: 0 !important; border: 0 !important; min-width: 0; font-size: 14px; background: transparent !important; text-align: right !important; }
+  table.m-cards td[data-label]:not([data-label=""])::before { content: attr(data-label); display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 2px; }
+  table.m-cards td:first-child { grid-column: 1 / -1; font-weight: 700; font-size: 15px; }
+  table.m-cards td:first-child::before { display: none !important; }
+  table.m-cards td[colspan] { grid-column: 1 / -1; text-align: center !important; color: var(--text-muted); }
+  table.m-cards td.m-empty { display: none; }
+  table.m-cards td.m-act { position: absolute; top: 10px; left: 10px; display: flex; gap: 6px; }
+  table.m-cards td.m-act button { min-height: 34px !important; min-width: 34px; padding: 6px 8px !important; }
+  table.m-cards tr:has(td.m-act) td:first-child { padding-left: 90px !important; }
+  table.m-cards td.m-act::before { display: none !important; }
+
+  /* חלונות קופצים הופכים ל"גיליון" מלמטה, מעל סרגל הניווט */
+  .modal-overlay { align-items: flex-end !important; z-index: 400 !important; }
+  .modal { width: 100vw !important; max-width: 100vw !important; max-height: 92vh !important; max-height: 92dvh !important;
+    border-radius: 22px 22px 0 0 !important; padding: 8px 18px calc(18px + env(safe-area-inset-bottom)) !important;
+    box-sizing: border-box; animation: mSheet .22s ease-out; overscroll-behavior: contain; }
+  .modal::before { content: ""; display: block; width: 38px; height: 5px; border-radius: 3px; background: var(--border-strong); margin: 2px auto 10px; }
+  .modal-header { position: sticky; top: -8px; background: var(--surface); z-index: 5; margin: 0 -18px 14px !important; padding: 6px 18px 10px; }
+  .modal-footer { position: sticky; bottom: calc(-18px - env(safe-area-inset-bottom)); background: var(--surface); z-index: 5;
+    margin: 16px -18px calc(-18px - env(safe-area-inset-bottom)) !important; padding: 12px 18px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); flex-wrap: wrap; }
+  .modal-footer { justify-content: stretch !important; }
+  .modal-footer > div { flex: 1 1 auto; display: flex; gap: 8px; }
+  .modal-footer .btn { flex: 1 1 0; justify-content: center; min-height: 46px; font-size: 15px; }
+  #custom-confirm-overlay { z-index: 500 !important; }
+
+  /* הודעה קופצת מעל סרגל הניווט */
+  .toast { bottom: calc(92px + env(safe-area-inset-bottom)); max-width: 88vw; text-align: center; z-index: 450; }
+
+  /* סרגל ניווט תחתון */
+  .nav-item { position: relative; }
+  .nav-item.active::before { content: ""; position: absolute; top: -8px; left: 30%; right: 30%; height: 3px; border-radius: 0 0 3px 3px; background: var(--accent); }
+}
+@keyframes mSheet { from { transform: translateY(40px); opacity: .4; } to { transform: none; opacity: 1; } }
 
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -9089,6 +9175,36 @@ init();
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
 }
+</script>
+<script>
+/* ===== נייד: טבלאות כרטיסים — כל תא מקבל את שם העמודה שלו ===== */
+(function () {
+  var mq = window.matchMedia('(max-width: 700px)');
+  function label(table) {
+    var ths = table.querySelectorAll('thead th');
+    if (ths.length < 4 || table.closest('.modal')) return;
+    var names = Array.prototype.map.call(ths, function (th) { return th.textContent.trim(); });
+    table.classList.add('m-cards');
+    table.querySelectorAll('tbody tr').forEach(function (tr) {
+      var i = 0;
+      Array.prototype.forEach.call(tr.children, function (td) {
+        if (td.tagName !== 'TD') return;
+        td.setAttribute('data-label', names[i] || '');
+        var txt = td.textContent.replace(/\s+/g, '');
+        var hasCtl = td.querySelector('button,input,select,a,svg,img');
+        td.classList.toggle('m-empty', !hasCtl && (txt === '' || txt === '—' || txt === '-'));
+        td.classList.toggle('m-act', !!hasCtl && !names[i] && !/[\u05D0-\u05EAA-Za-z0-9]/.test(txt));
+        i += parseInt(td.getAttribute('colspan') || '1', 10);
+      });
+    });
+  }
+  var t = null;
+  function run() { if (!mq.matches) return; document.querySelectorAll('.main-content table').forEach(label); }
+  function later() { clearTimeout(t); t = setTimeout(run, 60); }
+  new MutationObserver(later).observe(document.body, { childList: true, subtree: true });
+  if (mq.addEventListener) mq.addEventListener('change', later);
+  document.addEventListener('DOMContentLoaded', run); run();
+})();
 </script>
 </body>
 </html>
