@@ -15,14 +15,17 @@ app.use(express.json({ limit: '10mb' }));
 const MONGO_URI = process.env.MONGODB_URI;
 let db;
 
+// מתחבר, ואם נכשל — מנסה שוב כל 30 שניות (כדי שתקלה רגעית לא תשאיר את השרת בלי מסד נתונים)
 async function connectDB() {
+  if (!MONGO_URI) { console.error('❌ MONGODB_URI חסר'); return; }
   try {
-    const client = new MongoClient(MONGO_URI);
+    const client = new MongoClient(MONGO_URI, { serverSelectionTimeoutMS: 15000 });
     await client.connect();
     db = client.db('neptun');
     console.log('✅ MongoDB connected');
   } catch (err) {
-    console.error('❌ MongoDB connection error:', err.message);
+    console.error('❌ MongoDB connection error:', err.message, '— מנסה שוב בעוד 30 שניות');
+    setTimeout(connectDB, 30000);
   }
 }
 connectDB();
