@@ -716,6 +716,35 @@ html { -webkit-text-size-adjust: 100%; }
 }
 @keyframes mSheet { from { transform: translateY(40px); opacity: .4; } to { transform: none; opacity: 1; } }
 
+/* ===== בורר לקוח עם חיפוש ===== */
+.cpick { position: relative; flex: 0 1 240px; min-width: 0; }
+.cpick-in { width: 100%; box-sizing: border-box; padding-left: 34px !important; }
+.cpick-x { position: absolute; left: 6px; top: 50%; transform: translateY(-50%); border: 0; background: var(--bg-chip); color: var(--text-muted); width: 26px; height: 26px; border-radius: 50%; font-size: 15px; line-height: 1; cursor: pointer; display: none; font-family: inherit; }
+.cpick.has-val .cpick-x { display: block; }
+.cpick.has-val .cpick-in { font-weight: 700; color: var(--text); }
+.cpick-list { position: absolute; top: calc(100% + 6px); right: 0; left: 0; z-index: 260; background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(0,0,0,.14); max-height: 280px; overflow-y: auto; display: none; padding: 6px; overscroll-behavior: contain; }
+.cpick.open .cpick-list { display: block; }
+.cpick-opt { padding: 11px 12px; border-radius: 10px; cursor: pointer; font-size: 15px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.cpick-opt:hover, .cpick-opt.hl { background: var(--accent-light); }
+.cpick-opt.sel { font-weight: 700; color: var(--accent); }
+.cpick-opt small { color: var(--text-muted); font-size: 11.5px; font-weight: 500; white-space: nowrap; }
+.cpick-opt mark { background: none; color: var(--accent); font-weight: 800; }
+.cpick-sec { font-size: 11px; font-weight: 700; color: var(--text-muted); padding: 8px 12px 4px; }
+.cpick-empty { padding: 14px 12px; color: var(--text-muted); font-size: 14px; text-align: center; }
+.dmy-wrap { overflow: hidden; }
+@media (max-width: 700px) {
+  .sup-row { display: grid !important; grid-template-columns: 1fr auto; gap: 10px; }
+  .sup-row > .cpick, .sup-row > .form-control, .sup-row > select { grid-column: 1 / -1; }
+  .sup-row > .dmy-wrap { grid-column: 1; min-width: 0; }
+  .sup-row > .btn { grid-column: 2; min-height: 44px; padding: 0 22px; }
+  .dmy-wrap > input[type="date"] { -webkit-appearance: none; appearance: none; min-width: 0; display: block; }
+  .cpick { grid-column: 1 / -1; }
+  .cpick-list { max-height: 46vh; }
+  /* כשהמקלדת פתוחה — מסתירים את סרגל הניווט התחתון כדי שלא יכסה את הטופס */
+  body.kb-open .sidebar { display: none !important; }
+}
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -3729,6 +3758,7 @@ function renderSupplies() {
   const names = supClientNames();
   cSel.innerHTML = '<option value="">בחר לקוח</option>' + names.map(n => '<option>' + escHtml(n) + '</option>').join('');
   if (names.includes(prevC)) cSel.value = prevC;
+  if (window.cpickSync) cpickSync('sup-client');
   const dEl = document.getElementById('sup-date');
   if (dEl && !dEl.value) dEl.value = todayISO();
   const ml = document.getElementById('sup-month');
@@ -9204,6 +9234,86 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
   new MutationObserver(later).observe(document.body, { childList: true, subtree: true });
   if (mq.addEventListener) mq.addEventListener('change', later);
   document.addEventListener('DOMContentLoaded', run); run();
+})();
+</script>
+<script>
+/* ===== בורר לקוח עם חיפוש: מחליף את ה-select ומשאיר אותו מוסתר (הקוד הקיים ממשיך לקרוא ממנו) ===== */
+(function () {
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function norm(s) { return String(s || '').replace(/["'״׳.\-]/g, '').replace(/\s+/g, ' ').trim().toLowerCase(); }
+  function usage() {
+    var u = {};
+    try { (supplyLog || []).forEach(function (x) { u[x.client] = (u[x.client] || 0) + 1; }); } catch (e) {}
+    return u;
+  }
+  function enhance(sel, placeholder) {
+    if (!sel || sel._cpick) return;
+    var w = document.createElement('div'); w.className = 'cpick';
+    w.innerHTML = '<input class="form-control cpick-in" type="text" autocomplete="off" enterkeyhint="done" placeholder="' + esc(placeholder) + '">' +
+      '<button type="button" class="cpick-x" aria-label="נקה">×</button><div class="cpick-list" role="listbox"></div>';
+    sel.parentNode.insertBefore(w, sel); sel.style.display = 'none';
+    var inp = w.querySelector('.cpick-in'), list = w.querySelector('.cpick-list'), x = w.querySelector('.cpick-x');
+    var items = [], hl = 0;
+    sel._cpick = { sync: sync };
+    function opts() { return Array.prototype.filter.call(sel.options, function (o) { return o.value; }).map(function (o) { return o.value; }); }
+    function sync() {
+      inp.value = sel.value || '';
+      w.classList.toggle('has-val', !!sel.value);
+    }
+    function render() {
+      var q = norm(inp.value), all = opts(), u = usage();
+      if (sel.value && inp.value === sel.value) q = '';
+      var html = '';
+      if (!q) {
+        var top = all.filter(function (n) { return u[n]; }).sort(function (a, b) { return u[b] - u[a]; }).slice(0, 5);
+        var rest = all.filter(function (n) { return top.indexOf(n) < 0; });
+        items = top.concat(rest);
+        if (top.length) html += '<div class="cpick-sec">בשימוש לאחרונה</div>' + top.map(row).join('') + '<div class="cpick-sec">כל הלקוחות</div>';
+        html += rest.map(row).join('');
+      } else {
+        items = all.filter(function (n) { return norm(n).indexOf(q) >= 0; })
+          .sort(function (a, b) { return norm(a).indexOf(q) - norm(b).indexOf(q) || a.localeCompare(b, 'he'); });
+        html = items.map(row).join('') || '<div class="cpick-empty">לא נמצא לקוח בשם הזה</div>';
+      }
+      list.innerHTML = html; hl = 0; mark();
+      function row(n) {
+        var label = esc(n);
+        if (q) { var i = norm(n).indexOf(q); if (i >= 0 && n.length === norm(n).length) label = esc(n.slice(0, i)) + '<mark>' + esc(n.slice(i, i + q.length)) + '</mark>' + esc(n.slice(i + q.length)); }
+        return '<div class="cpick-opt' + (n === sel.value ? ' sel' : '') + '" data-v="' + esc(n) + '"><span>' + label + '</span>' + (u[n] ? '<small>' + u[n] + ' רישומים</small>' : '') + '</div>';
+      }
+    }
+    function mark() { Array.prototype.forEach.call(list.querySelectorAll('.cpick-opt'), function (el, i) { el.classList.toggle('hl', i === hl); }); }
+    function pick(v) {
+      sel.value = v; sel.dispatchEvent(new Event('change', { bubbles: true }));
+      sync(); close();
+      var nxt = document.getElementById(sel.getAttribute('data-next') || ''); if (nxt) setTimeout(function () { nxt.focus(); }, 30);
+    }
+    function open() { render(); w.classList.add('open'); }
+    function close() { w.classList.remove('open'); if (inp.value !== (sel.value || '')) sync(); }
+    inp.addEventListener('focus', function () { inp.select(); open(); });
+    inp.addEventListener('input', function () { w.classList.remove('has-val'); render(); w.classList.add('open'); });
+    inp.addEventListener('keydown', function (e) {
+      var n = list.querySelectorAll('.cpick-opt').length;
+      if (e.key === 'ArrowDown') { hl = Math.min(n - 1, hl + 1); mark(); e.preventDefault(); }
+      else if (e.key === 'ArrowUp') { hl = Math.max(0, hl - 1); mark(); e.preventDefault(); }
+      else if (e.key === 'Enter') { var el = list.querySelectorAll('.cpick-opt')[hl]; if (el) pick(el.getAttribute('data-v')); e.preventDefault(); }
+      else if (e.key === 'Escape') { close(); inp.blur(); }
+    });
+    list.addEventListener('mousedown', function (e) { e.preventDefault(); });
+    list.addEventListener('click', function (e) { var el = e.target.closest('.cpick-opt'); if (el) pick(el.getAttribute('data-v')); });
+    x.addEventListener('mousedown', function (e) { e.preventDefault(); });
+    x.addEventListener('click', function () { sel.value = ''; sel.dispatchEvent(new Event('change', { bubbles: true })); inp.value = ''; w.classList.remove('has-val'); inp.focus(); });
+    inp.addEventListener('blur', function () { setTimeout(close, 120); });
+    sync();
+  }
+  window.cpickSync = function (id) { var s = document.getElementById(id); if (s && s._cpick) s._cpick.sync(); };
+  function init() { var s = document.getElementById('sup-client'); if (s) { s.setAttribute('data-next', 'sup-text'); enhance(s, '🔍 חפש לקוח…'); } }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+
+  // מקלדת פתוחה בנייד → מסתירים את סרגל הניווט
+  function isField(el) { return el && (el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || (el.tagName === 'INPUT' && !/^(checkbox|radio|button|submit|file|range)$/.test(el.type))); }
+  document.addEventListener('focusin', function (e) { if (isField(e.target)) document.body.classList.add('kb-open'); });
+  document.addEventListener('focusout', function () { setTimeout(function () { if (!isField(document.activeElement)) document.body.classList.remove('kb-open'); }, 80); });
 })();
 </script>
 </body>
