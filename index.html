@@ -2,7 +2,15 @@
 <html lang="he-IL" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#f5f5f7">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="נפטון">
 <title>ניהול עובדים — נפטון</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700;800&display=swap');
@@ -594,11 +602,51 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
 .coll-h.open{margin-bottom:14px}
 .coll-chev{color:var(--text-muted);font-size:20px;line-height:1;transition:transform .2s;display:inline-block}
 .coll-h.open .coll-chev{transform:rotate(-90deg)}
+/* ===== סנכרון ===== */
+.sync-pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--text-muted);background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 11px;cursor:pointer;font-family:inherit;white-space:nowrap}
+.sync-pill .sp-d{width:7px;height:7px;border-radius:50%;background:#b8b8bd}
+.sp-ok .sp-d{background:var(--success)}
+.sp-saving .sp-d,.sp-connecting .sp-d{background:var(--warning);animation:spPulse 1s infinite}
+.sp-offline .sp-d,.sp-login .sp-d{background:var(--danger)}
+.sp-offline,.sp-login{color:var(--danger)}
+@keyframes spPulse{50%{opacity:.35}}
+#sync-banner{display:none;position:fixed;top:calc(12px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:4000;background:var(--primary);color:#fff;border-radius:14px;padding:10px 16px;font-size:14px;font-weight:600;align-items:center;gap:12px;box-shadow:0 6px 24px rgba(0,0,0,.18);max-width:92vw}
+#sync-banner button{background:#fff;color:var(--primary);border:0;border-radius:9px;padding:6px 12px;font-family:inherit;font-weight:700;cursor:pointer}
+#sync-login{display:none;position:fixed;inset:0;z-index:5000;background:var(--bg);align-items:center;justify-content:center;padding:24px}
+#sync-login form{background:var(--surface);border-radius:20px;padding:32px 26px;width:100%;max-width:360px;box-shadow:0 10px 40px rgba(0,0,0,.08);text-align:center}
+#sync-login h2{margin:0 0 4px;font-size:30px;font-weight:800;letter-spacing:-.5px}
+#sync-login p{margin:0 0 22px;color:var(--text-muted);font-size:14px}
+#sync-login input{width:100%;box-sizing:border-box;font-size:17px;padding:13px 14px;border:1px solid var(--border-strong);border-radius:12px;background:var(--bg);font-family:inherit;text-align:center}
+#sync-login input:focus{outline:none;border-color:var(--accent);background:#fff}
+#sl-btn{width:100%;margin-top:12px;background:var(--accent);color:#fff;border:0;border-radius:12px;padding:13px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer}
+#sl-btn:disabled{opacity:.6}
+#sl-msg{display:none;margin-top:12px;color:var(--danger);font-size:13px;font-weight:600}
+#sl-skip{margin-top:16px;background:none;border:0;color:var(--text-muted);font-size:13px;font-family:inherit;cursor:pointer}
+.sync-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}
+.sync-row span{color:var(--text-muted)}
+@media (max-width: 700px){
+  .sidebar{height:calc(78px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom)}
+  .main-content{padding-bottom:calc(78px + env(safe-area-inset-bottom))}
+  body{padding-top:env(safe-area-inset-top)}
+}
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
+
+<div id="sync-banner"><span>התקבלו עדכונים ממכשיר אחר</span><button onclick="nepSync.reload()">רענן</button></div>
+<div id="sync-login">
+  <form onsubmit="return nepSyncLoginSubmit(event)" autocomplete="on">
+    <h2>נפטון</h2>
+    <p>הכנס סיסמה כדי לסנכרן את הנתונים בין המכשירים</p>
+    <input type="password" id="sl-pw" placeholder="סיסמה" autocomplete="current-password">
+    <button type="submit" id="sl-btn">כניסה</button>
+    <div id="sl-msg"></div>
+    <button type="button" id="sl-skip" onclick="nepSyncSkipLogin()">לא עכשיו</button>
+  </form>
+</div>
 
 <div class="app">
 
@@ -637,16 +685,7 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
           style="font-size:14px;font-weight:600;color:var(--text);min-width:130px;text-align:center;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:5px 16px;cursor:pointer;transition:all 0.15s;letter-spacing:-0.3px"
           title="לחץ לבחירת חודש"><span id="active-month-text"></span></button>
       </div>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-secondary btn-sm" onclick="openQuickReplacementModal()" style="display:inline-flex;align-items:center;gap:6px">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M17 2.1l4 4-4 4"/><path d="M3 12.6v-2a4 4 0 0 1 4-4h14"/><path d="M7 21.9l-4-4 4-4"/><path d="M21 11.4v2a4 4 0 0 1-4 4H3"/></svg>
-          חילוף מהיר
-        </button>
-        <button class="btn btn-primary btn-sm" id="btn-add-emp-bar" onclick="openEditEmpPanel(null)" style="display:inline-flex;align-items:center;gap:6px">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" style="width:14px;height:14px"><path d="M12 5v14M5 12h14"/></svg>
-          הוסף עובד
-        </button>
-      </div>
+      <button id="sync-pill" class="sync-pill sp-connecting" onclick="nepSync.openSettings()" title="סנכרון בין מכשירים"><span class="sp-d"></span><span class="sp-t">מתחבר…</span></button>
 
       <!-- Month Picker Popup -->
       <div id="month-picker-popup" style="display:none;position:absolute;top:54px;right:0;z-index:500;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;box-shadow:0 4px 16px rgba(0,0,0,0.09);min-width:260px">
@@ -717,7 +756,16 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
 
     <!-- רשימת עובדים (מתקפלת) -->
     <div class="card" style="margin-bottom:12px">
-      <div class="card-title coll-h" onclick="toggleCard('emp')" style="margin-bottom:0 !important"><span>👥 רשימת עובדים <span id="emp-list-count" style="color:var(--text-muted);font-weight:500"></span></span><span class="coll-chev">‹</span></div>
+      <div class="card-title coll-h" onclick="toggleCard('emp')" style="margin-bottom:0 !important"><span>👥 רשימת עובדים <span id="emp-list-count" style="color:var(--text-muted);font-weight:500"></span></span><span style="display:flex;gap:8px;align-items:center;margin-inline-start:auto;margin-inline-end:12px" onclick="event.stopPropagation()">
+        <button class="btn btn-secondary btn-sm" onclick="openQuickReplacementModal()" style="display:inline-flex;align-items:center;gap:6px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M17 2.1l4 4-4 4"/><path d="M3 12.6v-2a4 4 0 0 1 4-4h14"/><path d="M7 21.9l-4-4 4-4"/><path d="M21 11.4v2a4 4 0 0 1-4 4H3"/></svg>
+          חילוף מהיר
+        </button>
+        <button class="btn btn-primary btn-sm" id="btn-add-emp-bar" onclick="openEditEmpPanel(null)" style="display:inline-flex;align-items:center;gap:6px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" style="width:14px;height:14px"><path d="M12 5v14M5 12h14"/></svg>
+          הוסף עובד
+        </button>
+      </span><span class="coll-chev">‹</span></div>
     </div>
     <div class="coll-body" id="emp-body" style="display:none">
     <!-- חיפוש -->
@@ -1358,6 +1406,20 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
     </div>
 
     <div style="max-width:700px;display:flex;flex-direction:column;gap:10px">
+
+      <!-- סנכרון בין מכשירים -->
+      <div class="card" style="margin:0;padding:0;overflow:hidden">
+        <div onclick="toggleSettingsSection('sync')" class="settings-row" style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;cursor:pointer;user-select:none">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:34px;height:34px;border-radius:10px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;color:var(--accent)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px"><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5M3 21v-5h5"/></svg></div>
+            <div style="font-weight:700;font-size:14px">סנכרון בין מכשירים</div>
+          </div>
+          <span id="settings-arrow-sync" style="color:var(--text-muted);font-size:12px;transition:transform 0.2s">▼</span>
+        </div>
+        <div id="settings-section-sync" style="display:none;padding:0 20px 18px;border-top:1px solid var(--border)">
+          <div id="sync-settings-body" style="margin-top:6px"></div>
+        </div>
+      </div>
 
       <!-- גיבוי ושחזור -->
       <div class="card" style="margin:0;padding:0;overflow:hidden">
@@ -2109,6 +2171,350 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
 function todayISO(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 </script>
 <script>
+/* ===== סנכרון בין מכשירים (נפטון) =====
+   כל מפתח nep_* ב-localStorage נשמר גם בשרת. שינוי בכל מכשיר נדחף אוטומטית,
+   ומכשיר אחר מושך אותו כשהוא נפתח / חוזר לפוקוס / כל 30 שניות. */
+(function () {
+  var API = 'https://business-app-hf5y.onrender.com/api';
+  var LS = window.localStorage, P = Storage.prototype;
+  var oSet = P.setItem, oGet = P.getItem, oRem = P.removeItem;
+  function g(k) { try { return oGet.call(LS, k); } catch (e) { return null; } }
+  function s(k, v) { try { oSet.call(LS, k, v); } catch (e) {} }
+  function r(k) { try { oRem.call(LS, k); } catch (e) {} }
+  function syncable(k) { return typeof k === 'string' && k.indexOf('nep_') === 0 && k.indexOf('nep__') !== 0 && k !== 'nep_active_month' && k !== 'nep_active_month_day'; }
+
+  var S = {
+    token: g('nep__tok') || '',
+    ver: parseInt(g('nep__ver'), 10) || 0,
+    dirty: (function () { try { return JSON.parse(g('nep__dirty') || '{}'); } catch (e) { return {}; } })(),
+    device: g('nep__dev') || '',
+    status: 'idle', lastOk: parseInt(g('nep__last'), 10) || 0, configured: null, pendingReload: false
+  };
+  if (!S.device) { S.device = /Mobi|Android|iPhone/i.test(navigator.userAgent) ? 'נייד' : 'מחשב'; s('nep__dev', S.device); }
+  function saveDirty() { s('nep__dirty', JSON.stringify(S.dirty)); }
+
+  // ---- בסיס (הערך האחרון שסונכרן) לצורך מיזוג — ב-IndexedDB כדי לא להעמיס על localStorage
+  var idb = null;
+  try {
+    var rq = indexedDB.open('nep_sync', 1);
+    rq.onupgradeneeded = function () { rq.result.createObjectStore('base'); };
+    rq.onsuccess = function () { idb = rq.result; };
+  } catch (e) {}
+  function baseSet(obj) {
+    if (!idb) return;
+    try { var st = idb.transaction('base', 'readwrite').objectStore('base'); Object.keys(obj).forEach(function (k) { obj[k] === null ? st.delete(k) : st.put(obj[k], k); }); } catch (e) {}
+  }
+  function baseGet(keys) {
+    return new Promise(function (res) {
+      var out = {}; if (!idb || !keys.length) return res(out);
+      try {
+        var tx = idb.transaction('base', 'readonly'), st = tx.objectStore('base');
+        keys.forEach(function (k) { var q = st.get(k); q.onsuccess = function () { if (q.result !== undefined) out[k] = q.result; }; });
+        tx.oncomplete = function () { res(out); }; tx.onerror = function () { res(out); };
+      } catch (e) { res(out); }
+    });
+  }
+
+  // ---- כל כתיבה של האפליקציה נרשמת כשינוי שצריך לדחוף
+  P.setItem = function (k, v) {
+    var prev = this === LS ? g(k) : null;
+    oSet.call(this, k, v);
+    if (this === LS && syncable(k) && prev !== String(v)) { S.dirty[k] = 1; saveDirty(); schedulePush(); }
+  };
+  P.removeItem = function (k) {
+    var had = this === LS ? g(k) !== null : false;
+    oRem.call(this, k);
+    if (this === LS && syncable(k) && had) { S.dirty[k] = 1; saveDirty(); schedulePush(); }
+  };
+
+  // ---- בקשות לשרת: כל קריאה ל-API של נפטון מקבלת את אסימון הכניסה
+  var oFetch = window.fetch.bind(window);
+  window.fetch = function (url, opt) {
+    if (S.token && typeof url === 'string' && url.indexOf(API) === 0) {
+      opt = Object.assign({}, opt || {});
+      var h = new Headers(opt.headers || {}); h.set('x-app-token', S.token); opt.headers = h;
+    }
+    return oFetch(url, opt);
+  };
+  function api(path, opt) {
+    opt = opt || {};
+    var o = { method: opt.method || 'GET', headers: { 'Content-Type': 'application/json' } };
+    if (opt.body !== undefined) o.body = JSON.stringify(opt.body);
+    return window.fetch(API + path, o).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (j) { j._status = res.status; return j; });
+    });
+  }
+
+  // ---- מיזוג: מערכים של רשומות עם id ממוזגים לפי רשומה; אחרת — המכשיר הזה גובר
+  function merge3(baseStr, localStr, serverStr) {
+    if (localStr === null || serverStr === null) return localStr;
+    var B, L, R;
+    try { L = JSON.parse(localStr); R = JSON.parse(serverStr); B = baseStr != null ? JSON.parse(baseStr) : null; } catch (e) { return localStr; }
+    var J = JSON.stringify;
+    function isIdArr(a) { return Array.isArray(a) && a.every(function (x) { return x && typeof x === 'object' && x.id != null; }); }
+    function pick(inB, b, inL, l, inR, rr) {
+      if (inL && inR) return { keep: true, v: inB && J(l) === J(b) ? rr : l };
+      if (inL) return { keep: !inB || J(l) !== J(b), v: l };       // נמחק בשרת — נשאר רק אם שונה כאן
+      if (inR) return { keep: !inB || J(rr) !== J(b), v: rr };     // נמחק כאן — נשאר רק אם שונה בשרת
+      return { keep: false };
+    }
+    if (isIdArr(L) && isIdArr(R) && (B === null || isIdArr(B))) {
+      var mb = {}, ml = {}, mr = {}, order = [];
+      (B || []).forEach(function (x) { mb[x.id] = x; });
+      L.forEach(function (x) { ml[x.id] = x; });
+      R.forEach(function (x) { mr[x.id] = x; if (order.indexOf(String(x.id)) < 0) order.push(String(x.id)); });
+      L.forEach(function (x) { if (order.indexOf(String(x.id)) < 0) order.push(String(x.id)); });
+      var out = [];
+      order.forEach(function (id) {
+        var p = pick(id in mb, mb[id], id in ml, ml[id], id in mr, mr[id]);
+        if (p.keep) out.push(p.v);
+      });
+      return J(out);
+    }
+    if (L && R && typeof L === 'object' && typeof R === 'object' && !Array.isArray(L) && !Array.isArray(R)) {
+      var b = (B && typeof B === 'object' && !Array.isArray(B)) ? B : {}, o = {};
+      Object.keys(Object.assign({}, b, L, R)).forEach(function (k) {
+        var p = pick(k in b, b[k], k in L, L[k], k in R, R[k]);
+        if (p.keep) o[k] = p.v;
+      });
+      return J(o);
+    }
+    return localStr;
+  }
+
+  // ---- סטטוס בממשק
+  var LABELS = { ok: 'מסונכרן', saving: 'שומר…', connecting: 'מתחבר…', offline: 'לא מחובר', off: 'מקומי בלבד', login: 'נדרשת כניסה' };
+  function setStatus(st) {
+    S.status = st;
+    var el = document.getElementById('sync-pill');
+    if (el) { el.className = 'sync-pill sp-' + st; el.querySelector('.sp-t').textContent = LABELS[st] || st; }
+    renderSettings();
+  }
+  function markOk() { S.lastOk = Date.now(); s('nep__last', String(S.lastOk)); setStatus(Object.keys(S.dirty).length ? 'saving' : 'ok'); }
+
+  // ---- משיכה מהשרת (וגם מיזוג אם יש כאן שינוי שעוד לא נדחף על אותו מפתח)
+  var pulling = null;
+  function pull() {
+    if (!S.token) return Promise.resolve(false);
+    if (pulling) return pulling;
+    pulling = api('/state?since=' + S.ver).then(function (j) {
+      if (j._status === 401) { logout(true); return false; }
+      if (j._status !== 200) { setStatus('offline'); return false; }
+      var ups = j.updates || {};
+      var mine = Object.keys(ups).filter(function (k) { return syncable(k) && S.dirty[k]; });
+      return baseGet(mine).then(function (base) {
+        var changed = false, baseUpd = {};
+        Object.keys(ups).forEach(function (k) {
+          if (!syncable(k)) return;
+          var v = ups[k]; baseUpd[k] = v;
+          if (S.dirty[k]) {
+            var m = merge3(base[k] !== undefined ? base[k] : null, g(k), v);
+            if (m !== g(k)) { m === null ? r(k) : s(k, m); changed = true; }
+          } else if (g(k) !== v) { v === null ? r(k) : s(k, v); changed = true; }
+        });
+        baseSet(baseUpd);
+        if ((j.version || 0) > S.ver) { S.ver = j.version || 0; s('nep__ver', String(S.ver)); }
+        markOk();
+        if (changed) refreshApp();
+        return changed;
+      });
+    }).catch(function () { setStatus('offline'); return false; })
+      .then(function (x) { pulling = null; return x; });
+    return pulling;
+  }
+
+  // ---- דחיפה לשרת
+  var pushT = null, pushing = false;
+  function schedulePush() { if (!S.token) return; setStatus('saving'); clearTimeout(pushT); pushT = setTimeout(push, 1200); }
+  function push() {
+    if (!S.token || pushing) return;
+    var keys = Object.keys(S.dirty);
+    if (!keys.length) return;
+    pushing = true;
+    var changes = {}, base = S.ver;
+    keys.forEach(function (k) { changes[k] = g(k); });
+    api('/state', { method: 'POST', body: { baseVersion: base, changes: changes, device: S.device } }).then(function (j) {
+      if (j._status === 200 && j.ok) {
+        keys.forEach(function (k) { if (g(k) === changes[k]) delete S.dirty[k]; });
+        saveDirty(); baseSet(changes);
+        // אם בינתיים מכשיר אחר שינה מפתחות אחרים — מושכים אותם לפני שמקדמים גרסה
+        if (j.version === base + 1 && S.ver === base) { S.ver = j.version; s('nep__ver', String(S.ver)); markOk(); }
+        else pull();
+        if (Object.keys(S.dirty).length) schedulePush();
+        return;
+      }
+      if (j._status === 409) return pull().then(function () { pushT = setTimeout(push, 300); });
+      if (j._status === 401) return logout(true);
+      setStatus('offline'); pushT = setTimeout(push, 15000);
+    }).catch(function () { setStatus('offline'); pushT = setTimeout(push, 15000); })
+      .then(function () { pushing = false; });
+  }
+
+  // ---- רענון האפליקציה אחרי שהגיעו נתונים ממכשיר אחר
+  function busy() {
+    if (document.querySelector('.modal-overlay.open')) return true;
+    var a = document.activeElement;
+    return !!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.type !== 'button' && a.closest('.main-content'));
+  }
+  function refreshApp() {
+    if (Object.keys(S.dirty).length || busy()) { S.pendingReload = true; showBanner(); return; }
+    location.reload();
+  }
+  function showBanner() {
+    var b = document.getElementById('sync-banner'); if (!b) return;
+    b.style.display = 'flex';
+  }
+  function tryPendingReload() { if (S.pendingReload && !Object.keys(S.dirty).length && !busy()) location.reload(); }
+
+  // ---- כניסה / יציאה
+  function allLocal() {
+    var o = {};
+    for (var i = 0; i < LS.length; i++) { var k = LS.key(i); if (syncable(k)) o[k] = g(k); }
+    return o;
+  }
+  function hasLocalData() {
+    try { return JSON.parse(g('nep_employees') || '[]').length > 0; } catch (e) { return false; }
+  }
+  function login(pw) {
+    return api('/auth/login', { method: 'POST', body: { password: pw } }).then(function (j) {
+      if (!j.token) throw new Error(j.error || 'שגיאה');
+      S.token = j.token; s('nep__tok', S.token);
+      return api('/state?since=0');
+    }).then(function (j) {
+      if (j._status !== 200) throw new Error(j.error || 'שגיאת שרת');
+      var server = j.updates || {}, local = allLocal();
+      var serverHas = false;
+      try { serverHas = JSON.parse(server.nep_employees || '[]').length > 0; } catch (e) {}
+      if (!serverHas) {
+        // אין עדיין עובדים בשרת — המכשיר הזה הוא המקור: מעלים הכול (מכשיר ריק לא דורס כלום)
+        S.ver = j.version || 0; s('nep__ver', String(S.ver)); baseSet(server);
+        if (!hasLocalData()) { saveDirty(); return 'empty'; }
+        Object.keys(local).forEach(function (k) { S.dirty[k] = 1; });
+        saveDirty(); push(); return 'uploaded';
+      }
+      var p = hasLocalData() ? api('/state/backup', { method: 'POST', body: { data: local, device: S.device + ' (לפני כניסה)' } }) : Promise.resolve();
+      return p.then(function () {
+        // נתוני השרת מחליפים את המכשיר; מפתחות שקיימים רק כאן נשמרים ונדחפים
+        Object.keys(server).forEach(function (k) { if (syncable(k)) { server[k] === null ? r(k) : s(k, server[k]); } });
+        S.dirty = {};
+        Object.keys(local).forEach(function (k) { if (!(k in server)) S.dirty[k] = 1; });
+        saveDirty(); baseSet(server);
+        S.ver = j.version; s('nep__ver', String(S.ver));
+        return 'downloaded';
+      });
+    });
+  }
+  function logout(expired) {
+    S.token = ''; r('nep__tok'); r('nep__ver'); S.ver = 0;
+    setStatus('login');
+    if (expired) showLogin('הסיסמה השתנתה או שהכניסה פגה. היכנס שוב.');
+  }
+
+  // ---- מסך כניסה
+  function showLogin(msg) {
+    var o = document.getElementById('sync-login'); if (!o) return;
+    o.style.display = 'flex';
+    var m = document.getElementById('sl-msg'); m.textContent = msg || ''; m.style.display = msg ? 'block' : 'none';
+    setTimeout(function () { var i = document.getElementById('sl-pw'); if (i) i.focus(); }, 50);
+  }
+  function hideLogin() { var o = document.getElementById('sync-login'); if (o) o.style.display = 'none'; }
+  window.nepSyncLoginSubmit = function (e) {
+    if (e) e.preventDefault();
+    var i = document.getElementById('sl-pw'), btn = document.getElementById('sl-btn'), m = document.getElementById('sl-msg');
+    if (!i.value) return false;
+    btn.disabled = true; btn.textContent = 'מתחבר…'; m.style.display = 'none';
+    login(i.value).then(function (res) {
+      i.value = '';
+      if (res === 'downloaded') { btn.textContent = 'טוען נתונים…'; setTimeout(function () { location.reload(); }, 300); return; }
+      hideLogin(); markOk();
+      if (typeof showToast === 'function') showToast(res === 'uploaded' ? '✅ הנתונים מהמכשיר הזה הועלו לשרת' : 'מחובר. עדיין אין נתונים בשרת — היכנס קודם מהמחשב');
+    }).catch(function (err) {
+      S.token = ''; r('nep__tok');
+      m.textContent = err.message === 'Failed to fetch' ? 'אין חיבור לשרת. נסה שוב בעוד דקה.' : err.message;
+      m.style.display = 'block';
+    }).then(function () { btn.disabled = false; if (btn.textContent !== 'טוען נתונים…') btn.textContent = 'כניסה'; });
+    return false;
+  };
+  window.nepSyncSkipLogin = function () { hideLogin(); setStatus('login'); };
+
+  // ---- אזור "סנכרון" בהגדרות
+  function fmtTime(t) {
+    if (!t) return '—';
+    var d = new Date(t), p = function (n) { return String(n).padStart(2, '0'); };
+    return p(d.getDate()) + '/' + p(d.getMonth() + 1) + '/' + d.getFullYear() + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+  function renderSettings() {
+    var el = document.getElementById('sync-settings-body'); if (!el) return;
+    var on = !!S.token;
+    var html = '<div class="sync-row"><span>מצב</span><b>' + (LABELS[S.status] || '') + '</b></div>' +
+      '<div class="sync-row"><span>סנכרון אחרון</span><b dir="ltr">' + fmtTime(S.lastOk) + '</b></div>' +
+      '<div class="sync-row"><span>המכשיר הזה</span><b>' + S.device + '</b></div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">';
+    if (on) html += '<button class="btn btn-primary btn-sm" onclick="nepSync.now()">סנכרן עכשיו</button>' +
+      '<button class="btn btn-secondary btn-sm" onclick="nepSync.backups()">גיבויים בשרת</button>' +
+      '<button class="btn btn-secondary btn-sm" onclick="nepSync.logout()">התנתק במכשיר הזה</button>';
+    else if (S.configured) html += '<button class="btn btn-primary btn-sm" onclick="nepSync.showLogin()">כניסה לסנכרון</button>';
+    else html += '<div style="font-size:13px;color:var(--text-muted)">הסנכרון עוד לא הופעל בשרת (חסר APP_PASSWORD ב-Render).</div>';
+    html += '</div><div id="sync-backups"></div>';
+    el.innerHTML = html;
+  }
+  function backups() {
+    var box = document.getElementById('sync-backups'); if (!box) return;
+    box.innerHTML = '<div style="font-size:13px;color:var(--text-muted);margin-top:12px">טוען…</div>';
+    api('/state/backups').then(function (list) {
+      if (!Array.isArray(list)) { box.innerHTML = '<div style="color:var(--danger);margin-top:12px">שגיאה בטעינת הגיבויים</div>'; return; }
+      if (!list.length) { box.innerHTML = '<div style="font-size:13px;color:var(--text-muted);margin-top:12px">אין עדיין גיבויים. הם נוצרים אוטומטית תוך כדי עבודה.</div>'; return; }
+      var KIND = { auto: 'אוטומטי', device: 'נתוני מכשיר', 'before-restore': 'לפני שחזור' };
+      box.innerHTML = '<div style="margin-top:14px;font-weight:700;font-size:13px">גיבויים (החדש למעלה)</div>' + list.map(function (b) {
+        return '<div class="sync-row"><span><b dir="ltr">' + fmtTime(b.at) + '</b> · ' + (KIND[b.kind] || b.kind) + (b.device ? ' · ' + b.device : '') + ' · ' + b.employees + ' עובדים</span>' +
+          '<button class="btn btn-secondary btn-sm" data-id="' + b.id + '" onclick="nepSync.restore(this.dataset.id)">שחזר</button></div>';
+      }).join('');
+    }).catch(function () { box.innerHTML = '<div style="color:var(--danger);margin-top:12px">אין חיבור לשרת</div>'; });
+  }
+  function restore(id) {
+    if (!confirm('לשחזר את הגיבוי הזה?\nהנתונים הנוכחיים יישמרו כגיבוי, וכל המכשירים יקבלו את הנתונים מהגיבוי.')) return;
+    api('/state/restore', { method: 'POST', body: { id: id, device: S.device } }).then(function (j) {
+      if (!j.ok) { alert(j.error || 'השחזור נכשל'); return; }
+      S.dirty = {}; saveDirty(); S.ver = 0;   // מושכים הכול מחדש
+      pull().then(function () { location.reload(); });
+    });
+  }
+
+  window.nepSync = {
+    now: function () { push(); pull(); },
+    showLogin: function () { showLogin(); },
+    logout: function () { if (confirm('להתנתק מהסנכרון במכשיר הזה? הנתונים יישארו במכשיר.')) logout(false); },
+    openSettings: function () {
+      if (typeof showPage === 'function') showPage('settings');
+      var b = document.getElementById('settings-section-sync');
+      if (b && b.style.display === 'none' && typeof toggleSettingsSection === 'function') toggleSettingsSection('sync');
+      renderSettings();
+    },
+    backups: backups, restore: restore, merge3: merge3, state: S, reload: function () { location.reload(); }
+  };
+
+  // ---- הפעלה
+  function start() {
+    setStatus('connecting');
+    api('/state/status').then(function (j) {
+      S.configured = !!j.configured;
+      if (!S.configured) { setStatus('off'); return; }
+      if (!S.token) { setStatus('login'); showLogin(); return; }
+      if (!j.authed) { logout(true); return; }
+      pull().then(function () { if (Object.keys(S.dirty).length) push(); });
+    }).catch(function () { setStatus(S.token ? 'offline' : 'off'); setTimeout(start, 20000); });
+  }
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible' && S.token) { pull(); push(); }
+    if (document.visibilityState === 'hidden' && S.token && Object.keys(S.dirty).length) { clearTimeout(pushT); push(); }
+  });
+  window.addEventListener('online', function () { if (S.token) { push(); pull(); } });
+  setInterval(function () { if (S.token && document.visibilityState === 'visible') pull(); tryPendingReload(); }, 30000);
+  document.addEventListener('click', function () { setTimeout(tryPendingReload, 400); }, true);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
+</script>
+<script>
 // ===== STATE =====
 let employees = JSON.parse(localStorage.getItem('nep_employees') || '[]');
 // migration: עובדים ללא status → active
@@ -2483,7 +2889,7 @@ function showPage(name) {
 
   // Show/hide add-emp button based on page
   const addEmpBtn = document.getElementById('btn-add-emp-bar');
-  if (addEmpBtn) addEmpBtn.style.display = (name === 'employees') ? 'inline-flex' : 'none';
+
 
   if (name === 'clients') { autoImportClientsFromEmployees(); renderClients(); }
   if (name === 'absences') {
@@ -8678,6 +9084,11 @@ init();
     .observe(document.body,{childList:true,subtree:true});
   document.addEventListener('reset',function(e){ setTimeout(function(){ scan(e.target); e.target.querySelectorAll && e.target.querySelectorAll('input[type="date"]').forEach(refresh); }); },true);
 })();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+}
 </script>
 </body>
 </html>

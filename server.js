@@ -8,7 +8,7 @@ const { MongoClient } = require('mongodb');
 const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
 
-app.use(cors({ origin: '*', methods: ['GET','POST','OPTIONS'] }));
+app.use(cors({ origin: '*', methods: ['GET','POST','OPTIONS'], allowedHeaders: ['Content-Type','x-app-token'] }));
 app.use(express.json({ limit: '10mb' }));
 
 // ===== MongoDB =====
@@ -30,39 +30,157 @@ connectDB();
 // ===== Static Frontend =====
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ===== DATA SYNC API =====
-
-// טען את כל הנתונים
-app.get('/api/data', async (req, res) => {
-  try {
-    const employees = await db.collection('employees').find({}).toArray();
-    const absences  = await db.collection('absences').find({}).toArray();
-    const hoursLog  = await db.collection('hoursLog').find({}).toArray();
-    res.json({ employees, absences, hoursLog });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+// ===== AUTH (סיסמת כניסה) =====
+const crypto = require('crypto');
+function expectedToken() {
+  const pw = process.env.APP_PASSWORD;
+  return pw ? crypto.createHmac('sha256', pw).update('neptun-sync-v1').digest('hex') : null;
+}
+function tokenOk(req) {
+  const exp = expectedToken();
+  const got = String(req.get('x-app-token') || '');
+  if (!exp || got.length !== exp.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(got), Buffer.from(exp));
+}
+// כשמוגדרת סיסמה — כל נתיבי הנתונים דורשים התחברות
+const PROTECTED = ['/api/state', '/api/data', '/api/clients', '/api/invoice', '/api/transactions', '/api/assistant', '/api/reminders/sync', '/api/green-invoice'];
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS' || !process.env.APP_PASSWORD) return next();
+  if (req.path === '/api/state/status') return next();
+  if (!PROTECTED.some(p => req.path === p || req.path.startsWith(p + '/'))) return next();
+  if (tokenOk(req)) return next();
+  res.status(401).json({ error: 'auth' });
 });
 
-// שמור את כל הנתונים (replace כל הקולקציה)
-app.post('/api/data', async (req, res) => {
-  try {
-    const { employees = [], absences = [], hoursLog = [] } = req.body;
-
-    // מחק והחלף
-    await db.collection('employees').deleteMany({});
-    await db.collection('absences').deleteMany({});
-    await db.collection('hoursLog').deleteMany({});
-
-    if (employees.length)  await db.collection('employees').insertMany(employees);
-    if (absences.length)   await db.collection('absences').insertMany(absences);
-    if (hoursLog.length)   await db.collection('hoursLog').insertMany(hoursLog);
-
-    res.json({ ok: true, employees: employees.length, absences: absences.length, hoursLog: hoursLog.length });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+// הגנה מניחוש סיסמה: עד 10 ניסיונות כושלים ב-15 דקות לכל כתובת
+const loginFails = new Map();
+app.post('/api/auth/login', (req, res) => {
+  if (!process.env.APP_PASSWORD) return res.status(503).json({ error: 'not_configured' });
+  const ip = (req.get('x-forwarded-for') || req.ip || '').split(',')[0].trim();
+  const now = Date.now();
+  const f = loginFails.get(ip) || { n: 0, t: now };
+  if (now - f.t > 15 * 60 * 1000) { f.n = 0; f.t = now; }
+  if (f.n >= 10) return res.status(429).json({ error: 'יותר מדי ניסיונות. נסה שוב בעוד רבע שעה.' });
+  const pw = String((req.body && req.body.password) || '');
+  const a = crypto.createHash('sha256').update(pw).digest();
+  const b = crypto.createHash('sha256').update(process.env.APP_PASSWORD).digest();
+  if (!crypto.timingSafeEqual(a, b)) { f.n++; loginFails.set(ip, f); return res.status(401).json({ error: 'סיסמה שגויה' }); }
+  loginFails.delete(ip);
+  res.json({ token: expectedToken() });
 });
+
+app.get('/api/ping', (req, res) => res.json({ ok: true }));
+
+// ===== סנכרון נתונים בין מכשירים =====
+// מסמך אחד: data = { מפתח: ערך JSON כטקסט }, kv = { מפתח: הגרסה שבה השתנה }
+const STATE_ID = 'main';
+const HISTORY_KEEP = 60;               // כמה גיבויים לשמור
+const HISTORY_EVERY = 20 * 60 * 1000;  // גיבוי אוטומטי לכל היותר כל 20 דקות
+const KEY_RE = /^nep_[A-Za-z0-9_\-]{1,80}$/;
+
+async function getState() {
+  return (await db.collection('appstate').findOne({ _id: STATE_ID })) || { _id: STATE_ID, version: 0, data: {}, kv: {} };
+}
+async function addHistory(state, kind, device) {
+  if (!state || !state.version) return;
+  const h = db.collection('appstate_history');
+  await h.insertOne({ at: new Date(), kind, device: device || '', version: state.version, data: state.data });
+  const old = await h.find({}, { projection: { _id: 1 } }).sort({ at: -1 }).skip(HISTORY_KEEP).toArray();
+  if (old.length) await h.deleteMany({ _id: { $in: old.map(o => o._id) } });
+}
+
+app.get('/api/state/status', (req, res) => {
+  res.json({ configured: !!process.env.APP_PASSWORD, db: !!db, authed: tokenOk(req) });
+});
+
+// משיכה: כל מה שהשתנה מאז גרסה since (0 = הכול)
+app.get('/api/state', async (req, res) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'DB לא מוכן' });
+    const since = parseInt(req.query.since, 10) || 0;
+    const st = await getState();
+    const updates = {};
+    for (const k of Object.keys(st.kv || {})) if ((st.kv[k] || 0) > since) updates[k] = st.data[k] === undefined ? null : st.data[k];
+    res.json({ version: st.version, updates, updatedAt: st.updatedAt || null, device: st.device || '' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// דחיפה: changes = { מפתח: טקסט או null למחיקה }. נדחה אם מפתח השתנה בשרת מאז baseVersion
+app.post('/api/state', async (req, res) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'DB לא מוכן' });
+    const base = parseInt(req.body && req.body.baseVersion, 10) || 0;
+    const changes = (req.body && req.body.changes) || {};
+    const device = String((req.body && req.body.device) || '').slice(0, 60);
+    const keys = Object.keys(changes).filter(k => KEY_RE.test(k) && (changes[k] === null || typeof changes[k] === 'string'));
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const st = await getState();
+      const conflicts = keys.filter(k => (st.kv[k] || 0) > base);
+      if (conflicts.length) return res.status(409).json({ error: 'conflict', version: st.version, conflicts });
+      if (!keys.length) return res.json({ ok: true, version: st.version });
+      const ver = st.version + 1;
+      const $set = { version: ver, updatedAt: new Date(), device };
+      const $unset = {};
+      for (const k of keys) {
+        if (changes[k] === null) $unset['data.' + k] = ''; else $set['data.' + k] = changes[k];
+        $set['kv.' + k] = ver;
+      }
+      // גיבוי של המצב הקודם לפני השינוי
+      const last = await db.collection('appstate_history').find({}, { projection: { at: 1 } }).sort({ at: -1 }).limit(1).toArray();
+      if (!last.length || Date.now() - new Date(last[0].at).getTime() > HISTORY_EVERY) await addHistory(st, 'auto', device);
+      const upd = { $set };
+      if (Object.keys($unset).length) upd.$unset = $unset;
+      const r = await db.collection('appstate').updateOne({ _id: STATE_ID, version: st.version }, upd, { upsert: st.version === 0 })
+        .catch(e => (e.code === 11000 ? { matchedCount: 0, upsertedCount: 0 } : Promise.reject(e)));
+      if (r.matchedCount || r.upsertedCount) return res.json({ ok: true, version: ver });
+    }
+    res.status(409).json({ error: 'busy' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// גיבוי של נתוני מכשיר (למשל לפני שמחליפים אותם בנתונים מהשרת)
+app.post('/api/state/backup', async (req, res) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'DB לא מוכן' });
+    const data = {};
+    const src = (req.body && req.body.data) || {};
+    for (const k of Object.keys(src)) if (KEY_RE.test(k) && typeof src[k] === 'string') data[k] = src[k];
+    await addHistory({ version: -1, data }, 'device', String((req.body && req.body.device) || '').slice(0, 60));
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/state/backups', async (req, res) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'DB לא מוכן' });
+    const list = await db.collection('appstate_history').find({}).sort({ at: -1 }).limit(HISTORY_KEEP).toArray();
+    res.json(list.map(h => {
+      let emp = 0;
+      try { emp = JSON.parse((h.data || {}).nep_employees || '[]').length; } catch (e) {}
+      return { id: String(h._id), at: h.at, kind: h.kind, device: h.device, employees: emp, size: JSON.stringify(h.data || {}).length };
+    }));
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// שחזור גיבוי — כל המכשירים יקבלו את הנתונים מחדש
+app.post('/api/state/restore', async (req, res) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'DB לא מוכן' });
+    const { ObjectId } = require('mongodb');
+    const h = await db.collection('appstate_history').findOne({ _id: new ObjectId(String(req.body && req.body.id)) });
+    if (!h) return res.status(404).json({ error: 'גיבוי לא נמצא' });
+    const st = await getState();
+    await addHistory(st, 'before-restore', String((req.body && req.body.device) || ''));
+    const ver = st.version + 1;
+    const kv = {};
+    for (const k of new Set([...Object.keys(st.data || {}), ...Object.keys(h.data || {})])) kv[k] = ver;
+    await db.collection('appstate').updateOne({ _id: STATE_ID }, { $set: { version: ver, data: h.data || {}, kv, updatedAt: new Date(), device: 'שחזור' } }, { upsert: true });
+    res.json({ ok: true, version: ver });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// הנתיב הישן (/api/data) בוטל: הוא מחק והחליף נתונים בלי הגנה
+app.all('/api/data', (req, res) => res.status(410).json({ error: 'הוחלף ב-/api/state' }));
 
 // ===== GREEN INVOICE (MORNING) =====
 const GI_BASE = 'https://api.greeninvoice.co.il/api/v1';
