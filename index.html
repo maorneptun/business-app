@@ -928,6 +928,8 @@ body.kb-open .ai-fab { display: none; }
 .rc-row .d { font-weight: 700; color: var(--accent); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .rc-row .t { flex: 1; min-width: 0; font-weight: 600; }
 .rc-row .v { font-weight: 700; white-space: nowrap; }
+.rc-end { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.rc-end .rc-btn { min-height: 54px; font-size: 15px; }
 .rc-empty { color: var(--text-muted); font-size: 14px; font-weight: 600; padding: 4px 0; }
 @media (max-width: 700px) { .rc-big { font-size: 36px; } .rc-stat b { font-size: 17px; } }
 
@@ -10196,6 +10198,10 @@ function renderRptCard() {
         (info.remaining > 0 ? '<br><small style="color:var(--text-muted);font-weight:600">נשאר ₪' + Math.round(info.remaining).toLocaleString() + '</small>' : '') + '</span><span class="v">₪' + Math.round(per) + ' לחודש</span>' +
         (info.remaining > 0 ? '<button class="rc-link" style="width:100%;text-align:left" data-id="' + esc(a.id) + '" onclick="openResplit(this.dataset.id)">↻ פריסה מחדש</button>' : '') + '</div>';
     }).join('') : '<div class="rc-empty">אין מפרעות פעילות</div>') + '</div>';
+  h += '<div class="rc-sec"><div class="rc-sec-h"><b>סיום הדוח</b></div><div class="rc-end">' +
+    '<button class="rc-btn primary" onclick="rptCardSave()">💾 ' + (saved ? 'עדכן' : 'שמור') + '</button>' +
+    '<button class="rc-btn" onclick="rptPrint()">🖨️ הדפסה</button>' +
+    '<button class="rc-btn" onclick="rptPdf(this)">📄 PDF</button></div></div>';
   el.innerHTML = h;
 }
 function rptCardSave() {
@@ -10259,6 +10265,99 @@ function saveResplit() {
   try { renderProfileAdvances(); } catch (e) {}
   try { renderRptCard(); } catch (e) {}
   showToast('✅ המפרעה נפרסה ל-' + n + ' חודשים · ₪' + Math.round(newAdv.amount / n).toLocaleString() + ' לחודש');
+}
+</script>
+<script>
+/* ===== דוח עובד: הדפסה ו-PDF (עברית תקינה — מצלמים את הדוח כתמונה) ===== */
+function _rptDocHTML() {
+  var empId = currentProfileEmpId, emp = employees.find(function (e) { return e.id === empId; }); if (!emp) return null;
+  var p = activeMonth.split('-'), y = +p[0], m = +p[1];
+  var MN = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+  // ממלאים את הדוח היומי (בלי להציג אותו) כדי לקחת ממנו את הטבלה המעודכנת
+  var ov = document.getElementById('modal-monthly-report'), wasOpen = ov && ov.classList.contains('open');
+  try { openMonthlyReport(y, m); } catch (e) {}
+  if (!wasOpen && ov) ov.classList.remove('open');
+  var tbl = document.getElementById('monthly-report-table'), rows = '';
+  if (tbl) {
+    var c = tbl.cloneNode(true), live = tbl.querySelectorAll('input'), cl = c.querySelectorAll('input');
+    cl.forEach(function (inp, i) { var sp = document.createElement('span'); var v = live[i] ? (live[i].type === 'checkbox' ? '' : live[i].value) : ''; sp.textContent = v; inp.replaceWith(sp); });
+    c.querySelectorAll('button, .no-print, svg').forEach(function (b) { b.remove(); });
+    c.querySelectorAll('[onclick]').forEach(function (b) { b.removeAttribute('onclick'); });
+    c.querySelectorAll('[style]').forEach(function (b) { b.removeAttribute('style'); });
+    rows = c.innerHTML;
+  }
+  var st = calcMonthStats(empId, activeMonth) || {};
+  var cards = document.querySelectorAll('#rpt-card .rc-stat b');
+  var ded = cards[3] ? cards[3].textContent : '';
+  var clients = (emp.clients && emp.clients.length ? emp.clients : [emp.client || '']).join(', ');
+  function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (ch) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]; }); }
+  var css = '*{box-sizing:border-box}body{margin:0}.rd{width:794px;padding:36px 40px;font-family:Assistant,Arial,sans-serif;direction:rtl;color:#1d1d1f;background:#fff}' +
+    '.rd h1{font-size:24px;margin:0}.rd .sub{font-size:14px;color:#555;margin:4px 0 18px}' +
+    '.rd .sum{display:flex;gap:10px;margin-bottom:18px}.rd .sum div{flex:1;border:1px solid #d9dee7;border-radius:10px;padding:10px;text-align:center}' +
+    '.rd .sum b{display:block;font-size:22px;color:#2B5285}.rd .sum small{font-size:12px;color:#555}.rd .sum .main{background:#4472A8;border-color:#4472A8;color:#fff}.rd .sum .main b,.rd .sum .main small{color:#fff}' +
+    '.rd table{width:100%;border-collapse:collapse;font-size:12px}.rd td,.rd th{border:1px solid #dde1e7;padding:5px 7px;text-align:right}.rd th{background:#f1f4f8}' +
+    '.rd .foot{margin-top:18px;font-size:11px;color:#777;display:flex;justify-content:space-between}';
+  var body = '<div class="rd"><h1>דוח שעות — ' + esc(empName(emp)) + '</h1><div class="sub">' + MN[m - 1] + ' ' + y + ' · ' + esc(clients) + '</div>' +
+    '<div class="sum"><div class="main"><b>' + (Math.round((st.netHours || 0) * 100) / 100) + '</b><small>שעות לתשלום</small></div>' +
+    '<div><b>' + (st.workdays || 0) + '</b><small>ימי עבודה</small></div><div><b>' + (st.absCount || 0) + '</b><small>חיסורים</small></div>' +
+    '<div><b>' + (Math.round((st.totalRepl || 0) * 100) / 100) + '</b><small>שעות חילוף</small></div><div><b>' + esc(ded) + '</b><small>ניכוי מפרעה</small></div></div>' +
+    (rows ? '<table>' + rows + '</table>' : '') +
+    '<div class="foot"><span>נפטון · הופק ' + new Date().toLocaleDateString('he-IL') + '</span><span>חתימה: ____________</span></div></div>';
+  return { css: css, body: body, name: 'דוח-שעות-' + empName(emp).replace(/\s+/g, '-') + '-' + m + '-' + y };
+}
+function rptPrint() {
+  var d = _rptDocHTML(); if (!d) return;
+  var w = window.open('', '_blank');
+  if (!w) { showToast('הדפדפן חסם את חלון ההדפסה'); return; }
+  w.document.write('<!DOCTYPE html><html dir="rtl" lang="he"><head><meta charset="utf-8"><title>' + d.name + '</title><style>' + d.css + '@page{size:A4;margin:8mm}.rd{width:auto;padding:0}</style></head><body>' + d.body + '</body></html>');
+  w.document.close(); w.focus(); setTimeout(function () { w.print(); }, 350);
+}
+function _loadH2C() {
+  return new Promise(function (res, rej) {
+    if (window.html2canvas) return res();
+    var sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    sc.onload = function () { res(); }; sc.onerror = function () { rej(new Error('load')); }; document.head.appendChild(sc);
+  });
+}
+function rptPdf(btn) {
+  var d = _rptDocHTML(); if (!d) return;
+  if (!window.jspdf) { showToast('ספריית ה-PDF לא נטענה — נסה שוב עם אינטרנט'); return; }
+  var old = btn ? btn.textContent : ''; if (btn) { btn.disabled = true; btn.textContent = 'מכין…'; }
+  var host = document.createElement('div');
+  host.style.cssText = 'position:fixed;left:-10000px;top:0;width:794px;background:#fff;z-index:-1';
+  host.innerHTML = '<style>' + d.css + '</style>' + d.body;
+  document.body.appendChild(host);
+  _loadH2C().then(function () {
+    return html2canvas(host.querySelector('.rd'), { scale: 2, backgroundColor: '#ffffff' });
+  }).then(function (canvas) {
+    var pdf = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    var pw = 210, ph = 297, imgH = canvas.height * pw / canvas.width, pageCanvasH = Math.floor(canvas.width * ph / pw);
+    for (var y0 = 0, pg = 0; y0 < canvas.height; y0 += pageCanvasH, pg++) {
+      var part = document.createElement('canvas'); part.width = canvas.width; part.height = Math.min(pageCanvasH, canvas.height - y0);
+      part.getContext('2d').drawImage(canvas, 0, y0, canvas.width, part.height, 0, 0, canvas.width, part.height);
+      if (pg) pdf.addPage();
+      pdf.addImage(part.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pw, part.height * pw / canvas.width);
+    }
+    var blob = pdf.output('blob'), fname = d.name + '.pdf', file = null;
+    try { file = new File([blob], fname, { type: 'application/pdf' }); } catch (e) {}
+    var canShare = file && navigator.canShare && navigator.canShare({ files: [file] }) && /Mobi|iPhone|iPad|Android/i.test(navigator.userAgent);
+    if (canShare && btn) {
+      // בטלפון: לחיצה נוספת פותחת את חלון השיתוף (שמירה בקבצים, וואטסאפ, מייל…)
+      btn.disabled = false; btn.textContent = '📤 שתף / שמור';
+      btn.onclick = function () { navigator.share({ files: [file], title: d.name }).catch(function () {}); };
+      showToast('✅ ה-PDF מוכן — לחץ "שתף / שמור"');
+      host.remove();
+      return 'shared';
+    }
+    // שם קובץ באותיות לועזיות (חלק מהדפדפנים מאבדים שם קובץ בעברית בהורדה)
+    var TR = { 'א':'a','ב':'b','ג':'g','ד':'d','ה':'h','ו':'v','ז':'z','ח':'ch','ט':'t','י':'y','כ':'k','ך':'k','ל':'l','מ':'m','ם':'m','נ':'n','ן':'n','ס':'s','ע':'a','פ':'p','ף':'f','צ':'tz','ץ':'tz','ק':'k','ר':'r','ש':'sh','ת':'t' };
+    var latin = d.name.replace(/^דוח-שעות-/, '').split('').map(function (ch) { return TR[ch] !== undefined ? TR[ch] : ch; }).join('').replace(/[^A-Za-z0-9\-]/g, '');
+    var url = URL.createObjectURL(blob), a2 = document.createElement('a');
+    a2.href = url; a2.download = 'Neptun-hours-' + latin + '.pdf'; document.body.appendChild(a2); a2.click(); a2.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    showToast('✅ ה-PDF ירד למחשב');
+  }).catch(function () { showToast('לא הצלחתי ליצור PDF — נסה "הדפסה" ואז "שמור כ-PDF"'); return null; })
+    .then(function (r) { if (r === 'shared') return; host.remove(); if (btn) { btn.disabled = false; btn.textContent = old; } });
 }
 </script>
 </body>
