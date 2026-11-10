@@ -34,7 +34,7 @@
   --border: #e5e5e7;
   --border-strong: #d2d2d7;
   --text: #1d1d1f;
-  --text-muted: #86868b;
+  --text-muted: #5f5f66;
   --shabbat: #fff4e5;
   --shabbat-text: #c93400;
   --holiday: #f2e9fb;
@@ -749,6 +749,48 @@ html { -webkit-text-size-adjust: 100%; }
 .sup-chip{background:var(--accent-light);color:var(--text);border-radius:20px;padding:5px 12px;font-size:13px}
 .sup-chip b{color:var(--accent);margin-left:3px}
 .sup-chip.sm{background:var(--bg);font-size:12.5px;padding:3px 10px}
+
+/* ===== חילוף במסך אחד ===== */
+#modal-qr { --qa: #2F64B0; }
+.qr-modal { max-width: 560px; width: 95vw; background: #F2F2F7 !important; }
+.qr-modal .modal-header, .qr-modal .modal-footer { background: #F2F2F7 !important; }
+.qr-title { font-size: 26px !important; font-weight: 800 !important; color: #111 !important; }
+#qr-body { display: flex; flex-direction: column; gap: 10px; color: #111; }
+.qr-done { width: 100%; background: #fff; border: 0; border-radius: 18px; padding: 12px 16px; min-height: 66px; display: flex; align-items: center; gap: 12px; text-align: right; font-family: inherit; cursor: pointer; }
+.qr-check { width: 34px; height: 34px; border-radius: 17px; background: #E3F4EC; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.qr-dq { display: block; font-size: 14px; font-weight: 700; color: #6B6B70; }
+.qr-da { display: block; font-size: 19px; font-weight: 800; color: #111; line-height: 1.25; }
+.qr-chg { font-size: 15px; font-weight: 700; color: var(--qa); white-space: nowrap; }
+.qr-cur { background: #fff; border-radius: 20px; padding: 16px; border: 2.5px solid var(--qa); }
+.qr-now { font-size: 13px; font-weight: 800; color: var(--qa); }
+.qr-q { font-size: 23px; font-weight: 800; margin: 2px 0 12px; color: #111; line-height: 1.2; }
+.qr-sub { font-size: 14px; font-weight: 800; color: #6B6B70; margin: 12px 0 8px; }
+.qr-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.qr-grid.c3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.qr-grid.c4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.qr-tile { min-height: 60px; border-radius: 14px; border: 0; background: #F2F2F7; font-family: inherit; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding: 8px 12px; text-align: right; cursor: pointer; color: #111; gap: 1px; }
+.qr-tile:hover { background: #E8E8EE; }
+.qr-tile b { font-size: 17px; font-weight: 800; line-height: 1.2; }
+.qr-tile small { font-size: 12.5px; font-weight: 700; color: #6B6B70; }
+.qr-tile small.ok { color: #0F6B4F; }
+.qr-tile.big { align-items: center; justify-content: center; font-size: 26px; font-weight: 800; min-height: 64px; }
+.qr-tile.mid { align-items: center; justify-content: center; font-size: 16px; font-weight: 800; }
+.qr-tile.on { background: var(--qa); color: #fff; }
+.qr-tile.on small { color: rgba(255,255,255,.85); }
+.qr-tile.dash { background: transparent; border: 2px dashed #C7C7CC; color: #4A4A50; align-items: center; font-size: 15px; font-weight: 700; }
+.qr-search { width: 100%; box-sizing: border-box; min-height: 50px; border-radius: 14px; border: 0; background: #F2F2F7; padding: 0 16px; font-family: inherit; font-size: 17px; font-weight: 600; margin-bottom: 10px; }
+.qr-input { width: 100%; box-sizing: border-box; min-height: 50px; border-radius: 14px; border: 1.5px solid #D1D1D6; background: #fff; padding: 0 14px; font-family: inherit; font-size: 17px; font-weight: 600; }
+.qr-more { width: 100%; min-height: 46px; margin-top: 8px; border: 0; background: transparent; font-family: inherit; font-size: 15px; font-weight: 800; color: var(--qa); cursor: pointer; }
+.qr-later { background: #E9E9EE; border-radius: 18px; padding: 12px 16px; min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.qr-later span { font-size: 17px; font-weight: 800; color: #8E8E93; }
+.qr-later small { font-size: 13px; font-weight: 700; color: #8E8E93; }
+.qr-save { background: var(--qa) !important; border-color: var(--qa) !important; width: 100%; min-height: 58px !important; border-radius: 18px !important; font-size: 20px !important; font-weight: 800 !important; }
+.qr-save:disabled { background: #C7C7CC !important; border-color: #C7C7CC !important; opacity: 1; cursor: default; }
+.qr-sum { background: #fff; border-radius: 18px; padding: 12px 16px; display: flex; flex-direction: column; gap: 4px; }
+.qr-sum div { display: flex; justify-content: space-between; gap: 10px; font-size: 16px; }
+.qr-sum span { color: #6B6B70; font-weight: 700; }
+.qr-sum b { font-weight: 800; text-align: left; }
+@media (max-width: 700px) { .qr-grid.c4 { grid-template-columns: repeat(4, minmax(0, 1fr)); } .qr-q { font-size: 22px; } }
 
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1882,6 +1924,19 @@ html { -webkit-text-size-adjust: 100%; }
 </div>
 
 <!-- Absence -->
+<!-- ===== חילוף / חיסור — מסך אחד בקוביות ===== -->
+<div class="modal-overlay" id="modal-qr">
+  <div class="modal qr-modal">
+    <div class="modal-header">
+      <div class="modal-title qr-title" id="qr-title">חילוף מהיר</div>
+      <button class="modal-close" onclick="closeModal('modal-qr')" aria-label="סגור">×</button>
+    </div>
+    <div id="qr-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-primary qr-save" id="qr-save" onclick="qrSave()">שמור</button>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="modal-absence">
   <div class="modal" style="width:520px">
     <div class="modal-header">
@@ -9406,6 +9461,238 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
   function isField(el) { return el && (el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || (el.tagName === 'INPUT' && !/^(checkbox|radio|button|submit|file|range)$/.test(el.type))); }
   document.addEventListener('focusin', function (e) { if (isField(e.target)) document.body.classList.add('kb-open'); });
   document.addEventListener('focusout', function () { setTimeout(function () { if (!isField(document.activeElement)) document.body.classList.remove('kb-open'); }, 80); });
+})();
+</script>
+<script>
+/* ===== חילוף / חיסור — מסך אחד: כל שאלה שנענתה נסגרת לשורה, הבאה נפתחת ===== */
+(function () {
+  var Q = null;
+  var HEBD = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+  function E(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function iso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function addDays(n) { var d = new Date(); d.setDate(d.getDate() + n); return iso(d); }
+  function dateLabel(s) {
+    if (!s) return '';
+    var t = todayISO(), d = new Date(s + 'T12:00:00');
+    var rel = s === t ? 'היום, ' : s === addDays(-1) ? 'אתמול, ' : s === addDays(1) ? 'מחר, ' : '';
+    return rel + HEBD[d.getDay()] + ' ' + String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
+  }
+  function clientsOf(e) { return e ? (e.clients && e.clients.length ? e.clients : (e.client ? [e.client] : [])) : []; }
+  function emp(id) { return employees.find(function (e) { return e.id === id; }); }
+  function act() { return validEmployees().filter(function (e) { return e.status !== 'inactive'; }).sort(function (a, b) { return empName(a).localeCompare(empName(b), 'he'); }); }
+  function defHours() {
+    var e = emp(Q.empId);
+    if (e && e.clientHours && Q.client && e.clientHours[Q.client]) return e.clientHours[Q.client];
+    return (e && e.dailyHours) || 8;
+  }
+  var CHECK = '<span class="qr-check"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0F6B4F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>';
+
+  // ---- פתיחה
+  window.openQR = function (dateStr, mode) {
+    Q = { empId: '', date: dateStr || todayISO(), client: '', replId: '', ext: '', noRepl: false, hours: null, paid: 'unpaid', amount: '', note: '',
+          open: null, qEmp: '', qRepl: '', allRepl: false, extMode: false, otherDate: false, mode: mode || 'repl' };
+    document.getElementById('qr-title').textContent = Q.mode === 'abs' ? 'רישום חיסור' : 'חילוף מהיר';
+    render(); openModal('modal-qr');
+    setTimeout(function () { var s = document.getElementById('qr-s-emp'); if (s && window.innerWidth > 700) s.focus(); }, 80);
+  };
+  window.openQuickReplacementModal = function () { openQR(todayISO(), 'repl'); };
+  window.openAbsenceModal = function (dateStr) { openQR(dateStr || todayISO(), 'abs'); };
+
+  // ---- שלבים
+  function needClient() { return clientsOf(emp(Q.empId)).length !== 1; }
+  function steps() {
+    var s = [{ k: 'emp', done: !!Q.empId }, { k: 'date', done: !!Q.date }];
+    if (Q.empId && needClient()) s.push({ k: 'client', done: !!Q.client });
+    s.push({ k: 'repl', done: !!(Q.replId || Q.ext || Q.noRepl) });
+    if (!Q.noRepl) s.push({ k: 'hours', done: !!(Q.replId || Q.ext) && Q.hours > 0 });
+    return s;
+  }
+  function current() {
+    if (Q.open) return Q.open;
+    var s = steps();
+    for (var i = 0; i < s.length; i++) if (!s[i].done) return s[i].k;
+    return Q.noRepl ? null : 'hours';
+  }
+  var QUEST = { emp: 'מי חסר?', date: 'מתי?', client: 'אצל איזה לקוח?', repl: 'מי מחליף?', hours: 'שעות ותשלום' };
+  function answer(k) {
+    var e = emp(Q.empId);
+    if (k === 'emp') return e ? empName(e) + (Q.client ? ' · ' + Q.client : '') : '';
+    if (k === 'date') return dateLabel(Q.date);
+    if (k === 'client') return Q.client;
+    if (k === 'repl') return Q.noRepl ? 'בלי מחליף' : Q.replId ? empName(emp(Q.replId)) : Q.ext ? Q.ext + ' (חיצוני)' : '';
+    if (k === 'hours') return Q.hours + ' שעות · ' + ({ unpaid: 'לא שולם', paid: 'שולם', pending: 'ממתין' }[Q.paid]) + (Q.amount ? ' · ₪' + Q.amount : '');
+    return '';
+  }
+
+  // ---- ציור
+  function render() {
+    var cur = current(), s = steps(), h = '';
+    s.forEach(function (st) {
+      if (st.k === cur) h += block(st.k);
+      else if (st.done) h += '<button class="qr-done" data-k="' + st.k + '" onclick="qrOpen(this.dataset.k)">' + CHECK +
+        '<span style="flex:1"><span class="qr-dq">' + QUEST[st.k] + '</span><span class="qr-da">' + E(answer(st.k)) + '</span></span><span class="qr-chg">שינוי</span></button>';
+      else h += '<div class="qr-later"><span>' + QUEST[st.k] + '</span><small>בהמשך</small></div>';
+    });
+    if (!cur || (cur === 'hours' && Q.hours > 0)) h += note();
+    document.getElementById('qr-body').innerHTML = h;
+    var ok = s.every(function (x) { return x.done; });
+    var btn = document.getElementById('qr-save');
+    btn.disabled = !ok;
+    btn.textContent = ok ? (Q.noRepl ? 'שמור חיסור' : 'שמור חילוף') : 'השלם את הפרטים כדי לשמור';
+  }
+  function note() {
+    return '<label style="display:block"><span class="qr-sub" style="display:block;margin-top:2px">הערה (לא חובה)</span>' +
+      '<input class="qr-input" id="qr-note" placeholder="מחלה, סידורים…" value="' + E(Q.note) + '" oninput="qrSet(\'note\', this.value, true)"></label>';
+  }
+  function block(k) {
+    var h = '<div class="qr-cur"><div class="qr-now">עכשיו</div><div class="qr-q">' + title(k) + '</div>';
+    if (k === 'emp') {
+      h += '<input class="qr-search" id="qr-s-emp" placeholder="🔍 חיפוש עובד…" value="' + E(Q.qEmp) + '" oninput="qrSearch(\'qEmp\', this.value)">';
+      h += '<div class="qr-grid" id="qr-emp-grid">' + empTiles() + '</div>';
+    } else if (k === 'date') {
+      var opts = [[todayISO(), 'היום'], [addDays(-1), 'אתמול'], [addDays(1), 'מחר']];
+      h += '<div class="qr-grid c3">' + opts.map(function (o) {
+        return '<button class="qr-tile mid' + (Q.date === o[0] && !Q.otherDate ? ' on' : '') + '" data-v="' + o[0] + '" onclick="qrPick(\'date\', this.dataset.v)"><b>' + o[1] + '</b><small>' + dateLabel(o[0]).replace(/^[^,]+, /, '') + '</small></button>';
+      }).join('') + '</div><div class="qr-sub">תאריך אחר</div><input type="date" class="qr-input" value="' + E(Q.date) + '" onchange="qrPick(\'date\', this.value)">';
+    } else if (k === 'client') {
+      var cs = clientsOf(emp(Q.empId));
+      if (cs.length) h += '<div class="qr-grid">' + cs.map(function (c) {
+        return '<button class="qr-tile mid' + (Q.client === c ? ' on' : '') + '" data-v="' + E(c) + '" onclick="qrPick(\'client\', this.dataset.v)"><b>' + E(c) + '</b></button>';
+      }).join('') + '</div>';
+      else h += '<input class="qr-input" placeholder="שם הלקוח" value="' + E(Q.client) + '" onchange="qrPick(\'client\', this.value.trim())">';
+    } else if (k === 'repl') {
+      h += replBlock();
+    } else if (k === 'hours') {
+      var dh = defHours(), opts2 = [4, 6, 8];
+      if (opts2.indexOf(dh) < 0) opts2 = [4, dh, 8].sort(function (a, b) { return a - b; });
+      var other = Q.hours > 0 && opts2.indexOf(Q.hours) < 0;
+      h += '<div class="qr-grid c4">' + opts2.map(function (n) {
+        return '<button class="qr-tile big' + (Q.hours === n ? ' on' : '') + '" data-v="' + n + '" onclick="qrPick(\'hours\', +this.dataset.v)">' + n + '</button>';
+      }).join('') + '<button class="qr-tile big' + (other ? ' on' : '') + '" style="font-size:17px" onclick="qrOtherHours()">' + (other ? Q.hours : 'אחר') + '</button></div>';
+      h += '<div class="qr-sub" style="font-size:17px;color:#111;margin-top:16px">תשלום למחליף</div><div class="qr-grid c3">' +
+        [['unpaid', 'לא שולם'], ['paid', 'שולם'], ['pending', 'ממתין']].map(function (p) {
+          return '<button class="qr-tile mid' + (Q.paid === p[0] ? ' on' : '') + '" data-v="' + p[0] + '" onclick="qrSet(\'paid\', this.dataset.v)"><b>' + p[1] + '</b></button>';
+        }).join('') + '</div>';
+      if (Q.paid !== 'unpaid') h += '<div class="qr-sub">סכום (₪)</div><input class="qr-input" type="number" inputmode="decimal" placeholder="0" value="' + E(Q.amount) + '" oninput="qrSet(\'amount\', this.value, true)">';
+      h += '<div class="qr-sum" style="margin-top:14px"><div><span>חסר/ה</span><b>' + E(answer('emp')) + '</b></div><div><span>מחליף/ה</span><b>' + E(answer('repl')) + ' · ' + Q.hours + ' שע\'</b></div><div><span>מתי</span><b>' + E(dateLabel(Q.date)) + '</b></div></div>';
+    }
+    return h + '</div>';
+  }
+  function title(k) {
+    var e = emp(Q.empId), first = e ? e.fname : '';
+    if (k === 'repl') return first ? 'מי מחליף את ' + E(first) + '?' : 'מי מחליף?';
+    if (k === 'hours') { var r = Q.replId ? emp(Q.replId).fname : Q.ext; return 'כמה שעות עבד/ה ' + E(r) + '?'; }
+    if (k === 'client' && first) return 'אצל איזה לקוח ' + E(first) + ' חסר/ה?';
+    return QUEST[k];
+  }
+  function norm(s) { return String(s || '').replace(/["'״׳]/g, '').toLowerCase(); }
+  function empTiles() {
+    var q = norm(Q.qEmp), absentToday = {};
+    absences.forEach(function (a) { if (a.date === Q.date) absentToday[a.empId] = 1; });
+    var list = act().filter(function (e) { return !q || norm(empName(e) + ' ' + clientsOf(e).join(' ')).indexOf(q) >= 0; });
+    if (!list.length) return '<div style="grid-column:1/-1;color:#6B6B70;font-weight:700;padding:10px">לא נמצא עובד</div>';
+    return list.map(function (e) {
+      var c = clientsOf(e);
+      return '<button class="qr-tile' + (Q.empId === e.id ? ' on' : '') + '" data-v="' + e.id + '" onclick="qrPick(\'emp\', this.dataset.v)"><b>' + E(empName(e)) + '</b><small>' +
+        (absentToday[e.id] ? 'כבר רשום/ה כחסר/ה' : E(c.length > 1 ? c.length + ' לקוחות' : (c[0] || ''))) + '</small></button>';
+    }).join('');
+  }
+  function replBlock() {
+    var busy = {}, client = Q.client, cnt = {};
+    absences.forEach(function (a) {
+      if (a.date === Q.date) { busy[a.empId] = 'חסר/ה היום'; if (a.replacementId) busy[a.replacementId] = 'כבר מחליף/ה היום'; }
+      if (a.replacementId && (a.replClient || a.client) === client) cnt[a.replacementId] = (cnt[a.replacementId] || 0) + 1;
+    });
+    var pool = act().filter(function (e) { return e.id !== Q.empId; });
+    var q = norm(Q.qRepl);
+    var h = '';
+    if (Q.extMode) {
+      return '<div class="qr-sub">שם העובד החיצוני</div><input class="qr-input" id="qr-ext" placeholder="שם מלא" value="' + E(Q.ext) + '" onkeydown="if(event.key===\'Enter\')qrExtDone()">' +
+        '<div class="qr-grid" style="margin-top:10px"><button class="qr-tile mid on" onclick="qrExtDone()"><b>המשך</b></button><button class="qr-tile mid" onclick="qrSet(\'extMode\', false)"><b>ביטול</b></button></div>';
+    }
+    function tag(e) {
+      if (busy[e.id]) return '<small>' + busy[e.id] + '</small>';
+      if (cnt[e.id]) return '<small class="ok">עבד/ה שם ' + cnt[e.id] + (cnt[e.id] === 1 ? ' פעם' : ' פעמים') + '</small>';
+      if (clientsOf(e).indexOf(client) >= 0) return '<small class="ok">עובד/ת אצל הלקוח</small>';
+      return '<small class="ok">פנוי/ה</small>';
+    }
+    function tile(e) { return '<button class="qr-tile' + (Q.replId === e.id ? ' on' : '') + '" data-v="' + e.id + '" onclick="qrPick(\'repl\', this.dataset.v)"><b>' + E(empName(e)) + '</b>' + tag(e) + '</button>'; }
+    if (!q && !Q.allRepl) {
+      var top = pool.filter(function (e) { return !busy[e.id]; }).sort(function (a, b) {
+        var sa = (cnt[a.id] || 0) * 10 + (clientsOf(a).indexOf(client) >= 0 ? 5 : 0), sb = (cnt[b.id] || 0) * 10 + (clientsOf(b).indexOf(client) >= 0 ? 5 : 0);
+        return sb - sa || empName(a).localeCompare(empName(b), 'he');
+      }).slice(0, 6);
+      h += '<div class="qr-sub" style="color:#0F6B4F;margin-top:0">מומלצים</div><div class="qr-grid">' + top.map(tile).join('') + '</div>' +
+        '<button class="qr-more" onclick="qrSet(\'allRepl\', true)">כל העובדים (' + pool.length + ')</button>';
+    } else {
+      h += '<input class="qr-search" id="qr-s-repl" placeholder="🔍 חיפוש עובד…" value="' + E(Q.qRepl) + '" oninput="qrSearch(\'qRepl\', this.value)">' +
+        '<div class="qr-grid" id="qr-repl-grid">' + pool.filter(function (e) { return !q || norm(empName(e)).indexOf(q) >= 0; }).map(tile).join('') + '</div>';
+    }
+    h += '<div class="qr-grid" style="margin-top:10px"><button class="qr-tile mid" onclick="qrSet(\'extMode\', true)"><b>עובד חיצוני</b></button>' +
+      '<button class="qr-tile dash" onclick="qrPick(\'none\')">בלי מחליף</button></div>';
+    return h;
+  }
+
+  // ---- פעולות
+  window.qrOpen = function (k) { Q.open = k; render(); };
+  window.qrSet = function (k, v, silent) { Q[k] = v; if (!silent) render(); };
+  window.qrSearch = function (k, v) {
+    Q[k] = v;
+    var g = document.getElementById(k === 'qEmp' ? 'qr-emp-grid' : 'qr-repl-grid');
+    if (g) g.innerHTML = k === 'qEmp' ? empTiles() : (function () { var tmp = document.createElement('div'); tmp.innerHTML = replBlock(); var gg = tmp.querySelector('#qr-repl-grid'); return gg ? gg.innerHTML : ''; })();
+    else { render(); var s = document.getElementById(k === 'qEmp' ? 'qr-s-emp' : 'qr-s-repl'); if (s) { s.focus(); s.setSelectionRange(v.length, v.length); } }
+  };
+  window.qrPick = function (k, v) {
+    Q.open = null;
+    if (k === 'emp') {
+      if (Q.empId !== v) { Q.replId = ''; Q.ext = ''; Q.hours = null; }
+      Q.empId = v; Q.qEmp = '';
+      var cs = clientsOf(emp(v)); Q.client = cs.length === 1 ? cs[0] : '';
+    } else if (k === 'date') { if (v) Q.date = v; }
+    else if (k === 'client') { Q.client = v; Q.hours = null; }
+    else if (k === 'repl') { Q.replId = v; Q.ext = ''; Q.noRepl = false; Q.qRepl = ''; Q.allRepl = false; if (!Q.hours) Q.hours = defHours(); }
+    else if (k === 'none') { Q.noRepl = true; Q.replId = ''; Q.ext = ''; }
+    else if (k === 'hours') Q.hours = v;
+    render();
+    var b = document.getElementById('qr-body'); if (b) { var c = b.querySelector('.qr-cur'); if (c && c.scrollIntoView) c.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+  };
+  window.qrExtDone = function () {
+    var v = (document.getElementById('qr-ext') || {}).value || '';
+    if (!v.trim()) { showToast('נא לכתוב שם'); return; }
+    Q.ext = v.trim(); Q.replId = ''; Q.noRepl = false; Q.extMode = false; Q.open = null; if (!Q.hours) Q.hours = defHours(); render();
+  };
+  window.qrOtherHours = function () {
+    var v = prompt('כמה שעות?', Q.hours || defHours());
+    var n = parseFloat(v); if (n > 0 && n <= 24) qrPick('hours', n);
+  };
+
+  // ---- שמירה (אותה לוגיקה כמו רישום חיסור הקודם)
+  window.qrSave = function () {
+    if (!Q || !Q.empId || !Q.date) return;
+    var replacementId = Q.replId || '', hasRepl = !!(replacementId || Q.ext);
+    var hours = hasRepl ? (Q.hours || 0) : 0;
+    var newAbs = {
+      id: Date.now().toString(), empId: Q.empId, date: Q.date, client: Q.client || '',
+      replacementId: replacementId || null,
+      replPaid: hasRepl ? Q.paid : null, replAmount: hasRepl ? (parseFloat(Q.amount) || 0) : 0, replPayNote: '',
+      replHours: hours, replClient: hasRepl ? (Q.client || '') : '',
+      note: (Q.note || '').trim(), createdAt: new Date().toISOString()
+    };
+    if (Q.ext) newAbs.replExtName = Q.ext;
+    absences.push(newAbs);
+    if (replacementId) hoursLog = hoursLog.filter(function (h) { return !(h.empId === replacementId && h.date === Q.date && h.type === 'replacement'); });
+    if (replacementId && hours > 0) {
+      hoursLog.push({ id: Date.now().toString() + '_repl', empId: replacementId, date: Q.date, hours: hours, client: Q.client || '',
+        note: 'חילוף: ' + empName(emp(Q.empId)), type: 'replacement', absenceId: newAbs.id, createdAt: new Date().toISOString() });
+    }
+    save();
+    closeModal('modal-qr');
+    try { renderCalendar(); } catch (e) {} try { renderAbsenceTable(); } catch (e) {} try { updateStats(); } catch (e) {}
+    try { if (typeof renderAbsencesChart === 'function') renderAbsencesChart(); } catch (e) {}
+    var msg = Q.noRepl ? 'החיסור נרשם' : 'החילוף נרשם' + (replacementId && hours > 0 ? ' · ' + hours + ' שע\' נוספו ל' + emp(replacementId).fname : '');
+    if (Q.date.slice(0, 7) !== activeMonth) msg += ' (בחודש אחר מהחודש המוצג)';
+    showToast('✅ ' + msg);
+  };
 })();
 </script>
 </body>
