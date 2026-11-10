@@ -931,6 +931,12 @@ body.kb-open .ai-fab { display: none; }
 .mr-end { margin-top: 18px; border-top: 1px solid var(--border); padding-top: 14px; display: flex; flex-direction: column; gap: 10px; }
 .mr-end-h { font-size: 16.5px; font-weight: 700; }
 .mr-close { border: 0; background: transparent; color: var(--text-muted); font-family: inherit; font-size: 15px; font-weight: 700; min-height: 44px; cursor: pointer; }
+.rc-man { font-size: 12.5px; font-weight: 600; opacity: .95; margin-top: 4px; }
+.rc-man button { border: 0; background: rgba(255,255,255,.22); color: #fff; font-family: inherit; font-size: 12px; font-weight: 700; border-radius: 10px; padding: 2px 9px; margin-right: 4px; cursor: pointer; }
+#modal-mhours { --qa: var(--accent); }
+.mh-input { width: 100%; box-sizing: border-box; font-size: 34px !important; font-weight: 800; text-align: center; min-height: 72px; border-radius: 16px; border: 2px solid var(--accent); background: #fff; font-family: inherit; color: var(--text); }
+.mh-note { font-size: 13.5px; color: var(--text-muted); font-weight: 600; text-align: center; margin: 8px 0 0; }
+.mh-clear { width: 100%; margin-top: 10px; border: 0; background: transparent; color: var(--danger); font-family: inherit; font-size: 14.5px; font-weight: 700; min-height: 44px; cursor: pointer; }
 .rc-up { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
 .rc-up .rc-btn { cursor: pointer; }
 .rc-files { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
@@ -2101,6 +2107,17 @@ body.kb-open .ai-fab { display: none; }
 </div>
 
 <!-- Absence -->
+<!-- ===== סה"כ שעות מהדוח המצולם ===== -->
+<div class="modal-overlay" id="modal-mhours">
+  <div class="modal qr-modal" style="max-width:440px">
+    <div class="modal-header">
+      <div class="modal-title qr-title" id="mh-title">כמה שעות עבד/ה החודש?</div>
+      <button class="modal-close" onclick="closeModal('modal-mhours')" aria-label="סגור">×</button>
+    </div>
+    <div id="mh-body"></div>
+    <div class="modal-footer"><button class="btn btn-primary qr-save" onclick="saveManualHours()">עדכן סה״כ לתשלום</button></div>
+  </div>
+</div>
 <!-- ===== צפייה בקובץ מצורף ===== -->
 <div class="modal-overlay" id="modal-fileview">
   <div class="modal" style="max-width:720px;width:95vw">
@@ -10198,7 +10215,8 @@ function renderRptCard() {
   var repL = absences.filter(function (a) { return a.replacementId === empId && a.date.startsWith(month); }).sort(function (a, b) { return a.date.localeCompare(b.date); });
   var allAdv = advances.filter(function (a) { return a.empId === empId && a.status !== 'completed' && (advRemaining(a, month).remaining > 0 || adv.indexOf(a) >= 0); }).sort(function (a, b) { return b.date.localeCompare(a.date); });
 
-  var h = '<div class="rc-sum"><div class="rc-sum-top"><div><small>לתשלום · ' + MN[m - 1] + ' ' + y + '</small><div class="rc-big">' + r2(st.netHours) + '<span>שעות</span></div></div>' +
+  var h = '<div class="rc-sum"><div class="rc-sum-top"><div><small>לתשלום · ' + MN[m - 1] + ' ' + y + '</small><div class="rc-big">' + r2(st.netHours) + '<span>שעות</span></div>' +
+    (st.manual ? '<div class="rc-man">📷 לפי הדוח המצולם · חישוב אוטומטי: ' + r2(st.autoHours) + ' <button onclick="openManualHours()">שינוי</button></div>' : '') + '</div>' +
     (saved ? '<span class="rc-saved">✓ דוח נשמר ' + esc(saved.savedAt || '') + '</span>' : '<span class="rc-saved">טרם נשמר</span>') + '</div>' +
     '<div class="rc-stats">' +
       '<div class="rc-stat"><b>' + (st.workdays || 0) + '</b><small>ימי עבודה</small></div>' +
@@ -10231,7 +10249,8 @@ function renderRptCard() {
   h += '<div class="rc-sec"><div class="rc-sec-h"><b>📎 דוחות שעות וקבצים</b><small style="color:var(--text-muted);font-weight:600">' + MN[m - 1] + '</small></div>' +
     '<div class="rc-up"><label class="rc-btn">📷 צלם דוח<input type="file" accept="image/*" capture="environment" onchange="rcUpload(this)" hidden></label>' +
     '<label class="rc-btn">📎 צרף קובץ<input type="file" accept="image/*,application/pdf,.pdf,.xlsx,.xls,.csv,.doc,.docx" multiple onchange="rcUpload(this)" hidden></label></div>' +
-    '<div id="rc-files" class="rc-files"><div class="rc-empty">טוען…</div></div></div>';
+    '<div id="rc-files" class="rc-files"><div class="rc-empty">טוען…</div></div>' +
+    '<button class="rc-link" style="margin-top:6px" onclick="openManualHours()">✍️ ' + (st.manual ? 'עדכון סה״כ השעות מהדוח (' + r2(st.netHours) + ')' : 'הזנת סה״כ שעות מהדוח המצולם') + '</button></div>';
   el.innerHTML = h;
   try { rcLoadFiles(); } catch (e) {}
 }
@@ -10458,7 +10477,11 @@ function rcUpload(input) {
       }).then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || 'שגיאה'); ok++; }); });
     }).catch(function (e) { fail = e.message || 'שגיאה בהעלאה'; });
   });
-  chain.then(function () { rcLoadFiles(); showToast(fail ? '⚠️ ' + fail : '✅ ' + (ok > 1 ? ok + ' קבצים נשמרו' : 'הקובץ נשמר') + ' לכרטיס של ' + (emp ? emp.fname : 'העובד')); });
+  var wasCamera = input.hasAttribute('capture') || files.some(function (f) { return /^image\//.test(f.type); });
+  chain.then(function () {
+    rcLoadFiles(); showToast(fail ? '⚠️ ' + fail : '✅ ' + (ok > 1 ? ok + ' קבצים נשמרו' : 'הקובץ נשמר') + ' לכרטיס של ' + (emp ? emp.fname : 'העובד'));
+    if (ok && wasCamera && empId === currentProfileEmpId) setTimeout(openManualHours, 400);
+  });
 }
 function rcOpen(id) {
   var f = (window._rcList || []).find(function (x) { return x.id === id; }); if (!f) return;
@@ -10483,6 +10506,51 @@ function rcOpen(id) {
       if (!r.ok) throw new Error('x'); closeModal('modal-fileview'); rcLoadFiles(); showToast('הקובץ נמחק');
     }).catch(function () { showToast('המחיקה נכשלה — אין חיבור לשרת'); });
   };
+}
+</script>
+<script>
+/* ===== סה"כ שעות ידני מהדוח המצולם — גובר על החישוב האוטומטי בכל מקום (כרטיס, דוח שנשמר, PDF) ===== */
+var manualHours = (function () { try { return JSON.parse(localStorage.getItem('nep_manual_hours') || '{}'); } catch (e) { return {}; } })();
+(function () {
+  var orig = window.calcMonthStats;
+  window.calcMonthStats = function (empId, monthStr) {
+    var r = orig.apply(this, arguments); if (!r) return r;
+    var mh = manualHours[empId + '_' + monthStr];
+    if (mh && mh.hours != null) { r.autoHours = r.netHours; r.netHours = mh.hours; r.manual = true; }
+    return r;
+  };
+  // נתונים שהגיעו ממכשיר אחר
+  window.addEventListener('storage', function (e) { if (e.key === 'nep_manual_hours') { try { manualHours = JSON.parse(e.newValue || '{}'); } catch (x) {} } });
+})();
+function openManualHours() {
+  var empId = currentProfileEmpId, emp = employees.find(function (e) { return e.id === empId; }); if (!emp) return;
+  var key = empId + '_' + activeMonth, cur = manualHours[key];
+  var st = calcMonthStats(empId, activeMonth) || {}, auto = st.manual ? st.autoHours : st.netHours;
+  document.getElementById('mh-title').textContent = 'כמה שעות עבד/ה ' + emp.fname + ' החודש?';
+  document.getElementById('mh-body').innerHTML =
+    '<label for="mh-in" class="qr-sub" style="display:block;margin-top:0">סה״כ שעות לפי הדוח שצילמת</label>' +
+    '<input id="mh-in" class="mh-input" type="number" inputmode="decimal" step="0.25" min="0" max="400" placeholder="' + (Math.round((auto || 0) * 100) / 100) + '" value="' + (cur ? cur.hours : '') + '" onkeydown="if(event.key===\'Enter\')saveManualHours()">' +
+    '<div class="mh-note">החישוב האוטומטי לחודש: ' + (Math.round((auto || 0) * 100) / 100) + ' שעות</div>' +
+    (cur ? '<button class="mh-clear" onclick="clearManualHours()">בטל ושימוש בחישוב האוטומטי</button>' : '');
+  openModal('modal-mhours');
+  setTimeout(function () { var i = document.getElementById('mh-in'); if (i) i.focus(); }, 250);
+}
+function _mhStore() { localStorage.setItem('nep_manual_hours', JSON.stringify(manualHours)); try { save(); } catch (e) {} try { renderRptCard(); } catch (e) {} try { renderSavedReports(); } catch (e) {} }
+function saveManualHours() {
+  var v = parseFloat((document.getElementById('mh-in') || {}).value);
+  if (!(v >= 0 && v <= 400)) { showToast('נא להזין מספר שעות'); return; }
+  manualHours[currentProfileEmpId + '_' + activeMonth] = { hours: Math.round(v * 100) / 100, at: new Date().toISOString() };
+  // אם כבר נשמר דוח לחודש — מעדכנים אותו
+  var sv = (savedMonths || []).find(function (s) { return s.empId === currentProfileEmpId && s.month === activeMonth; });
+  if (sv) sv.netHours = Math.round(v * 100) / 100;
+  _mhStore(); closeModal('modal-mhours');
+  showToast('✅ סה״כ לתשלום עודכן ל-' + (Math.round(v * 100) / 100) + ' שעות');
+}
+function clearManualHours() {
+  delete manualHours[currentProfileEmpId + '_' + activeMonth];
+  var sv = (savedMonths || []).find(function (s) { return s.empId === currentProfileEmpId && s.month === activeMonth; });
+  var st = calcMonthStats(currentProfileEmpId, activeMonth); if (sv && st) sv.netHours = st.netHours;
+  _mhStore(); closeModal('modal-mhours'); showToast('חזרנו לחישוב האוטומטי');
 }
 </script>
 </body>
