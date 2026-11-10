@@ -886,7 +886,7 @@ body.kb-open .ai-fab { display: none; }
   </div>
   <nav class="sidebar-nav">
     <div class="nav-item" onclick="showPage('employees')">
-      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> עובדים
+      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg></span> בית
     </div>
     <div class="nav-item" onclick="showPage('absences')">
       <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span> חיסורים
@@ -935,7 +935,7 @@ body.kb-open .ai-fab { display: none; }
 
     <div class="page-header" style="margin-bottom:12px;margin-top:0">
       <div>
-        <div class="page-title">עובדים</div>
+        <div class="page-title">בית</div>
         <div class="page-subtitle" id="emp-count-sub"></div>
       </div>
     </div>
@@ -948,7 +948,7 @@ body.kb-open .ai-fab { display: none; }
 
     
     <div class="stats-grid" style="display:flex;gap:14px;flex-wrap:wrap">
-      <div class="stat-card" style="flex:0 1 200px"><div class="stat-label">עובדים פעילים</div><div class="stat-value blue" id="stat-active">0</div></div>
+      <div class="stat-card" style="flex:0 1 200px;cursor:pointer" onclick="openEmpListModal()"><div class="stat-label">עובדים פעילים <span style="color:var(--accent);font-weight:700">· לרשימה</span></div><div class="stat-value blue" id="stat-active">0</div></div>
       <div class="stat-card" style="flex:0 1 200px;cursor:pointer" onclick="showPage('absences')"><div class="stat-label">חיסורים החודש</div><div class="stat-value red" id="stat-absences">0</div></div>
       <div class="stat-card" id="stat-rem-card" style="flex:0 1 200px;cursor:pointer" onclick="openReminders()"><div class="stat-label">תזכורות להיום</div><div class="stat-value" style="color:var(--warning)" id="stat-rem">0</div><div id="rem-today-list" class="rem-mini"></div></div>
     </div>
@@ -998,7 +998,7 @@ body.kb-open .ai-fab { display: none; }
     </div>
 
     <!-- רשימת עובדים (מתקפלת) -->
-    <div class="card" style="margin-bottom:12px">
+    <div class="card" id="emp-list-card" style="margin-bottom:12px;display:none">
       <div class="card-title coll-h" onclick="toggleCard('emp')" style="margin-bottom:0 !important"><span>👥 רשימת עובדים <span id="emp-list-count" style="color:var(--text-muted);font-weight:500"></span></span><span style="display:flex;gap:8px;align-items:center;margin-inline-start:auto;margin-inline-end:12px" onclick="event.stopPropagation()">
         <button class="btn btn-secondary btn-sm" onclick="openQuickReplacementModal()" style="display:inline-flex;align-items:center;gap:6px">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M17 2.1l4 4-4 4"/><path d="M3 12.6v-2a4 4 0 0 1 4-4h14"/><path d="M7 21.9l-4-4 4-4"/><path d="M21 11.4v2a4 4 0 0 1-4 4H3"/></svg>
@@ -1418,7 +1418,7 @@ body.kb-open .ai-fab { display: none; }
         </div>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
-        <button class="btn btn-secondary" onclick="showPage('employees')">← חזור</button>
+        <button class="btn btn-secondary" onclick="showPage('employees');openEmpListModal()">← לרשימה</button>
       </div>
     </div>
 
@@ -2008,6 +2008,19 @@ body.kb-open .ai-fab { display: none; }
 </div>
 
 <!-- Absence -->
+<!-- ===== רשימת עובדים — חלון ===== -->
+<div class="modal-overlay" id="modal-emps">
+  <div class="modal" style="max-width:640px;width:95vw">
+    <div class="modal-header">
+      <div class="modal-title" style="font-size:21px;font-weight:700">👥 עובדים <span id="emps-modal-count" style="color:var(--text-muted);font-weight:600;font-size:15px"></span></div>
+      <button class="modal-close" onclick="closeModal('modal-emps')" aria-label="סגור">×</button>
+    </div>
+    <div id="emps-modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="closeModal('modal-emps');openAddEmployeeModal()">+ עובד חדש</button>
+    </div>
+  </div>
+</div>
 <!-- ===== עוזר AI — חלון + בועה מרחפת ===== -->
 <button class="ai-fab" id="ai-fab" onclick="openAiModal()" aria-label="עוזר AI">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>
@@ -9893,6 +9906,26 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
     init(); openModal('modal-ai');
     setTimeout(function () { var t = document.getElementById('ai-input'); if (t) t.focus(); }, 250);
   };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
+<script>
+/* רשימת העובדים נפתחת בחלון (מקוביית "עובדים פעילים") */
+(function () {
+  function init() {
+    var body = document.getElementById('emp-body'), dst = document.getElementById('emps-modal-body');
+    if (!body || !dst || dst.childNodes.length) return;
+    while (body.firstChild) dst.appendChild(body.firstChild);
+  }
+  window.openEmpListModal = function () {
+    init();
+    try { renderEmployees(); } catch (e) {}
+    var c = document.getElementById('emp-list-count'), mc = document.getElementById('emps-modal-count');
+    if (mc) mc.textContent = c ? c.textContent : '';
+    openModal('modal-emps');
+  };
+  var orig = window.openEmpProfile;
+  if (typeof orig === 'function') window.openEmpProfile = function () { try { closeModal('modal-emps'); } catch (e) {} return orig.apply(this, arguments); };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
 </script>
