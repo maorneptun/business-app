@@ -9,7 +9,9 @@ const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
 
 app.use(cors({ origin: '*', methods: ['GET','POST','OPTIONS'], allowedHeaders: ['Content-Type','x-app-token'] }));
-app.use(express.json({ limit: '10mb' }));
+const jsonSmall = express.json({ limit: '10mb' });
+// קבצים (צילומי שעות וכו') מקבלים גבול גדול יותר — שאר הנתיבים נשארים עם 10MB
+app.use((req, res, next) => (req.path.startsWith('/api/files') ? next() : jsonSmall(req, res, next)));
 
 // ===== MongoDB =====
 const MONGO_URI = process.env.MONGODB_URI;
@@ -46,7 +48,7 @@ function tokenOk(req) {
   return crypto.timingSafeEqual(Buffer.from(got), Buffer.from(exp));
 }
 // כשמוגדרת סיסמה — כל נתיבי הנתונים דורשים התחברות
-const PROTECTED = ['/api/state', '/api/data', '/api/clients', '/api/invoice', '/api/transactions', '/api/assistant', '/api/reminders/sync', '/api/green-invoice'];
+const PROTECTED = ['/api/files', '/api/state', '/api/data', '/api/clients', '/api/invoice', '/api/transactions', '/api/assistant', '/api/reminders/sync', '/api/green-invoice'];
 app.use((req, res, next) => {
   if (req.method === 'OPTIONS' || !process.env.APP_PASSWORD) return next();
   if (req.path === '/api/state/status') return next();
@@ -179,6 +181,54 @@ app.post('/api/state/restore', async (req, res) => {
     for (const k of new Set([...Object.keys(st.data || {}), ...Object.keys(h.data || {})])) kv[k] = ver;
     await db.collection('appstate').updateOne({ _id: STATE_ID }, { $set: { version: ver, data: h.data || {}, kv, updatedAt: new Date(), device: 'שחזור' } }, { upsert: true });
     res.json({ ok: true, version: ver });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+
+// ===== קבצים מצורפים לעובד (דוחות שעות מצולמים / קבצים) =====
+const FILE_MAX = 15 * 1024 * 1024;
+app.post('/api/files', express.json({ limit: '25mb' }), async (req, res) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'DB לא מוכן' });
+    const b = req.body || {};
+    const empId = String(b.empId || '').slice(0, 60), month = String(b.month || '');
+    if (!empId || !/^\d{4}-\d{2}$/.test(month)) return res.status(400).json({ error: 'חסר עובד או חודש' });
+    if (typeof b.data !== 'string' || !b.data) return res.status(400).json({ error: 'אין קובץ' });
+    const buf = Buffer.from(b.data, 'base64');
+    if (!buf.length || buf.length > FILE_MAX) return res.status(413).json({ error: 'הקובץ גדול מדי (עד 15MB)' });
+    const doc = { empId, month, name: String(b.name || 'קובץ').slice(0, 120), type: String(b.type || 'application/octet-stream').slice(0, 100),
+      size: buf.length, data: buf, createdAt: new Date() };
+    const r = await db.collection('files').insertOne(doc);
+    res.json({ id: String(r.insertedId), name: doc.name, type: doc.type, size: doc.size, createdAt: doc.createdAt });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+app.get('/api/files', async (req, res) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'DB לא מוכן' });
+    const q = { empId: String(req.query.empId || '') };
+    if (req.query.month) q.month = String(req.query.month);
+    const list = await db.collection('files').find(q, { projection: { data: 0 } }).sort({ createdAt: -1 }).limit(200).toArray();
+    res.json(list.map(f => ({ id: String(f._id), name: f.name, type: f.type, size: f.size, month: f.month, createdAt: f.createdAt })));
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+app.get('/api/files/:id', async (req, res) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'DB לא מוכן' });
+    const { ObjectId } = require('mongodb');
+    const f = await db.collection('files').findOne({ _id: new ObjectId(String(req.params.id)) });
+    if (!f) return res.status(404).json({ error: 'לא נמצא' });
+    const buf = Buffer.isBuffer(f.data) ? f.data : Buffer.from(f.data.buffer || f.data);
+    res.set('Content-Type', f.type || 'application/octet-stream');
+    res.set('Content-Disposition', "inline; filename*=UTF-8''" + encodeURIComponent(f.name || 'file'));
+    res.send(buf);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+app.post('/api/files/:id/delete', async (req, res) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'DB לא מוכן' });
+    const { ObjectId } = require('mongodb');
+    await db.collection('files').deleteOne({ _id: new ObjectId(String(req.params.id)) });
+    res.json({ ok: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
