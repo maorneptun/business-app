@@ -807,6 +807,11 @@ html { -webkit-text-size-adjust: 100%; }
 .act-tile.primary .act-ic { background: rgba(255,255,255,.18); color: #fff; }
 .act-tile.primary small { color: rgba(255,255,255,.85); }
 .abs-cards { display: flex; flex-direction: column; gap: 12px; }
+.abs-search-btn { border: 0; background: transparent; color: var(--text); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; margin: -10px -10px -10px 0; border-radius: 22px; }
+.abs-search-btn svg { width: 22px; height: 22px; }
+.abs-search-btn:hover { color: var(--accent); }
+.abs-q { margin-bottom: 12px; font-size: 16px; }
+
 #page-absences .table-wrap table { display: none !important; }
 #page-absences .table-wrap { padding: 0; background: transparent; box-shadow: none; overflow: visible; }
 .abs-card { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 14px; text-align: right; font-family: inherit; color: var(--text); display: flex; align-items: stretch; gap: 14px; cursor: pointer; }
@@ -1090,6 +1095,7 @@ body.kb-open .ai-fab { display: none; }
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
         <div class="card-title" style="margin-bottom:0">חיסורי החודש <span id="abs-list-month" style="color:var(--text-muted);font-weight:600"></span></div>
+        <button class="abs-search-btn" onclick="toggleAbsSearch()" aria-label="חיפוש לפי שם עובד"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>
         <div class="flex gap-8" style="display:none">
           <select class="form-control" id="abs-filter-emp" onchange="renderAbsenceTable()" style="width:auto">
             <option value="">כל העובדים</option>
@@ -1099,6 +1105,7 @@ body.kb-open .ai-fab { display: none; }
           </select>
         </div>
       </div>
+      <input type="search" id="abs-q" class="form-control abs-q" placeholder="חיפוש לפי שם עובד…" oninput="renderAbsenceTable()" style="display:none">
       <div class="table-wrap">
         <table>
           <thead>
@@ -4661,12 +4668,18 @@ function renderAbsenceTable() {
   // אם לא נבחר חודש ידנית — מסנן לפי החודש הפעיל
   const monthToFilter = filterMonth || activeMonth;
   if (monthToFilter) filtered = filtered.filter(a => a.date.startsWith(monthToFilter));
+  const _q = ((document.getElementById('abs-q') || {}).value || '').trim();
+  if (_q) filtered = filtered.filter(a => {
+    const e1 = employees.find(e => e.id === a.empId), e2 = a.replacementId ? employees.find(e => e.id === a.replacementId) : null;
+    return [e1 ? empName(e1) : '', e2 ? empName(e2) : '', a.replExtName || ''].join(' ').indexOf(_q) >= 0;
+  });
 
   const cardsEl = document.getElementById('abs-cards');
   try { const [yy, mm] = activeMonth.split('-').map(Number); const ml = document.getElementById('abs-list-month'); if (ml) ml.textContent = '· ' + ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'][mm - 1] + ' ' + yy; } catch (e) {}
   if (!filtered.length) {
     tbody.innerHTML = '';
     if (cardsEl) cardsEl.innerHTML = '';
+    empty.textContent = _q ? 'לא נמצאו חיסורים של "' + _q + '" החודש' : 'אין חיסורים החודש';
     empty.style.display = 'block';
     return;
   }
@@ -9950,6 +9963,14 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
   if (typeof orig === 'function') window.openEmpProfile = function () { try { closeModal('modal-emps'); } catch (e) {} return orig.apply(this, arguments); };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
+</script>
+<script>
+function toggleAbsSearch() {
+  var q = document.getElementById('abs-q'); if (!q) return;
+  var show = q.style.display === 'none';
+  q.style.display = show ? 'block' : 'none';
+  if (show) q.focus(); else { q.value = ''; renderAbsenceTable(); }
+}
 </script>
 </body>
 </html>
