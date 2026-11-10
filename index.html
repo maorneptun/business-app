@@ -898,6 +898,10 @@ body.kb-open .ai-fab { display: none; }
 .sr-meta { font-size: 13.5px; font-weight: 600; color: var(--text-muted); }
 .sr-empty { background: var(--surface); border: 1px dashed var(--border-strong); border-radius: 16px; padding: 22px 16px; text-align: center; color: var(--text-muted); font-size: 14.5px; font-weight: 600; }
 
+.rem-alert-acts { display: flex; gap: 8px; margin: -2px 0 12px; }
+.rem-alert-acts .btn { flex: 1; justify-content: center; min-height: 44px; font-size: 15px; }
+#rem-alert-list .notice-bar .n-txt { font-size: 16px; font-weight: 700; }
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -1886,7 +1890,8 @@ body.kb-open .ai-fab { display: none; }
   <div class="modal" style="width:420px;border-top:6px solid #D9822B">
     <div class="modal-header"><div class="modal-title">⏰ תזכורת</div></div>
     <div id="rem-alert-list"></div>
-    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('modal-rem-alert')">סגור</button></div>
+    <div style="font-size:13px;color:var(--text-muted);margin:2px 0 4px">תזכורת שלא סומנה "בוצע" תמשיך להופיע בדף הבית ותקפוץ שוב.</div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('modal-rem-alert')">אחר כך (שוב בעוד 30 דק׳)</button></div>
   </div>
 </div>
 
@@ -3925,17 +3930,31 @@ function checkReminders() {
   if (!due.length) return;
   due.forEach(r => { r.notified = true; });
   save();
+  window._remShown = due.map(r => r.id);
   document.getElementById('rem-alert-list').innerHTML = due.map(r =>
     '<div class="notice-bar" style="margin-bottom:8px"><span class="n-ico">⏰</span><div class="n-txt">' + escHtml(r.text) +
     '<div class="n-date">' + (r.date < t ? 'באיחור · ' : '') + _remDayLabel(r.date) + (r.time ? ' · ' + r.time : '') + '</div></div>' +
-    '<button title="בוצע" data-id="' + r.id + '" onclick="remDone(this.dataset.id);this.closest(\'.notice-bar\').remove()">✓</button></div>' +
-    '<div style="text-align:left;margin:-2px 0 8px"><button class="btn btn-secondary btn-sm" data-id="' + r.id + '" onclick="remSnooze(this.dataset.id);this.parentNode.previousSibling.remove();this.parentNode.remove()">נדנד בעוד 10 דקות</button></div>'
+    '</div></div>' +
+    '<div class="rem-alert-acts"><button class="btn btn-primary" data-id="' + r.id + '" onclick="remDone(this.dataset.id);_remAlertGone(this)">✓ בוצע</button>' +
+    '<button class="btn btn-secondary" data-id="' + r.id + '" onclick="remSnooze(this.dataset.id);_remAlertGone(this)">נדנד בעוד 10 דק׳</button></div>'
   ).join('');
   openModal('modal-rem-alert');
   try {
     if ('Notification' in window && Notification.permission === 'granted') due.forEach(r => new Notification('⏰ תזכורת', { body: r.text }));
   } catch (e) {}
   updateRemStat();
+}
+// הסרת תזכורת מהחלון (אחרי בוצע/נדנוד); אם לא נשאר כלום — סוגרים
+function _remAlertGone(btn) {
+  const acts = btn.closest('.rem-alert-acts'); const bar = acts && acts.previousElementSibling;
+  const id = btn.dataset.id; window._remShown = (window._remShown || []).filter(x => x !== id);
+  if (bar) bar.remove(); if (acts) acts.remove();
+  if (!document.querySelector('#rem-alert-list .notice-bar')) closeModal('modal-rem-alert');
+}
+// סגירה בלי לסמן "בוצע" — התזכורת לא נמחקת ותקפוץ שוב בעוד 30 דקות
+function _remAlertLater() {
+  (window._remShown || []).forEach(id => { const r = reminders.find(x => x.id === id); if (r && !r.done) { r.notified = false; r.snoozeUntil = Date.now() + 30 * 60000; } });
+  window._remShown = []; save();
 }
 function remSnooze(id) {
   const r = reminders.find(x => x.id === id);
@@ -10070,6 +10089,12 @@ function openSavedReport(empId) {
   if (typeof prevSave === 'function') window.saveMonthSnapshot = function () { var r = prevSave.apply(this, arguments); try { renderSavedReports(); } catch (e) {} return r; };
   var prevDel = window.deleteSavedMonth;
   if (typeof prevDel === 'function') window.deleteSavedMonth = function () { var r = prevDel.apply(this, arguments); try { renderSavedReports(); } catch (e) {} return r; };
+})();
+</script>
+<script>
+(function () {
+  var prev = window.closeModal;
+  window.closeModal = function (id) { if (id === 'modal-rem-alert' && window._remAlertLater) _remAlertLater(); return prev.apply(this, arguments); };
 })();
 </script>
 </body>
