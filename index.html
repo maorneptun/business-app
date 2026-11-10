@@ -751,7 +751,7 @@ html { -webkit-text-size-adjust: 100%; }
 .sup-chip.sm{background:var(--bg);font-size:12.5px;padding:3px 10px}
 
 /* ===== חילוף במסך אחד ===== */
-#modal-qr { --qa: var(--accent); }
+#modal-qr, #modal-resplit { --qa: var(--accent); }
 .qr-modal { max-width: 560px; width: 95vw; background: var(--bg) !important; }
 .qr-modal .modal-header, .qr-modal .modal-footer { background: var(--bg) !important; }
 .qr-title { font-size: 22px !important; font-weight: 700 !important; color: #111 !important; }
@@ -2087,6 +2087,17 @@ body.kb-open .ai-fab { display: none; }
 </div>
 
 <!-- Absence -->
+<!-- ===== פריסה מחדש של מפרעה ===== -->
+<div class="modal-overlay" id="modal-resplit">
+  <div class="modal qr-modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title qr-title">פריסה מחדש של מפרעה</div>
+      <button class="modal-close" onclick="closeModal('modal-resplit')" aria-label="סגור">×</button>
+    </div>
+    <div id="resplit-body"></div>
+    <div class="modal-footer"><button class="btn btn-primary qr-save" id="resplit-save" onclick="saveResplit()">אישור פריסה</button></div>
+  </div>
+</div>
 <!-- ===== רשימת עובדים — חלון ===== -->
 <div class="modal-overlay" id="modal-emps">
   <div class="modal" style="max-width:640px;width:95vw">
@@ -10153,7 +10164,7 @@ function renderRptCard() {
   var saved = (savedMonths || []).find(function (s) { return s.empId === empId && s.month === month; });
   var absL = absences.filter(function (a) { return a.empId === empId && a.date.startsWith(month); }).sort(function (a, b) { return a.date.localeCompare(b.date); });
   var repL = absences.filter(function (a) { return a.replacementId === empId && a.date.startsWith(month); }).sort(function (a, b) { return a.date.localeCompare(b.date); });
-  var allAdv = advances.filter(function (a) { return a.empId === empId && a.status !== 'completed'; }).sort(function (a, b) { return b.date.localeCompare(a.date); });
+  var allAdv = advances.filter(function (a) { return a.empId === empId && a.status !== 'completed' && (advRemaining(a, month).remaining > 0 || adv.indexOf(a) >= 0); }).sort(function (a, b) { return b.date.localeCompare(a.date); });
 
   var h = '<div class="rc-sum"><div class="rc-sum-top"><div><small>לתשלום · ' + MN[m - 1] + ' ' + y + '</small><div class="rc-big">' + r2(st.netHours) + '<span>שעות</span></div></div>' +
     (saved ? '<span class="rc-saved">✓ דוח נשמר ' + esc(saved.savedAt || '') + '</span>' : '<span class="rc-saved">טרם נשמר</span>') + '</div>' +
@@ -10180,7 +10191,10 @@ function renderRptCard() {
   h += '<div class="rc-sec"><div class="rc-sec-h"><b>מפרעות</b><button class="rc-link" onclick="openAddAdvanceModal()">+ מפרעה</button></div>' +
     (allAdv.length ? allAdv.map(function (a) {
       var per = (parseFloat(a.amount) || 0) / (parseInt(a.months) || 1), d = new Date(a.date);
-      return '<div class="rc-row"><span class="d">' + (d.getMonth() + 1) + '/' + d.getFullYear() + '</span><span class="t">₪' + Math.round(parseFloat(a.amount) || 0).toLocaleString() + ' · ' + (parseInt(a.months) || 1) + ' תשלומים</span><span class="v">₪' + Math.round(per) + ' לחודש</span></div>';
+      var info = advRemaining(a, month);
+      return '<div class="rc-row" style="flex-wrap:wrap"><span class="d">' + (d.getMonth() + 1) + '/' + d.getFullYear() + '</span><span class="t">₪' + Math.round(parseFloat(a.amount) || 0).toLocaleString() + ' · ' + (parseInt(a.months) || 1) + ' תשלומים' +
+        (info.remaining > 0 ? '<br><small style="color:var(--text-muted);font-weight:600">נשאר ₪' + Math.round(info.remaining).toLocaleString() + '</small>' : '') + '</span><span class="v">₪' + Math.round(per) + ' לחודש</span>' +
+        (info.remaining > 0 ? '<button class="rc-link" style="width:100%;text-align:left" data-id="' + esc(a.id) + '" onclick="openResplit(this.dataset.id)">↻ פריסה מחדש</button>' : '') + '</div>';
     }).join('') : '<div class="rc-empty">אין מפרעות פעילות</div>') + '</div>';
   el.innerHTML = h;
 }
@@ -10197,6 +10211,55 @@ function rptCardSave() {
   var prevSw = window.switchProfileTab;
   window.switchProfileTab = function () { var r = prevSw.apply(this, arguments); try { renderRptCard(); } catch (e) {} return r; };
 })();
+</script>
+<script>
+/* ===== פריסה מחדש של מפרעה: מה שכבר נוכה נשאר; היתרה מתחלקת מחדש מהחודש הפעיל ===== */
+function advRemaining(a, month) {
+  var amt = parseFloat(a.amount) || 0, n = parseInt(a.months) || 1, d = new Date(a.date);
+  var p = month.split('-'), diff = (+p[0] * 12 + (+p[1])) - (d.getFullYear() * 12 + d.getMonth() + 1);
+  var paidMonths = Math.max(0, Math.min(n, diff));
+  var paid = amt / n * paidMonths;
+  return { paidMonths: paidMonths, paid: paid, remaining: Math.max(0, amt - paid), per: amt / n, leftMonths: n - paidMonths };
+}
+var _rs = null;
+function openResplit(id) {
+  var a = advances.find(function (x) { return x.id === id; }); if (!a) return;
+  var info = advRemaining(a, activeMonth);
+  _rs = { id: id, n: Math.max(2, info.leftMonths + 1), info: info };
+  renderResplit(); openModal('modal-resplit');
+}
+function renderResplit() {
+  var MN = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+  var p = activeMonth.split('-'), y = +p[0], m = +p[1], i = _rs.info, n = _rs.n;
+  var per = i.remaining / n;
+  var end = new Date(y, m - 1 + n - 1, 1);
+  var opts = [2, 3, 4, 6, 8, 10, 12];
+  var h = '<div class="qr-sum" style="margin-bottom:12px">' +
+    '<div><span>יתרה לפריסה</span><b>₪' + Math.round(i.remaining).toLocaleString() + '</b></div>' +
+    '<div><span>היום יורד</span><b>₪' + Math.round(i.per).toLocaleString() + ' × ' + i.leftMonths + ' חודשים</b></div>' +
+    (i.paid > 0 ? '<div><span>כבר נוכה</span><b>₪' + Math.round(i.paid).toLocaleString() + '</b></div>' : '') + '</div>' +
+    '<div class="qr-cur"><div class="qr-q">לכמה חודשים לפרוס?</div><div class="qr-grid c4">' +
+    opts.map(function (k) { return '<button class="qr-tile big' + (k === n ? ' on' : '') + '" data-v="' + k + '" onclick="_rs.n=+this.dataset.v;renderResplit()">' + k + '</button>'; }).join('') +
+    '<button class="qr-tile big" style="font-size:16px" onclick="var v=parseInt(prompt(\'כמה חודשים?\',_rs.n));if(v>0&&v<=36){_rs.n=v;renderResplit()}">' + (opts.indexOf(n) < 0 ? n : 'אחר') + '</button></div>' +
+    '<div class="qr-sum" style="margin-top:14px;background:var(--accent-light)"><div><span>ירד כל חודש</span><b style="font-size:20px;color:var(--accent)">₪' + Math.round(per).toLocaleString() + '</b></div>' +
+    '<div><span>מ-</span><b>' + MN[m - 1] + ' ' + y + ' עד ' + MN[end.getMonth()] + ' ' + end.getFullYear() + '</b></div></div></div>';
+  document.getElementById('resplit-body').innerHTML = h;
+}
+function saveResplit() {
+  if (!_rs) return;
+  var a = advances.find(function (x) { return x.id === _rs.id; }); if (!a) return;
+  var i = _rs.info, n = _rs.n;
+  var newAdv = { id: Date.now().toString(), empId: a.empId, amount: Math.round(i.remaining * 100) / 100, months: n,
+    date: activeMonth + '-01', note: 'פריסה מחדש' + (a.note ? ' · ' + a.note : ''), status: 'active', createdAt: new Date().toISOString() };
+  if (i.paidMonths > 0) { a.amount = Math.round(i.paid * 100) / 100; a.months = i.paidMonths; a.note = (a.note ? a.note + ' · ' : '') + 'נפרס מחדש'; }
+  else advances = advances.filter(function (x) { return x.id !== a.id; });
+  advances.push(newAdv);
+  save();
+  closeModal('modal-resplit');
+  try { renderProfileAdvances(); } catch (e) {}
+  try { renderRptCard(); } catch (e) {}
+  showToast('✅ המפרעה נפרסה ל-' + n + ' חודשים · ₪' + Math.round(newAdv.amount / n).toLocaleString() + ' לחודש');
+}
 </script>
 </body>
 </html>
