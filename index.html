@@ -820,6 +820,7 @@ html { -webkit-text-size-adjust: 100%; }
 @media (max-width: 700px) {
   .act-grid { grid-template-columns: 1fr 1fr; }
   .act-grid.one { grid-template-columns: 1fr; }
+  #modal-sup .modal { min-height: 72vh; }
   .act-tile { min-height: 76px; padding: 12px 14px; gap: 10px; }
   .act-t b { font-size: 16px; }
   #page-absences .table-wrap table { display: none !important; }
@@ -916,12 +917,17 @@ html { -webkit-text-size-adjust: 100%; }
 
     <div id="notices-area"></div>
 
-    <div class="act-grid"><button class="act-tile primary" onclick="openQuickReplacementModal()"><span class="act-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg></span><span class="act-t"><b>חילוף מהיר</b><small>מישהו חסר היום?</small></span></button><button class="act-tile" onclick="openAbsenceModal()"><span class="act-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M12 13v5M9.5 15.5h5"/></svg></span><span class="act-t"><b>רישום חיסור</b><small>עם או בלי מחליף</small></span></button><button class="act-tile" onclick="var b=document.getElementById('sup-body');if(b&amp;&amp;b.style.display==='none')toggleCard('sup');document.getElementById('sup-card').scrollIntoView({behavior:'smooth',block:'start'})"><span class="act-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6v4H9zM7 7h10l1 14H6z"/></svg></span><span class="act-t"><b>חומרי ניקיון</b><small>רישום ללקוח</small></span></button><button class="act-tile" onclick="openAddEmployeeModal()"><span class="act-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6M19 4v4M17 6h4"/></svg></span><span class="act-t"><b>עובד חדש</b><small>הוספה לרשימה</small></span></button></div>
+
 
     
     <div class="stats-grid" style="display:flex;gap:14px;flex-wrap:wrap">
       <div class="stat-card" style="flex:0 1 200px"><div class="stat-label">עובדים פעילים</div><div class="stat-value blue" id="stat-active">0</div></div>
-      <div class="stat-card" style="flex:0 1 200px"><div class="stat-label">חיסורים החודש</div><div class="stat-value red" id="stat-absences">0</div></div>
+      <div class="stat-card" style="flex:0 1 200px;cursor:pointer" onclick="showPage('absences')"><div class="stat-label">חיסורים החודש</div><div class="stat-value red" id="stat-absences">0</div></div>
+    </div>
+
+    <div class="act-grid"><button class="act-tile primary" onclick="openQuickReplacementModal()"><span class="act-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg></span><span class="act-t"><b>חילוף מהיר</b><small>מישהו חסר היום?</small></span></button><button class="act-tile" onclick="openAbsenceModal()"><span class="act-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M12 13v5M9.5 15.5h5"/></svg></span><span class="act-t"><b>רישום חיסור</b><small>עם או בלי מחליף</small></span></button><button class="act-tile" onclick="openSupplyModal()"><span class="act-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6v4H9zM7 7h10l1 14H6z"/></svg></span><span class="act-t"><b>חומרי ניקיון</b><small>רישום ללקוח</small></span></button><button class="act-tile" onclick="openAddEmployeeModal()"><span class="act-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6M19 4v4M17 6h4"/></svg></span><span class="act-t"><b>עובד חדש</b><small>הוספה לרשימה</small></span></button></div>
+
+    <div class="stats-grid" id="rem-row" style="display:flex;gap:14px;flex-wrap:wrap">
       <div class="stat-card" id="stat-rem-card" style="flex:0 1 200px;cursor:pointer" onclick="openReminders()"><div class="stat-label">תזכורות להיום</div><div class="stat-value" style="color:var(--warning)" id="stat-rem">0</div><div id="rem-today-list" class="rem-mini"></div></div>
     </div>
 
@@ -1970,6 +1976,16 @@ html { -webkit-text-size-adjust: 100%; }
 </div>
 
 <!-- Absence -->
+<!-- ===== חומרי ניקיון — חלון ===== -->
+<div class="modal-overlay" id="modal-sup">
+  <div class="modal" style="max-width:560px;width:95vw">
+    <div class="modal-header">
+      <div class="modal-title" style="font-size:21px;font-weight:700">🧴 חומרי ניקיון <span id="sup-modal-month" style="color:var(--text-muted);font-weight:600;font-size:15px"></span></div>
+      <button class="modal-close" onclick="closeModal('modal-sup')" aria-label="סגור">×</button>
+    </div>
+    <div id="sup-modal-body"></div>
+  </div>
+</div>
 <!-- ===== חילוף / חיסור — מסך אחד בקוביות ===== -->
 <div class="modal-overlay" id="modal-qr">
   <div class="modal qr-modal">
@@ -3958,7 +3974,7 @@ function renderSupplies() {
   }
   // בדף הבית רק טופס ההוספה — הרישומים עצמם מוצגים בכרטיס של כל לקוח
   const list = document.getElementById('sup-list');
-  if (list) list.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 2px 0;flex-wrap:wrap"><span style="color:var(--text-muted);font-size:12px">נשמר בכרטיס הלקוח</span><button class="btn btn-secondary btn-sm" onclick="showPage(\'reports\');switchReportTab(\'supplies\');window.scrollTo(0,0)">📋 סיכום החודש</button></div>';
+  if (list) list.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 2px 0;flex-wrap:wrap"><span style="color:var(--text-muted);font-size:12px">נשמר בכרטיס הלקוח</span><button class="btn btn-secondary btn-sm" onclick="closeModal(\'modal-sup\');showPage(\'reports\');switchReportTab(\'supplies\');window.scrollTo(0,0)">📋 סיכום החודש</button></div>';
   renderClientSupplies();
   try { renderSupplySummary(); } catch (e) {}
 }
@@ -9768,6 +9784,30 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
     if (Q.date.slice(0, 7) !== activeMonth) msg += ' (בחודש אחר מהחודש המוצג)';
     showToast('✅ ' + msg);
   };
+})();
+</script>
+<script>
+/* חומרי ניקיון נפתחים בחלון (במקום כרטיס בתחתית דף הבית) */
+(function () {
+  function init() {
+    var body = document.getElementById('sup-body'), dst = document.getElementById('sup-modal-body'), card = document.getElementById('sup-card');
+    if (!body || !dst || dst.childNodes.length) return;
+    while (body.firstChild) dst.appendChild(body.firstChild);
+    if (card) card.style.display = 'none';
+  }
+  window.openSupplyModal = function () {
+    init();
+    var m = document.getElementById('sup-month'), mm = document.getElementById('sup-modal-month');
+    if (m && mm) mm.textContent = m.textContent;
+    try { renderSupplies(); } catch (e) {}
+    openModal('modal-sup');
+    var sel = document.getElementById('sup-client');
+    setTimeout(function () {
+      var t = sel && sel.value ? document.getElementById('sup-text') : document.querySelector('#modal-sup .cpick-in');
+      if (t) t.focus();
+    }, 250);
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
 </script>
 </body>
