@@ -806,15 +806,20 @@ html { -webkit-text-size-adjust: 100%; }
 .act-tile.primary { background: var(--accent); color: #fff; }
 .act-tile.primary .act-ic { background: rgba(255,255,255,.18); color: #fff; }
 .act-tile.primary small { color: rgba(255,255,255,.85); }
-.abs-cards { display: none; flex-direction: column; gap: 10px; }
-#page-employees .coll-h button[onclick*="openQuickReplacementModal"], #btn-add-emp-bar { display: none !important; }
-.abs-card { width: 100%; background: var(--surface); border: 0; border-radius: 16px; padding: 14px 16px; text-align: right; font-family: inherit; color: var(--text); box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 6px; cursor: pointer; }
+.abs-cards { display: flex; flex-direction: column; gap: 12px; }
+#page-absences .table-wrap table { display: none !important; }
+#page-absences .table-wrap { padding: 0; background: transparent; box-shadow: none; overflow: visible; }
+.abs-card { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 14px; text-align: right; font-family: inherit; color: var(--text); display: flex; align-items: stretch; gap: 14px; cursor: pointer; }
+.abs-card:hover { border-color: var(--accent-mid); }
+.abs-card .ac-date { flex: 0 0 64px; background: var(--accent-light); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 4px; color: var(--accent); }
+.abs-card .ac-date b { font-size: 20px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.abs-card .ac-date small { font-size: 12.5px; font-weight: 700; }
+.abs-card .ac-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; justify-content: center; }
 .abs-card .ac-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .abs-card .ac-name { font-size: 17px; font-weight: 700; }
-.abs-card .ac-date { font-size: 13.5px; font-weight: 700; background: var(--bg); border-radius: 10px; padding: 3px 10px; white-space: nowrap; }
 .abs-card .ac-cl { font-size: 14px; font-weight: 600; color: var(--text-muted); }
-.abs-card .ac-rep { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 15px; font-weight: 600; border-top: 1px solid var(--border); padding-top: 8px; margin-top: 2px; }
-.abs-card .ac-rep.none { color: var(--text-muted); font-weight: 600; }
+.abs-card .ac-rep { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 14.5px; font-weight: 600; border-top: 1px solid var(--border); padding-top: 7px; margin-top: 3px; }
+.abs-card .ac-rep.none { color: var(--text-muted); }
 .ac-pill { font-size: 12.5px; font-weight: 700; border-radius: 20px; padding: 3px 10px; }
 .ac-pill.paid { background: #E3F4EC; color: #0F6B4F; } .ac-pill.unpaid { background: #FDECE4; color: #9A3412; } .ac-pill.pending { background: #FEF3C7; color: #854D0E; }
 @media (max-width: 700px) {
@@ -823,14 +828,12 @@ html { -webkit-text-size-adjust: 100%; }
   #modal-sup .modal { min-height: 72vh; }
   .act-tile { min-height: 76px; padding: 12px 14px; gap: 10px; }
   .act-t b { font-size: 16px; }
-  #page-absences .table-wrap table { display: none !important; }
-  #page-absences .abs-cards { display: flex; }
+
   #abs-filter-emp { flex: 1; min-width: 0; width: 100% !important; }
   #abs-filter-month { flex: 1; min-width: 0; width: 100% !important; }
   .card:has(#abs-filter-emp) > div:first-child { flex-wrap: wrap; gap: 10px; }
   .card:has(#abs-filter-emp) > div:first-child > .flex { width: 100%; }
 
-  #page-absences .table-wrap { padding: 0; }
 }
 
 /* ===== גרף חיסורים לפי יום (דף הבית) ===== */
@@ -1086,8 +1089,8 @@ body.kb-open .ai-fab { display: none; }
 
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <div class="card-title" style="margin-bottom:0">כל החיסורים</div>
-        <div class="flex gap-8">
+        <div class="card-title" style="margin-bottom:0">חיסורי החודש <span id="abs-list-month" style="color:var(--text-muted);font-weight:600"></span></div>
+        <div class="flex gap-8" style="display:none">
           <select class="form-control" id="abs-filter-emp" onchange="renderAbsenceTable()" style="width:auto">
             <option value="">כל העובדים</option>
           </select>
@@ -4660,6 +4663,7 @@ function renderAbsenceTable() {
   if (monthToFilter) filtered = filtered.filter(a => a.date.startsWith(monthToFilter));
 
   const cardsEl = document.getElementById('abs-cards');
+  try { const [yy, mm] = activeMonth.split('-').map(Number); const ml = document.getElementById('abs-list-month'); if (ml) ml.textContent = '· ' + ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'][mm - 1] + ' ' + yy; } catch (e) {}
   if (!filtered.length) {
     tbody.innerHTML = '';
     if (cardsEl) cardsEl.innerHTML = '';
@@ -4674,12 +4678,14 @@ function renderAbsenceTable() {
     const d = a.date.split('-');
     const st = a.replPaid || 'unpaid';
     const stL = { paid: 'שולם', unpaid: 'לא שולם', pending: 'ממתין' }[st] || st;
+    const wd = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'][new Date(a.date + 'T12:00:00').getDay()];
     return '<button class="abs-card" data-id="' + a.id + '" onclick="openEditAbsenceModal(this.dataset.id)">' +
-      '<span class="ac-top"><span class="ac-name">' + escHtml(emp ? empName(emp) : '—') + '</span><span class="ac-date">' + d[2] + '/' + d[1] + '</span></span>' +
+      '<span class="ac-date"><b>' + parseInt(d[2], 10) + '/' + parseInt(d[1], 10) + '</b><small>' + wd + '</small></span><span class="ac-body">' +
+      '<span class="ac-top"><span class="ac-name">' + escHtml(emp ? empName(emp) : '—') + '</span></span>' +
       (a.client ? '<span class="ac-cl">' + escHtml(a.client) + '</span>' : '') +
       (rn ? '<span class="ac-rep"><span>מחליף/ה: <b>' + escHtml(rn) + '</b>' + (a.replHours ? ' · ' + a.replHours + " שע'" : '') + '</span><span class="ac-pill ' + st + '">' + stL + (a.replAmount ? ' · ₪' + a.replAmount : '') + '</span></span>'
           : '<span class="ac-rep none">בלי מחליף</span>') +
-      (a.note ? '<span class="ac-cl">' + escHtml(a.note) + '</span>' : '') + '</button>';
+      (a.note ? '<span class="ac-cl">' + escHtml(a.note) + '</span>' : '') + '</span></button>';
   }).join('');
 
   const paidLabel = { paid: '✅ שולם', unpaid: '❌ לא שולם', pending: '⏳ ממתין' };
