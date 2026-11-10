@@ -902,6 +902,35 @@ body.kb-open .ai-fab { display: none; }
 .rem-alert-acts .btn { flex: 1; justify-content: center; min-height: 44px; font-size: 15px; }
 #rem-alert-list .notice-bar .n-txt { font-size: 16px; font-weight: 700; }
 
+/* ===== כרטיס עובד לדוח (מדף הדוחות) ===== */
+#rpt-card { display: none; }
+#page-emp-profile.rpt-mode #rpt-card { display: flex; flex-direction: column; gap: 12px; max-width: 760px; }
+#page-emp-profile.rpt-mode .profile-tabs, #page-emp-profile.rpt-mode .profile-tab-content { display: none !important; }
+.rc-sum { background: var(--accent); color: #fff; border-radius: 20px; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+.rc-sum-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.rc-sum-top small { font-size: 14px; font-weight: 600; opacity: .9; display: block; }
+.rc-big { font-size: 40px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.rc-big span { font-size: 17px; font-weight: 700; margin-right: 4px; }
+.rc-saved { font-size: 12.5px; font-weight: 700; background: rgba(255,255,255,.2); border-radius: 20px; padding: 4px 10px; white-space: nowrap; }
+.rc-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.rc-stat { background: rgba(255,255,255,.14); border-radius: 12px; padding: 8px 6px; text-align: center; }
+.rc-stat b { display: block; font-size: 19px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.rc-stat small { font-size: 12px; font-weight: 600; opacity: .9; }
+.rc-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.rc-btn { min-height: 52px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface); font-family: inherit; font-size: 15.5px; font-weight: 700; color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.rc-btn.primary { background: #2E6A48; border-color: #2E6A48; color: #fff; }
+.rc-sec { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 14px 16px; }
+.rc-sec-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
+.rc-sec-h b { font-size: 16.5px; font-weight: 700; }
+.rc-link { border: 0; background: transparent; color: var(--accent); font-family: inherit; font-size: 14.5px; font-weight: 700; cursor: pointer; padding: 8px 4px; min-height: 40px; }
+.rc-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--border); font-size: 15px; }
+.rc-row:first-of-type { border-top: 0; }
+.rc-row .d { font-weight: 700; color: var(--accent); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rc-row .t { flex: 1; min-width: 0; font-weight: 600; }
+.rc-row .v { font-weight: 700; white-space: nowrap; }
+.rc-empty { color: var(--text-muted); font-size: 14px; font-weight: 600; padding: 4px 0; }
+@media (max-width: 700px) { .rc-big { font-size: 36px; } .rc-stat b { font-size: 17px; } }
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -1470,6 +1499,7 @@ body.kb-open .ai-fab { display: none; }
       </div>
     </div>
 
+    <div id="rpt-card"></div>
     <div class="profile-tabs">
       <button class="profile-tab-btn active" id="tab-btn-replacements" onclick="switchProfileTab('replacements')">🔄 חילופים <span id="tab-badge-replacements" style="background:var(--accent);color:white;border-radius:10px;padding:1px 7px;font-size:11px;margin-right:4px"></span></button>
       <button class="profile-tab-btn" id="tab-btn-absences" onclick="switchProfileTab('absences')">📅 חיסורים <span id="tab-badge-absences" style="background:var(--danger);color:white;border-radius:10px;padding:1px 7px;font-size:11px;margin-right:4px"></span></button>
@@ -2923,6 +2953,7 @@ function renderActiveMonthLabel() {
   try { renderClientSupplies(); } catch (e) {}
   try { renderSupplySummary(); } catch (e) {}
   try { renderSavedReports(); } catch (e) {}
+  try { renderRptCard(); } catch (e) {}
 }
 
 
@@ -10095,6 +10126,76 @@ function openSavedReport(empId) {
 (function () {
   var prev = window.closeModal;
   window.closeModal = function (id) { if (id === 'modal-rem-alert' && window._remAlertLater) _remAlertLater(); return prev.apply(this, arguments); };
+})();
+</script>
+<script>
+/* כרטיס עובד לדוח: סיכום החודש, פעולות, חיסורים, חילופים ומפרעות — לפי החודש שנבחר למעלה */
+function renderRptCard() {
+  var el = document.getElementById('rpt-card'), pg = document.getElementById('page-emp-profile');
+  if (!el || !pg || !pg.classList.contains('rpt-mode')) return;
+  var empId = currentProfileEmpId, emp = employees.find(function (e) { return e.id === empId; });
+  if (!emp) { el.innerHTML = ''; return; }
+  var month = activeMonth, p = month.split('-'), y = +p[0], m = +p[1];
+  var MN = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+  var DN = ['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'];
+  function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function dl(iso) { var d = new Date(iso + 'T12:00:00'); return d.getDate() + '/' + (d.getMonth() + 1) + ' ' + DN[d.getDay()]; }
+  function r2(n) { return Math.round((n || 0) * 100) / 100; }
+  var st = calcMonthStats(empId, month) || {};
+  var adv = advances.filter(function (a) {
+    if (a.empId !== empId || a.status === 'completed') return false;
+    var s0 = new Date(a.date), sm = s0.getFullYear() + '-' + String(s0.getMonth() + 1).padStart(2, '0');
+    var ed = new Date(s0); ed.setMonth(ed.getMonth() + (parseInt(a.months) || 1) - 1);
+    var em = ed.getFullYear() + '-' + String(ed.getMonth() + 1).padStart(2, '0');
+    return month >= sm && month <= em;
+  });
+  var advDed = adv.reduce(function (s, a) { return s + (parseFloat(a.amount) || 0) / (parseInt(a.months) || 1); }, 0);
+  var saved = (savedMonths || []).find(function (s) { return s.empId === empId && s.month === month; });
+  var absL = absences.filter(function (a) { return a.empId === empId && a.date.startsWith(month); }).sort(function (a, b) { return a.date.localeCompare(b.date); });
+  var repL = absences.filter(function (a) { return a.replacementId === empId && a.date.startsWith(month); }).sort(function (a, b) { return a.date.localeCompare(b.date); });
+  var allAdv = advances.filter(function (a) { return a.empId === empId && a.status !== 'completed'; }).sort(function (a, b) { return b.date.localeCompare(a.date); });
+
+  var h = '<div class="rc-sum"><div class="rc-sum-top"><div><small>לתשלום · ' + MN[m - 1] + ' ' + y + '</small><div class="rc-big">' + r2(st.netHours) + '<span>שעות</span></div></div>' +
+    (saved ? '<span class="rc-saved">✓ דוח נשמר ' + esc(saved.savedAt || '') + '</span>' : '<span class="rc-saved">טרם נשמר</span>') + '</div>' +
+    '<div class="rc-stats">' +
+      '<div class="rc-stat"><b>' + (st.workdays || 0) + '</b><small>ימי עבודה</small></div>' +
+      '<div class="rc-stat"><b>' + (st.absCount || 0) + '</b><small>חיסורים</small></div>' +
+      '<div class="rc-stat"><b>' + r2(st.totalRepl) + '</b><small>שע׳ חילוף</small></div>' +
+      '<div class="rc-stat"><b>₪' + Math.round(advDed) + '</b><small>ניכוי מפרעה</small></div>' +
+    '</div></div>';
+  h += '<div class="rc-acts"><button class="rc-btn primary" onclick="rptCardSave()">💾 ' + (saved ? 'עדכן דוח' : 'שמור דוח') + '</button>' +
+    '<button class="rc-btn" onclick="openMonthlyReport(' + y + ',' + m + ')">📋 דוח יומי מלא</button></div>';
+  // חיסורים
+  h += '<div class="rc-sec"><div class="rc-sec-h"><b>חיסורים החודש</b><button class="rc-link" data-id="' + esc(empId) + '" onclick="openAbsenceModal();qrPick(\'emp\', this.dataset.id)">+ חיסור</button></div>' +
+    (absL.length ? absL.map(function (a) {
+      var r = a.replacementId ? employees.find(function (e) { return e.id === a.replacementId; }) : null;
+      return '<div class="rc-row"><span class="d">' + dl(a.date) + '</span><span class="t">' + esc(a.client || '') + '</span><span class="v" style="color:var(--text-muted);font-weight:600">' + (r ? 'החליף/ה: ' + esc(r.fname) : (a.replExtName ? esc(a.replExtName) : 'בלי מחליף')) + '</span></div>';
+    }).join('') : '<div class="rc-empty">אין חיסורים החודש</div>') + '</div>';
+  // חילופים שעשה
+  if (repL.length) h += '<div class="rc-sec"><div class="rc-sec-h"><b>החליף/ה עובדים אחרים</b></div>' + repL.map(function (a) {
+    var e2 = employees.find(function (e) { return e.id === a.empId; });
+    return '<div class="rc-row"><span class="d">' + dl(a.date) + '</span><span class="t">במקום ' + esc(e2 ? empName(e2) : '') + '</span><span class="v">' + r2(a.replHours) + ' שע׳</span></div>';
+  }).join('') + '</div>';
+  // מפרעות
+  h += '<div class="rc-sec"><div class="rc-sec-h"><b>מפרעות</b><button class="rc-link" onclick="openAddAdvanceModal()">+ מפרעה</button></div>' +
+    (allAdv.length ? allAdv.map(function (a) {
+      var per = (parseFloat(a.amount) || 0) / (parseInt(a.months) || 1), d = new Date(a.date);
+      return '<div class="rc-row"><span class="d">' + (d.getMonth() + 1) + '/' + d.getFullYear() + '</span><span class="t">₪' + Math.round(parseFloat(a.amount) || 0).toLocaleString() + ' · ' + (parseInt(a.months) || 1) + ' תשלומים</span><span class="v">₪' + Math.round(per) + ' לחודש</span></div>';
+    }).join('') : '<div class="rc-empty">אין מפרעות פעילות</div>') + '</div>';
+  el.innerHTML = h;
+}
+function rptCardSave() {
+  try { profileHoursMonth = activeMonth; } catch (e) {}
+  saveMonthSnapshot(); renderRptCard();
+}
+(function () {
+  // מתרענן בכל כניסה למצב דוח, בשינוי חודש ואחרי שמירה
+  var prevOpen = window.openEmpProfile;
+  window.openEmpProfile = function () { var r = prevOpen.apply(this, arguments); setTimeout(renderRptCard, 0); return r; };
+  var prevSave = window.save;
+  if (typeof prevSave === 'function') window.save = function () { var r = prevSave.apply(this, arguments); try { renderRptCard(); } catch (e) {} return r; };
+  var prevSw = window.switchProfileTab;
+  window.switchProfileTab = function () { var r = prevSw.apply(this, arguments); try { renderRptCard(); } catch (e) {} return r; };
 })();
 </script>
 </body>
