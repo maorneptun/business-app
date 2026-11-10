@@ -878,6 +878,10 @@ body.kb-open .ai-fab { display: none; }
 .rem-mini-row.gone { opacity: 0; transform: translateX(-12px); }
 @media (max-width: 700px) { #stat-rem-card { padding: 12px 16px; } #stat-rem-card .stat-value { font-size: 24px; } }
 
+/* ===== דוחות: רק "צור דוח שעות" (שאר הלשוניות מוסתרות כרגע) ===== */
+#page-reports .tabs-inner, #rpt-tab-summary, #rpt-tab-clock, #rpt-tab-client { display: none !important; }
+#page-emp-profile.rpt-mode #tab-btn-replacements, #page-emp-profile.rpt-mode #tab-btn-absences { display: none !important; }
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -1306,10 +1310,10 @@ body.kb-open .ai-fab { display: none; }
     <div class="page-header">
       <div>
         <div class="page-title">דוחות</div>
-        <div class="page-subtitle">הפקת דוחות שעות וחיסורים</div>
+        <div class="page-subtitle">דוח שעות ומפרעות לפי עובד</div>
       </div>
-      <button class="btn btn-primary" onclick="printReport()">🖨️ הדפסת דוח</button>
     </div>
+    <div class="act-grid one"><button class="act-tile primary" onclick="openReportPicker()"><span class="act-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4M9 12h6M9 16h6M12 9v6"/></svg></span><span class="act-t"><b>צור דוח שעות חדש</b><small>בוחרים עובד ← שעות ומפרעות</small></span></button></div>
 
     <!-- Tabs -->
     <div class="tabs-inner" style="margin-bottom:20px">
@@ -1441,7 +1445,7 @@ body.kb-open .ai-fab { display: none; }
         </div>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
-        <button class="btn btn-secondary" onclick="showPage('employees');openEmpListModal()">← לרשימה</button>
+        <button class="btn btn-secondary" onclick="if(document.getElementById('page-emp-profile').classList.contains('rpt-mode')){showPage('reports')}else{showPage('employees');openEmpListModal()}">← חזרה</button>
       </div>
     </div>
 
@@ -9971,6 +9975,45 @@ function toggleAbsSearch() {
   q.style.display = show ? 'block' : 'none';
   if (show) q.focus(); else { q.value = ''; renderAbsenceTable(); }
 }
+</script>
+<script>
+/* דוח שעות: בחירת עובד מהרשימה → כרטיס העובד עם שעות עבודה ומפרעות בלבד */
+(function () {
+  var pick = false;
+  var prevShow = window.showPage;
+  window.showPage = function (name) {
+    var r = prevShow.apply(this, arguments);
+    if (name === 'reports') { var sp = document.getElementById('rpt-tab-supplies'); if (sp) sp.classList.remove('active'); }
+    return r;
+  };
+  window.openReportPicker = function () {
+    pick = true;
+    openEmpListModal();
+    var t = document.querySelector('#modal-emps .modal-title');
+    if (t) t.firstChild.textContent = '📄 דוח שעות — בחר עובד ';
+  };
+  var prevOpen = window.openEmpProfile;
+  window.openEmpProfile = function () {
+    var wasPick = pick; pick = false;
+    var r = prevOpen.apply(this, arguments);
+    var pg = document.getElementById('page-emp-profile');
+    if (wasPick) {
+      if (pg) pg.classList.add('rpt-mode');
+      try { switchProfileTab('hours'); } catch (e) {}
+    } else if (pg) pg.classList.remove('rpt-mode');
+    return r;
+  };
+  // סגירת החלון בלי בחירה מבטלת את מצב הבחירה
+  var prevClose = window.closeModal;
+  window.closeModal = function (id) {
+    var r = prevClose.apply(this, arguments);
+    if (id === 'modal-emps') pick = false;
+    if (id === 'modal-emps') setTimeout(function () {
+      var t = document.querySelector('#modal-emps .modal-title'); if (t) t.firstChild.textContent = '👥 עובדים ';
+    }, 0);
+    return r;
+  };
+})();
 </script>
 </body>
 </html>
