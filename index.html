@@ -17,9 +17,9 @@
 
 :root {
   --primary: #1d1d1f;
-  --accent: #5A86B3;
+  --accent: #4472A8;
   --accent-light: #eef3f8;
-  --accent-mid: #6a93bd;
+  --accent-mid: #5A86B3;
   --danger: #C98980;
   --danger-light: #faf1ef;
   --warning: #C9A066;
@@ -751,46 +751,86 @@ html { -webkit-text-size-adjust: 100%; }
 .sup-chip.sm{background:var(--bg);font-size:12.5px;padding:3px 10px}
 
 /* ===== חילוף במסך אחד ===== */
-#modal-qr { --qa: #2F64B0; }
-.qr-modal { max-width: 560px; width: 95vw; background: #F2F2F7 !important; }
-.qr-modal .modal-header, .qr-modal .modal-footer { background: #F2F2F7 !important; }
-.qr-title { font-size: 26px !important; font-weight: 800 !important; color: #111 !important; }
-#qr-body { display: flex; flex-direction: column; gap: 10px; color: #111; }
+#modal-qr { --qa: var(--accent); }
+.qr-modal { max-width: 560px; width: 95vw; background: var(--bg) !important; }
+.qr-modal .modal-header, .qr-modal .modal-footer { background: var(--bg) !important; }
+.qr-title { font-size: 22px !important; font-weight: 700 !important; color: #111 !important; }
+#qr-body { display: flex; flex-direction: column; gap: 10px; color: var(--text); }
 .qr-done { width: 100%; background: #fff; border: 0; border-radius: 18px; padding: 12px 16px; min-height: 66px; display: flex; align-items: center; gap: 12px; text-align: right; font-family: inherit; cursor: pointer; }
 .qr-check { width: 34px; height: 34px; border-radius: 17px; background: #E3F4EC; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .qr-dq { display: block; font-size: 14px; font-weight: 700; color: #6B6B70; }
-.qr-da { display: block; font-size: 19px; font-weight: 800; color: #111; line-height: 1.25; }
+.qr-da { display: block; font-size: 17px; font-weight: 700; color: #111; line-height: 1.25; }
 .qr-chg { font-size: 15px; font-weight: 700; color: var(--qa); white-space: nowrap; }
-.qr-cur { background: #fff; border-radius: 20px; padding: 16px; border: 2.5px solid var(--qa); }
-.qr-now { font-size: 13px; font-weight: 800; color: var(--qa); }
-.qr-q { font-size: 23px; font-weight: 800; margin: 2px 0 12px; color: #111; line-height: 1.2; }
-.qr-sub { font-size: 14px; font-weight: 800; color: #6B6B70; margin: 12px 0 8px; }
+.qr-cur { background: #fff; border-radius: 20px; padding: 16px; border: 2px solid var(--qa); }
+.qr-now { font-size: 12.5px; font-weight: 700; color: var(--qa); }
+.qr-q { font-size: 20px; font-weight: 700; margin: 2px 0 12px; color: #111; line-height: 1.2; }
+.qr-sub { font-size: 13.5px; font-weight: 700; color: #6B6B70; margin: 12px 0 8px; }
 .qr-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .qr-grid.c3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .qr-grid.c4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.qr-tile { min-height: 60px; border-radius: 14px; border: 0; background: #F2F2F7; font-family: inherit; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding: 8px 12px; text-align: right; cursor: pointer; color: #111; gap: 1px; }
+.qr-tile { min-height: 58px; border-radius: 14px; border: 0; background: var(--bg); font-family: inherit; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding: 8px 12px; text-align: right; cursor: pointer; color: #111; gap: 1px; }
 .qr-tile:hover { background: #E8E8EE; }
-.qr-tile b { font-size: 17px; font-weight: 800; line-height: 1.2; }
+.qr-tile b { font-size: 16px; font-weight: 700; line-height: 1.2; }
 .qr-tile small { font-size: 12.5px; font-weight: 700; color: #6B6B70; }
 .qr-tile small.ok { color: #0F6B4F; }
-.qr-tile.big { align-items: center; justify-content: center; font-size: 26px; font-weight: 800; min-height: 64px; }
-.qr-tile.mid { align-items: center; justify-content: center; font-size: 16px; font-weight: 800; }
+.qr-tile.big { align-items: center; justify-content: center; font-size: 22px; font-weight: 700; min-height: 60px; }
+.qr-tile.mid { align-items: center; justify-content: center; font-size: 15px; font-weight: 700; }
 .qr-tile.on { background: var(--qa); color: #fff; }
 .qr-tile.on small { color: rgba(255,255,255,.85); }
 .qr-tile.dash { background: transparent; border: 2px dashed #C7C7CC; color: #4A4A50; align-items: center; font-size: 15px; font-weight: 700; }
 .qr-search { width: 100%; box-sizing: border-box; min-height: 50px; border-radius: 14px; border: 0; background: #F2F2F7; padding: 0 16px; font-family: inherit; font-size: 17px; font-weight: 600; margin-bottom: 10px; }
 .qr-input { width: 100%; box-sizing: border-box; min-height: 50px; border-radius: 14px; border: 1.5px solid #D1D1D6; background: #fff; padding: 0 14px; font-family: inherit; font-size: 17px; font-weight: 600; }
-.qr-more { width: 100%; min-height: 46px; margin-top: 8px; border: 0; background: transparent; font-family: inherit; font-size: 15px; font-weight: 800; color: var(--qa); cursor: pointer; }
+.qr-more { width: 100%; min-height: 46px; margin-top: 8px; border: 0; background: transparent; font-family: inherit; font-size: 15px; font-weight: 700; color: var(--qa); cursor: pointer; }
 .qr-later { background: #E9E9EE; border-radius: 18px; padding: 12px 16px; min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.qr-later span { font-size: 17px; font-weight: 800; color: #8E8E93; }
+.qr-later span { font-size: 16px; font-weight: 700; color: #8E8E93; }
 .qr-later small { font-size: 13px; font-weight: 700; color: #8E8E93; }
-.qr-save { background: var(--qa) !important; border-color: var(--qa) !important; width: 100%; min-height: 58px !important; border-radius: 18px !important; font-size: 20px !important; font-weight: 800 !important; }
+.qr-save { background: var(--qa) !important; border-color: var(--qa) !important; width: 100%; min-height: 58px !important; border-radius: 18px !important; font-size: 18px !important; font-weight: 700 !important; }
 .qr-save:disabled { background: #C7C7CC !important; border-color: #C7C7CC !important; opacity: 1; cursor: default; }
 .qr-sum { background: #fff; border-radius: 18px; padding: 12px 16px; display: flex; flex-direction: column; gap: 4px; }
 .qr-sum div { display: flex; justify-content: space-between; gap: 10px; font-size: 16px; }
 .qr-sum span { color: #6B6B70; font-weight: 700; }
-.qr-sum b { font-weight: 800; text-align: left; }
+.qr-sum b { font-weight: 700; text-align: left; }
 @media (max-width: 700px) { .qr-grid.c4 { grid-template-columns: repeat(4, minmax(0, 1fr)); } .qr-q { font-size: 22px; } }
+
+/* ===== קוביות פעולה (בית, חיסורים) ===== */
+.act-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; max-width: 900px; }
+.act-grid.one { grid-template-columns: 1fr; max-width: 420px; }
+#page-absences .page-header > .btn { display: none !important; }
+.act-tile { background: var(--surface); border: 0; border-radius: 18px; padding: 14px 16px; min-height: 84px; display: flex; align-items: center; gap: 12px; text-align: right; font-family: inherit; cursor: pointer; box-shadow: var(--shadow); color: var(--text); }
+.act-tile:active { transform: scale(.98); }
+.act-ic { width: 40px; height: 40px; border-radius: 12px; background: var(--accent-light); color: var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.act-ic svg { width: 21px; height: 21px; }
+.act-t { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.act-t b { font-size: 16.5px; font-weight: 700; line-height: 1.2; }
+.act-t small { font-size: 13px; font-weight: 600; color: var(--text-muted); }
+.act-tile.primary { background: var(--accent); color: #fff; }
+.act-tile.primary .act-ic { background: rgba(255,255,255,.18); color: #fff; }
+.act-tile.primary small { color: rgba(255,255,255,.85); }
+.abs-cards { display: none; flex-direction: column; gap: 10px; }
+#page-employees .coll-h button[onclick*="openQuickReplacementModal"], #btn-add-emp-bar { display: none !important; }
+.abs-card { width: 100%; background: var(--surface); border: 0; border-radius: 16px; padding: 14px 16px; text-align: right; font-family: inherit; color: var(--text); box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 6px; cursor: pointer; }
+.abs-card .ac-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.abs-card .ac-name { font-size: 17px; font-weight: 700; }
+.abs-card .ac-date { font-size: 13.5px; font-weight: 700; background: var(--bg); border-radius: 10px; padding: 3px 10px; white-space: nowrap; }
+.abs-card .ac-cl { font-size: 14px; font-weight: 600; color: var(--text-muted); }
+.abs-card .ac-rep { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 15px; font-weight: 600; border-top: 1px solid var(--border); padding-top: 8px; margin-top: 2px; }
+.abs-card .ac-rep.none { color: var(--text-muted); font-weight: 600; }
+.ac-pill { font-size: 12.5px; font-weight: 700; border-radius: 20px; padding: 3px 10px; }
+.ac-pill.paid { background: #E3F4EC; color: #0F6B4F; } .ac-pill.unpaid { background: #FDECE4; color: #9A3412; } .ac-pill.pending { background: #FEF3C7; color: #854D0E; }
+@media (max-width: 700px) {
+  .act-grid { grid-template-columns: 1fr 1fr; }
+  .act-grid.one { grid-template-columns: 1fr; }
+  .act-tile { min-height: 76px; padding: 12px 14px; gap: 10px; }
+  .act-t b { font-size: 16px; }
+  #page-absences .table-wrap table { display: none !important; }
+  #page-absences .abs-cards { display: flex; }
+  #abs-filter-emp { flex: 1; min-width: 0; width: 100% !important; }
+  #abs-filter-month { flex: 1; min-width: 0; width: 100% !important; }
+  .card:has(#abs-filter-emp) > div:first-child { flex-wrap: wrap; gap: 10px; }
+  .card:has(#abs-filter-emp) > div:first-child > .flex { width: 100%; }
+
+  #page-absences .table-wrap { padding: 0; }
+}
 
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -876,6 +916,9 @@ html { -webkit-text-size-adjust: 100%; }
 
     <div id="notices-area"></div>
 
+    <div class="act-grid"><button class="act-tile primary" onclick="openQuickReplacementModal()"><span class="act-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg></span><span class="act-t"><b>חילוף מהיר</b><small>מישהו חסר היום?</small></span></button><button class="act-tile" onclick="openAbsenceModal()"><span class="act-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M12 13v5M9.5 15.5h5"/></svg></span><span class="act-t"><b>רישום חיסור</b><small>עם או בלי מחליף</small></span></button><button class="act-tile" onclick="var b=document.getElementById('sup-body');if(b&amp;&amp;b.style.display==='none')toggleCard('sup');document.getElementById('sup-card').scrollIntoView({behavior:'smooth',block:'start'})"><span class="act-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6v4H9zM7 7h10l1 14H6z"/></svg></span><span class="act-t"><b>חומרי ניקיון</b><small>רישום ללקוח</small></span></button><button class="act-tile" onclick="openAddEmployeeModal()"><span class="act-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6M19 4v4M17 6h4"/></svg></span><span class="act-t"><b>עובד חדש</b><small>הוספה לרשימה</small></span></button></div>
+
+    
     <div class="stats-grid" style="display:flex;gap:14px;flex-wrap:wrap">
       <div class="stat-card" style="flex:0 1 200px"><div class="stat-label">עובדים פעילים</div><div class="stat-value blue" id="stat-active">0</div></div>
       <div class="stat-card" style="flex:0 1 200px"><div class="stat-label">חיסורים החודש</div><div class="stat-value red" id="stat-absences">0</div></div>
@@ -961,6 +1004,8 @@ html { -webkit-text-size-adjust: 100%; }
       </button>
     </div>
 
+    <div class="act-grid one"><button class="act-tile primary" onclick="openAbsenceModal()"><span class="act-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M12 13v5M9.5 15.5h5"/></svg></span><span class="act-t"><b>רישום חיסור או חילוף</b><small>לחיצה אחת ומתחילים</small></span></button></div>
+
     <div class="form-row mb-16">
       <div class="card" style="margin-bottom:0">
         <div class="cal-header">
@@ -1016,6 +1061,7 @@ html { -webkit-text-size-adjust: 100%; }
           </thead>
           <tbody id="abs-tbody"></tbody>
         </table>
+        <div id="abs-cards" class="abs-cards"></div>
         <div id="abs-empty" style="text-align:center;padding:24px;color:var(--text-muted);display:none;">אין חיסורים רשומים</div>
       </div>
     </div>
@@ -4497,12 +4543,28 @@ function renderAbsenceTable() {
   const monthToFilter = filterMonth || activeMonth;
   if (monthToFilter) filtered = filtered.filter(a => a.date.startsWith(monthToFilter));
 
+  const cardsEl = document.getElementById('abs-cards');
   if (!filtered.length) {
     tbody.innerHTML = '';
+    if (cardsEl) cardsEl.innerHTML = '';
     empty.style.display = 'block';
     return;
   }
   empty.style.display = 'none';
+  if (cardsEl) cardsEl.innerHTML = filtered.map(a => {
+    const emp = employees.find(e => e.id === a.empId);
+    const repl = a.replacementId ? employees.find(e => e.id === a.replacementId) : null;
+    const rn = repl ? empName(repl) : (a.replExtName ? a.replExtName + ' (חיצוני)' : '');
+    const d = a.date.split('-');
+    const st = a.replPaid || 'unpaid';
+    const stL = { paid: 'שולם', unpaid: 'לא שולם', pending: 'ממתין' }[st] || st;
+    return '<button class="abs-card" data-id="' + a.id + '" onclick="openEditAbsenceModal(this.dataset.id)">' +
+      '<span class="ac-top"><span class="ac-name">' + escHtml(emp ? empName(emp) : '—') + '</span><span class="ac-date">' + d[2] + '/' + d[1] + '</span></span>' +
+      (a.client ? '<span class="ac-cl">' + escHtml(a.client) + '</span>' : '') +
+      (rn ? '<span class="ac-rep"><span>מחליף/ה: <b>' + escHtml(rn) + '</b>' + (a.replHours ? ' · ' + a.replHours + " שע'" : '') + '</span><span class="ac-pill ' + st + '">' + stL + (a.replAmount ? ' · ₪' + a.replAmount : '') + '</span></span>'
+          : '<span class="ac-rep none">בלי מחליף</span>') +
+      (a.note ? '<span class="ac-cl">' + escHtml(a.note) + '</span>' : '') + '</button>';
+  }).join('');
 
   const paidLabel = { paid: '✅ שולם', unpaid: '❌ לא שולם', pending: '⏳ ממתין' };
   const paidBadge = { paid: 'badge-green', unpaid: 'badge-red', pending: 'badge-yellow' };
@@ -9350,7 +9412,20 @@ init();
 </script>
 <script>
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
-  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (reg) {
+      // בכל חזרה לאפליקציה — בודקים אם יש גרסה חדשה
+      document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') reg.update().catch(function () {}); });
+    }).catch(function () {});
+    // גרסה חדשה נכנסה לפעולה → רענון אחד (רק אם אין שינוי שלא נשמר)
+    var hadCtl = !!navigator.serviceWorker.controller, reloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      if (!hadCtl || reloaded) { hadCtl = true; return; }
+      reloaded = true;
+      var dirty = window.nepSync && Object.keys(nepSync.state.dirty || {}).length;
+      if (!dirty && !document.querySelector('.modal-overlay.open')) location.reload();
+    });
+  });
 }
 </script>
 <script>
@@ -9569,7 +9644,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
       h += '<div class="qr-grid c4">' + opts2.map(function (n) {
         return '<button class="qr-tile big' + (Q.hours === n ? ' on' : '') + '" data-v="' + n + '" onclick="qrPick(\'hours\', +this.dataset.v)">' + n + '</button>';
       }).join('') + '<button class="qr-tile big' + (other ? ' on' : '') + '" style="font-size:17px" onclick="qrOtherHours()">' + (other ? Q.hours : 'אחר') + '</button></div>';
-      h += '<div class="qr-sub" style="font-size:17px;color:#111;margin-top:16px">תשלום למחליף</div><div class="qr-grid c3">' +
+      h += '<div class="qr-sub" style="font-size:16px;color:var(--text);margin-top:16px">תשלום למחליף</div><div class="qr-grid c3">' +
         [['unpaid', 'לא שולם'], ['paid', 'שולם'], ['pending', 'ממתין']].map(function (p) {
           return '<button class="qr-tile mid' + (Q.paid === p[0] ? ' on' : '') + '" data-v="' + p[0] + '" onclick="qrSet(\'paid\', this.dataset.v)"><b>' + p[1] + '</b></button>';
         }).join('') + '</div>';
