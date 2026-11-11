@@ -378,6 +378,75 @@ app.get('/api/invoice/open', async (req, res) => {
   }
 });
 
+// ===== סיכום כסף ממורנינג: שולם (קבלות) מול פתוח (חשבוניות) =====
+// GET /api/invoice/summary?month=YYYY-MM
+// paid: קבלות (400) וחשבוניות מס/קבלה (320) שהופקו בחודש. last: התשלום האחרון של כל לקוח ב-6 החודשים האחרונים.
+// open: חשבוניות מס / חשבונות עסקה (305/300) בסטטוס פתוח, לפי לקוח, כולל הוותיקה ביותר.
+const _sumCache = new Map();
+async function giSearchAll(token, body, maxPages = 5) {
+  const out = [];
+  for (let page = 1; page <= maxPages; page++) {
+    const r = await fetch(`${GI_BASE}/documents/search`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ ...body, page, pageSize: 100 })
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok || data.errorCode) throw new Error('מורנינג החזירה שגיאה: ' + (data.errorMessage || r.status));
+    const items = data.items || [];
+    out.push(...items);
+    const pages = data.pages || data.totalPages;
+    if (items.length < 100 || (pages && page >= pages)) break;
+  }
+  return out;
+}
+app.get('/api/invoice/summary', async (req, res) => {
+  try {
+    const month = String(req.query.month || '');
+    if (!/^\d{4}-\d{2}$/.test(month)) return res.status(400).json({ error: 'חודש לא תקין' });
+    const hit = _sumCache.get(month);
+    if (hit && !req.query.fresh && Date.now() - hit.t < 5 * 60 * 1000) return res.json(hit.data);
+    const token = await getGiToken();
+    if (!token) return res.status(502).json({ error: 'לא הצלחתי להתחבר למורנינג' });
+    const [y, m] = month.split('-').map(Number);
+    const last = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
+    const from6 = new Date(Date.UTC(y, m - 6, 1)).toISOString().slice(0, 10);
+    const amt = d => Number(d.amount != null ? d.amount : (d.total != null ? d.total : d.amountLocal)) || 0;
+    const dt = d => String(d.documentDate || d.creationDate || '').slice(0, 10);
+    const cid = d => (d.client && (d.client.id || d.client.name)) ? String(d.client.id || d.client.name) : '';
+    const cname = d => (d.client && d.client.name) || '';
+
+    const receipts = await giSearchAll(token, { type: [400, 320], fromDate: from6, toDate: last, sort: 'documentDate' });
+    const openDocs = await giSearchAll(token, { type: [300, 305], status: [0], sort: 'documentDate' });
+
+    const paid = { total: 0, count: 0, byClient: {} };
+    const lastPay = {};
+    receipts.forEach(d => {
+      const id = cid(d); const date = dt(d); const v = amt(d);
+      if (date.startsWith(month)) {
+        paid.total += v; paid.count++;
+        const b = paid.byClient[id] || (paid.byClient[id] = { name: cname(d), total: 0 });
+        b.total += v;
+      }
+      if (id && date <= last && (!lastPay[id] || date > lastPay[id].date)) lastPay[id] = { date, total: v, number: d.number || null };
+    });
+    const open = { total: 0, count: 0, byClient: {} };
+    openDocs.forEach(d => {
+      if (d.status !== undefined && d.status !== 0) return;
+      const id = cid(d); const date = dt(d); const v = amt(d);
+      open.total += v; open.count++;
+      const b = open.byClient[id] || (open.byClient[id] = { name: cname(d), total: 0, count: 0, oldest: date });
+      b.total += v; b.count++; if (date && (!b.oldest || date < b.oldest)) b.oldest = date;
+    });
+    const data = { month, paid, open, last: lastPay, at: new Date().toISOString() };
+    _sumCache.set(month, { t: Date.now(), data });
+    res.json(data);
+  } catch (err) {
+    console.error('invoice/summary', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ===== CSV Upload =====
 let lastTransactions = [];
 

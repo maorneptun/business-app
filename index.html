@@ -921,6 +921,28 @@ body.kb-open .ai-fab { display: none; }
 .rem-new svg { width: 16px; height: 16px; }
 .rem-empty { padding: 16px 2px; color: var(--text-muted); font-size: 14.5px; font-weight: 600; }
 
+/* ===== תשלומים מלקוחות (מורנינג) ===== */
+.mny { display: flex; flex-direction: column; gap: 12px; max-width: 900px; padding: 16px; border-radius: 18px; margin-bottom: 14px; }
+.mny[hidden] { display: none; }
+.mny-h { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.mny-h h2 { margin: 0; font-size: 17px; font-weight: 700; }
+.mny-h small { font-size: 13px; font-weight: 500; color: var(--text-muted); }
+.mny-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.mny-stats > div { background: var(--bg); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mny-stats b { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.mny-stats span { font-size: 12.5px; font-weight: 500; color: var(--text-muted); }
+.mny-lh { font-size: 13px; font-weight: 700; color: #9A4A00; margin: 2px 2px 0; }
+.mny-row { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 50px; border: 0; border-top: 1px solid #F0F1F4; background: none; padding: 0; font-family: inherit; color: var(--text); cursor: pointer; text-align: right; }
+.mny-row:first-of-type { border-top: 0; }
+.mny-row .b { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.mny-row .n { font-size: 15px; font-weight: 600; }
+.mny-row .m { font-size: 12.5px; font-weight: 500; color: #9A4A00; }
+.mny-row .v { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.mny-note { font-size: 12.5px; color: var(--text-muted); }
+.mny-note:empty { display: none; }
+.cpx-last { font-size: 13px; font-weight: 500; color: var(--text-muted); margin-top: -4px; }
+.cpx-last:empty { display: none; }
+
 /* ===== כרטיס לקוח (עיצוב חדש) ===== */
 .cpx { max-width: 720px; display: flex; flex-direction: column; gap: 14px; }
 .cpx-top { display: flex; align-items: center; justify-content: space-between; }
@@ -1245,6 +1267,16 @@ body.kb-open .ai-fab { display: none; }
 
 
     
+    <section class="card mny" id="mny" aria-label="תשלומים מלקוחות" hidden>
+      <div class="mny-h"><h2>תשלומים מלקוחות <small id="mny-m"></small></h2><button type="button" class="cpx-refresh" onclick="loadMoney(true)">רענן</button></div>
+      <div class="mny-stats">
+        <div><b id="mny-paid">—</b><span id="mny-paid-l">נכנס</span></div>
+        <div><b id="mny-open">—</b><span id="mny-open-l">פתוח</span></div>
+      </div>
+      <div id="mny-late"></div>
+      <div class="mny-note" id="mny-note"></div>
+    </section>
+
     <div class="stats-grid" style="display:flex;gap:14px;flex-wrap:wrap">
       <div class="stat-card" style="flex:0 1 200px;cursor:pointer" onclick="openEmpListModal()"><div class="stat-label">עובדים פעילים <span style="color:var(--accent);font-weight:700">· לרשימה</span></div><div class="stat-value blue" id="stat-active">0</div></div>
       <div class="stat-card" style="flex:0 1 200px;cursor:pointer" onclick="showPage('absences')"><div class="stat-label">חיסורים החודש</div><div class="stat-value red" id="stat-absences">0</div></div>
@@ -1887,6 +1919,7 @@ body.kb-open .ai-fab { display: none; }
 
       <section class="cpx-card" id="cpx-open-sec">
         <div class="cpx-h"><h2>חשבוניות פתוחות</h2><button type="button" class="cpx-refresh" onclick="cpxLoadOpen(true)" aria-label="רענן חשבוניות">רענן</button></div>
+        <div class="cpx-last" id="cpx-last"></div>
         <div id="cpx-open"></div>
       </section>
 
@@ -4004,6 +4037,7 @@ function _amPick(d) {
 function updateStats() {
   try { renderAbsMini(); } catch (e) {}
   try { renderEmpGrid(); } catch (e) {}
+  try { _moneyMaybe(); } catch (e) {}
   const activeEmps = employees.filter(e => e.status === 'active');
   const el = document.getElementById('stat-active');
   if (el) el.textContent = activeEmps.length;
@@ -9743,6 +9777,7 @@ function openClientProfile(id) {
   renderClientSupplies();
   cpxRefresh();
   cpxLoadOpen(false);
+  _cpxLastRender(); if (!window._money) loadMoney(false);
   showPage('client-profile');
   window.scrollTo(0, 0);
 }
@@ -9902,6 +9937,65 @@ function cpxRefresh() {
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>';
   }).join('') : '<div class="cpx-empty">אין עובדים משויכים. משייכים לקוח מתוך כרטיס העובד.</div>';
 }
+// ===== תשלומים מלקוחות: שולם (קבלות) מול פתוח, ממורנינג =====
+const SUM_API = 'https://business-app-hf5y.onrender.com/api/invoice/summary';
+window._money = null;
+async function loadMoney(fresh) {
+  const sec = document.getElementById('mny'); if (!sec) return null;
+  const month = activeMonth;
+  const [y, m] = month.split('-').map(Number);
+  document.getElementById('mny-m').textContent = _HEB_MN[m - 1];
+  try {
+    const res = await fetch(SUM_API + '?month=' + month + (fresh ? '&fresh=1' : ''));
+    if (res.status === 401) { sec.hidden = true; return null; } // לא מחובר לסנכרון — לא מציגים
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok || !j.paid) throw new Error(j.error || 'לא הצלחתי לטעון ממורנינג');
+    window._money = j;
+    if (month === activeMonth) _moneyRender(j);
+    try { if (currentClientId && document.getElementById('page-client-profile').classList.contains('active')) _cpxLastRender(); } catch (e) {}
+    return j;
+  } catch (e) {
+    sec.hidden = false;
+    document.getElementById('mny-paid').textContent = '—'; document.getElementById('mny-open').textContent = '—';
+    document.getElementById('mny-late').innerHTML = '';
+    document.getElementById('mny-note').textContent = e.message || 'מורנינג לא זמינה כרגע';
+    return null;
+  }
+}
+// נטען כשנכנסים / מחליפים חודש; לא יותר מפעם בדקה לאותו חודש
+let _moneyTry = { m: '', t: 0 };
+function _moneyMaybe() {
+  if (window._money && window._money.month === activeMonth) { _moneyRender(window._money); return; }
+  if (_moneyTry.m === activeMonth && Date.now() - _moneyTry.t < 60000) return;
+  _moneyTry = { m: activeMonth, t: Date.now() };
+  setTimeout(() => loadMoney(false), 1200);
+}
+function _clientByGi(id) { return clientsData.find(c => c.giId && String(c.giId) === String(id)) || clientsData.find(c => c.name === id); }
+function _moneyRender(j) {
+  const sec = document.getElementById('mny'); sec.hidden = false;
+  document.getElementById('mny-paid').textContent = _ils(j.paid.total);
+  document.getElementById('mny-paid-l').textContent = 'נכנס' + (j.paid.count ? ' · ' + j.paid.count + ' קבלות' : '');
+  document.getElementById('mny-open').textContent = _ils(j.open.total);
+  document.getElementById('mny-open-l').textContent = 'פתוח' + (j.open.count ? ' · ' + j.open.count + ' חשבוניות' : '');
+  const now = Date.now();
+  const late = Object.keys(j.open.byClient).map(id => ({ id, ...j.open.byClient[id] }))
+    .map(x => ({ ...x, days: x.oldest ? Math.floor((now - new Date(x.oldest + 'T12:00:00').getTime()) / 86400000) : 0 }))
+    .filter(x => x.days > 30).sort((a, b) => b.days - a.days);
+  const el = document.getElementById('mny-late');
+  el.innerHTML = late.length ? '<div class="mny-lh">באיחור מעל 30 יום</div>' + late.slice(0, 4).map(x => {
+    const c = _clientByGi(x.id);
+    return '<button type="button" class="mny-row"' + (c ? ' data-cid="' + c.id + '" onclick="openClientProfile(this.dataset.cid)"' : ' disabled') + '><span class="b"><span class="n">' + escHtml((c && c.name) || x.name || 'לקוח') + '</span>' +
+      '<span class="m">' + x.count + (x.count === 1 ? ' חשבונית' : ' חשבוניות') + ' · הוותיקה פתוחה ' + x.days + ' ימים</span></span><span class="v">' + _ils(x.total) + '</span></button>';
+  }).join('') + (late.length > 4 ? '<div class="mny-note">ועוד ' + (late.length - 4) + ' לקוחות</div>' : '') : '';
+  document.getElementById('mny-note').textContent = (!late.length && j.open.count) ? 'אין חשבוניות באיחור מעל 30 יום' : '';
+}
+function _cpxLastRender() {
+  const el = document.getElementById('cpx-last'); if (!el) return;
+  const c = clientsData.find(x => x.id === currentClientId); const j = window._money;
+  const lp = c && c.giId && j && j.last ? j.last[String(c.giId)] : null;
+  el.textContent = lp ? 'תשלום אחרון: ' + lp.date.split('-').reverse().join('/') + ' · ' + _ils(lp.total) : '';
+}
+
 // חשבוניות פתוחות של הלקוח ממורנינג (נשמר 5 דקות בזיכרון)
 const OPEN_API = 'https://business-app-hf5y.onrender.com/api/invoice/open';
 const _openCache = {};
@@ -10046,7 +10140,7 @@ async function _ipIssue(force) {
     c.invoices[_ip.month] = { number: j.number || '', url: j.url || '', type: _ip.type, total: t.sub, date: todayISO().split('-').reverse().join('/') };
     saveClientsData();
     _ip.busy = false; _ip.done = c.invoices[_ip.month];
-    _ipRender(); try { cpxRefresh(); cpxLoadOpen(true); } catch (e) {}
+    _ipRender(); try { cpxRefresh(); cpxLoadOpen(true); loadMoney(true); } catch (e) {}
     showToast('✅ המסמך הופק במורנינג');
   } catch (e) {
     _ip.busy = false; _ip.step = 0; _ip.err = escHtml(e.message || 'השרת לא זמין כרגע. נסה שוב בעוד דקה.'); _ipRender();
