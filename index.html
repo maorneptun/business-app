@@ -842,21 +842,45 @@ html { -webkit-text-size-adjust: 100%; }
 }
 
 /* ===== גרף חיסורים לפי יום (דף הבית) ===== */
-.abs-mini { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 900px; border: 0; text-align: right; font-family: inherit; color: var(--text); cursor: pointer; padding: 14px 16px 12px; }
-.am-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-.am-h b { font-size: 16px; font-weight: 700; }
-.am-h small { font-size: 13px; font-weight: 600; color: var(--text-muted); }
-.am-plot { display: flex; align-items: flex-end; gap: 2px; height: 84px; border-bottom: 1px solid var(--border); direction: rtl; }
-.am-bar { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; position: relative; }
-.am-bar i { display: block; background: var(--accent); border-radius: 4px 4px 0 0; min-height: 0; }
-.am-bar.wk { background: rgba(0,0,0,.035); border-radius: 3px 3px 0 0; }
-.am-bar.today i { background: #2B5285; }
-.am-bar.today::after { content: ""; position: absolute; bottom: -5px; left: 50%; width: 4px; height: 4px; margin-left: -2px; border-radius: 2px; background: var(--text); }
-.am-bar .v { position: absolute; left: 50%; transform: translateX(-50%); font-size: 10.5px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
-.am-axis { display: flex; direction: rtl; font-size: 11px; font-weight: 600; color: var(--text-muted); font-variant-numeric: tabular-nums; margin-top: 2px; }
+.abs-mini { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 900px; box-sizing: border-box; text-align: right; color: var(--text); padding: 16px; border-radius: 18px; }
+.am-h { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.am-h b { display: block; font-size: 17px; font-weight: 700; }
+.am-h small { display: block; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-top: 2px; }
+.am-total { font-size: 30px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.am-tipw { height: 24px; display: flex; align-items: center; justify-content: center; }
+.am-tip { font-size: 13px; font-weight: 600; background: var(--text); color: #fff; border-radius: 8px; padding: 3px 10px; }
+.am-tip:empty { display: none; }
+.am-chart { position: relative; height: 130px; }
+.am-avg { position: absolute; left: 0; right: 0; border-top: 2px dashed #9AA3AF; z-index: 1; pointer-events: none; }
+.am-plot { position: absolute; inset: 0; display: flex; align-items: flex-end; gap: 3px; border-bottom: 1px solid var(--border); direction: rtl; }
+.am-bar { flex: 1 1 0; min-width: 0; height: 100%; padding: 0; border: 0; background: none; cursor: pointer; display: flex; align-items: flex-end; font-family: inherit; }
+.am-bar i { display: block; width: 100%; border-radius: 4px 4px 2px 2px; background: #7FA0CC; transition: height .3s, background .2s; }
+.am-bar.wk i { background: #C9D6E8; }
+.am-bar.fut { cursor: default; }
+.am-bar.fut i { background: #EEF1F5; }
+.am-bar.today i { background: var(--accent); box-shadow: 0 0 0 2px #fff, 0 0 0 3px var(--accent); }
+.am-bar.sel i { background: #2B5285; }
+.am-bar:focus-visible { outline: 2px solid var(--accent-mid); outline-offset: 2px; border-radius: 4px; }
+.am-axis { display: flex; direction: rtl; font-size: 11px; font-weight: 600; color: var(--text-muted); font-variant-numeric: tabular-nums; gap: 3px; }
 .am-axis span { flex: 1 1 0; text-align: center; min-width: 0; }
-.am-top { font-size: 13.5px; font-weight: 600; color: var(--text-muted); }
-.am-top b { color: var(--text); font-weight: 700; }
+.am-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; font-weight: 600; color: var(--text-muted); }
+.am-legend span { display: flex; align-items: center; gap: 6px; }
+.am-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; background: #7FA0CC; }
+.am-legend i.avg { width: 14px; height: 0; border-radius: 0; background: none; border-top: 2px dashed #9AA3AF; }
+.am-legend i.fut { background: #EEF1F5; }
+.am-day { border-top: 1px solid var(--border); padding-top: 10px; display: flex; flex-direction: column; gap: 2px; }
+.am-day-h { font-size: 14.5px; font-weight: 700; margin-bottom: 4px; }
+.am-day-empty { font-size: 14px; font-weight: 600; color: var(--text-muted); padding: 4px 0 2px; }
+.am-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 6px 0; border: 0; border-bottom: 1px solid #F0F1F4; background: none; font-family: inherit; color: var(--text); text-align: right; cursor: pointer; }
+.am-row:last-child { border-bottom: 0; }
+.am-av { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 50%; background: var(--accent-light); color: var(--accent); font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.am-rb { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.am-rn { font-size: 15px; font-weight: 600; }
+.am-rr { font-size: 13px; font-weight: 600; color: var(--text-muted); }
+.am-rr b { color: #2E6A48; font-weight: 700; }
+.am-rr .none { color: #9A4A00; }
+.am-rc { flex: 0 0 auto; max-width: 38%; font-size: 12px; font-weight: 600; color: var(--text-muted); background: var(--bg); border-radius: 8px; padding: 3px 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.am-all { align-self: flex-start; border: 0; background: none; padding: 0; min-height: 36px; font-family: inherit; font-size: 14px; font-weight: 600; color: var(--accent); cursor: pointer; }
 
 /* ===== בועת עוזר AI ===== */
 .ai-fab { position: fixed; left: max(20px, env(safe-area-inset-left, 0px)); bottom: calc(24px + env(safe-area-inset-bottom, 0px)); z-index: 350; width: 54px; height: 54px; border-radius: 27px; border: 0; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 18px rgba(30,50,90,.28); cursor: pointer; }
@@ -1107,12 +1131,15 @@ body.kb-open .ai-fab { display: none; }
       <div class="stat-card" style="flex:0 1 200px;cursor:pointer" onclick="showPage('absences')"><div class="stat-label">חיסורים החודש</div><div class="stat-value red" id="stat-absences">0</div></div>
     </div>
 
-    <button class="card abs-mini" id="abs-mini" onclick="showPage('absences')" aria-label="חיסורים לפי יום בחודש — מעבר לדף החיסורים">
-      <span class="am-h"><b>חיסורים לפי יום</b><small id="am-month"></small></span>
-      <span class="am-plot" id="am-plot"></span>
-      <span class="am-axis" id="am-axis"></span>
-      <span class="am-top" id="am-top"></span>
-    </button>
+    <section class="card abs-mini" id="abs-mini" aria-label="חיסורים לפי יום בחודש">
+      <div class="am-h"><div><b>חיסורים לפי יום</b><small id="am-month"></small></div><span class="am-total" id="am-total"></span></div>
+      <div class="am-tipw"><span class="am-tip" id="am-tip" aria-live="polite"></span></div>
+      <div class="am-chart"><div class="am-avg" id="am-avg"></div><div class="am-plot" id="am-plot"></div></div>
+      <div class="am-axis" id="am-axis"></div>
+      <div class="am-legend"><span><i></i>חיסורים</span><span><i class="avg"></i>ממוצע</span><span><i class="fut"></i>עוד לא</span></div>
+      <div class="am-day" id="am-day"></div>
+      <button type="button" class="am-all" onclick="showPage('absences')">לכל החיסורים ›</button>
+    </section>
 
 
 
@@ -3740,28 +3767,71 @@ function cleanGarbageEmployees() {
 
 
 // ===== גרף חיסורים לפי יום (דף הבית) =====
+let _amSel = null; // תאריך נבחר בגרף (YYYY-MM-DD)
 function renderAbsMini() {
   const plot = document.getElementById('am-plot'); if (!plot) return;
   const [y, m] = activeMonth.split('-').map(Number);
   const days = new Date(y, m, 0).getDate();
-  const cnt = new Array(days + 1).fill(0), per = {};
-  absences.forEach(a => { if (a.date && a.date.startsWith(activeMonth)) { const d = parseInt(a.date.slice(8, 10), 10); if (d >= 1 && d <= days) cnt[d]++; per[a.empId] = (per[a.empId] || 0) + 1; } });
+  const cnt = new Array(days + 1).fill(0);
+  const monthAbs = absences.filter(a => a.date && a.date.startsWith(activeMonth));
+  monthAbs.forEach(a => { const d = parseInt(a.date.slice(8, 10), 10); if (d >= 1 && d <= days) cnt[d]++; });
   const max = Math.max(2, ...cnt);
-  const t = todayISO(), tDay = t.startsWith(activeMonth) ? parseInt(t.slice(8, 10), 10) : 0;
+  const t = todayISO();
+  const tDay = t.startsWith(activeMonth) ? parseInt(t.slice(8, 10), 10) : 0;
+  const lastDay = t.slice(0, 7) > activeMonth ? days : t.slice(0, 7) < activeMonth ? 0 : tDay; // ימים שכבר עברו
+  const total = monthAbs.length;
+  const avg = lastDay ? total / lastDay : 0;
+  const mk = d => activeMonth + '-' + String(d).padStart(2, '0');
+  if (!_amSel || !_amSel.startsWith(activeMonth)) {
+    let d = tDay || 0;
+    if (!d) for (let k = Math.min(lastDay, days); k >= 1; k--) if (cnt[k]) { d = k; break; }
+    _amSel = d ? mk(d) : null;
+  }
+  const sel = _amSel ? parseInt(_amSel.slice(8, 10), 10) : 0;
   let h = '', ax = '';
   for (let d = 1; d <= days; d++) {
-    const wd = new Date(y, m - 1, d).getDay(), pct = cnt[d] ? Math.max(8, Math.round(cnt[d] / max * 100)) : 0;
-    const lab = d + '/' + m + ': ' + (cnt[d] ? cnt[d] + (cnt[d] === 1 ? ' חיסור' : ' חיסורים') : 'אין חיסורים');
-    h += '<span class="am-bar' + (wd === 6 ? ' wk' : '') + (d === tDay ? ' today' : '') + '" title="' + lab + '">' +
-      (cnt[d] && cnt[d] === Math.max(...cnt) ? '<span class="v" style="bottom:calc(' + pct + '% + 2px)">' + cnt[d] + '</span>' : '') +
-      '<i style="height:' + pct + '%"></i></span>';
+    const wd = new Date(y, m - 1, d).getDay(), fut = d > lastDay;
+    const pct = fut ? 5 : cnt[d] ? Math.max(8, Math.round(cnt[d] / max * 100)) : 2;
+    const lab = d + '/' + m + ': ' + (fut ? 'עוד לא הגיע' : cnt[d] ? cnt[d] + (cnt[d] === 1 ? ' חיסור' : ' חיסורים') : 'אין חיסורים');
+    h += '<button type="button" class="am-bar' + (wd === 6 ? ' wk' : '') + (fut ? ' fut' : '') + (d === tDay ? ' today' : '') + (d === sel ? ' sel' : '') +
+      '" aria-label="' + lab + '" aria-pressed="' + (d === sel) + '" onclick="_amPick(' + d + ')"><i style="height:' + pct + '%"></i></button>';
     ax += '<span>' + ((d === 1 || d % 5 === 0) ? d : '') + '</span>';
   }
   plot.innerHTML = h;
   document.getElementById('am-axis').innerHTML = ax;
-  const ml = document.getElementById('am-month'); if (ml) ml.textContent = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'][m - 1] + ' ' + y;
-  const top = Object.keys(per).sort((a, b) => per[b] - per[a]).slice(0, 3).map(id => { const e = employees.find(x => x.id === id); return e ? '<b>' + escHtml(e.fname) + '</b> ' + per[id] : ''; }).filter(Boolean);
-  document.getElementById('am-top').innerHTML = top.length ? 'הכי הרבה החודש: ' + top.join(' · ') : 'אין חיסורים החודש';
+  const MN = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'][m - 1];
+  const ml = document.getElementById('am-month');
+  if (ml) ml.textContent = MN + (lastDay ? ' · ממוצע ' + (Math.round(avg * 10) / 10) + ' ליום' : '');
+  const tot = document.getElementById('am-total'); if (tot) tot.textContent = total;
+  const avgEl = document.getElementById('am-avg');
+  if (avgEl) { avgEl.style.display = avg ? '' : 'none'; avgEl.style.bottom = Math.min(100, avg / max * 100) + '%'; }
+  // פירוט היום שנבחר
+  const tip = document.getElementById('am-tip'), box = document.getElementById('am-day');
+  if (!sel) { tip.textContent = ''; box.innerHTML = '<div class="am-day-empty">לחץ על יום בגרף כדי לראות מי חסר</div>'; return; }
+  const n = cnt[sel], fut = sel > lastDay;
+  const wdn = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'][new Date(y, m - 1, sel).getDay()];
+  tip.textContent = sel + '/' + m + ' · ' + (fut ? 'עוד לא הגיע' : n ? n + (n === 1 ? ' חיסור' : ' חיסורים') : 'אין חיסורים') + (sel === tDay ? ' (היום)' : '');
+  const list = monthAbs.filter(a => a.date === _amSel);
+  let bh = '<div class="am-day-h">יום ' + wdn + ', ' + sel + '/' + m + '</div>';
+  if (!list.length) bh += '<div class="am-day-empty">' + (fut ? 'היום הזה עוד לא הגיע' : 'אין חיסורים ביום הזה') + '</div>';
+  bh += list.map(a => {
+    const e = employees.find(x => x.id === a.empId);
+    const r = a.replacementId ? employees.find(x => x.id === a.replacementId) : null;
+    const nm = empName(e);
+    const ini = e ? ((e.fname || '').charAt(0) + (e.lname || '').charAt(0)) : '?';
+    const rn = r ? empName(r) : (a.replExtName ? a.replExtName + ' (חיצוני)' : '');
+    const cl = a.client || (e && e.client) || '';
+    return '<button type="button" class="am-row" data-id="' + a.id + '" onclick="openEditAbsenceModal(this.dataset.id)">' +
+      '<span class="am-av" aria-hidden="true">' + escHtml(ini) + '</span>' +
+      '<span class="am-rb"><span class="am-rn">' + escHtml(nm) + ' חסר/ה</span>' +
+      '<span class="am-rr">' + (rn ? 'מחליף: <b>' + escHtml(rn) + '</b>' : '<span class="none">בלי מחליף</span>') + '</span></span>' +
+      (cl ? '<span class="am-rc">' + escHtml(cl) + '</span>' : '') + '</button>';
+  }).join('');
+  box.innerHTML = bh;
+}
+function _amPick(d) {
+  _amSel = activeMonth + '-' + String(d).padStart(2, '0');
+  renderAbsMini();
 }
 function updateStats() {
   try { renderAbsMini(); } catch (e) {}
