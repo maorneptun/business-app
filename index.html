@@ -921,6 +921,27 @@ body.kb-open .ai-fab { display: none; }
 .rem-new svg { width: 16px; height: 16px; }
 .rem-empty { padding: 16px 2px; color: var(--text-muted); font-size: 14.5px; font-weight: 600; }
 
+/* ===== עובדים בדף הבית — קוביות לפי שימוש ===== */
+.eg { display: flex; flex-direction: column; gap: 10px; max-width: 900px; margin-top: 14px; }
+.eg-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.eg-h h2 { margin: 0; font-size: 17px; font-weight: 700; color: var(--text); white-space: nowrap; flex: 0 0 auto; }
+.eg-h small { font-size: 14px; font-weight: 500; color: var(--text-muted); }
+.eg-search { flex: 0 1 200px; display: flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 0 12px; min-height: 40px; color: var(--text-muted); }
+.eg-search svg { width: 16px; height: 16px; flex: 0 0 auto; }
+.eg-search input { flex: 1; min-width: 0; border: 0; background: transparent; font-family: inherit; font-size: 16px; color: var(--text); outline: none; padding: 0; }
+.eg-search:focus-within { border-color: var(--accent-mid); }
+.eg-sub { font-size: 13px; font-weight: 600; color: var(--text-muted); margin: -2px 2px 0; }
+.eg-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+@media (min-width: 701px) { .eg-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); } }
+.eg-tile { background: var(--surface); border: 0; border-radius: 16px; padding: 14px 6px 12px; min-height: 88px; box-shadow: 0 1px 2px rgba(20,30,50,.06); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; font-family: inherit; color: var(--text); cursor: pointer; text-align: center; min-width: 0; }
+.eg-tile:hover { box-shadow: 0 1px 2px rgba(20,30,50,.06), 0 0 0 1px var(--accent-mid); }
+.eg-tile:focus-visible, .eg-all:focus-visible { outline: 3px solid var(--accent-mid); outline-offset: 2px; }
+.eg-n { font-size: 14px; font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; }
+.eg-c { font-size: 11.5px; font-weight: 500; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.eg-t { font-size: 11px; font-weight: 600; background: #F1F3F6; color: #4A4F57; border-radius: 999px; padding: 2px 8px; }
+.eg-empty { grid-column: 1 / -1; text-align: center; padding: 16px 0; font-size: 14px; font-weight: 600; color: var(--text-muted); }
+.eg-all { align-self: center; min-height: 42px; padding: 0 18px; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; font-family: inherit; font-size: 14px; font-weight: 600; color: var(--accent); cursor: pointer; }
+
 /* ===== חלון תזכורות — נקי ===== */
 .rm-compose { display: flex; flex-direction: column; gap: 12px; }
 .rm-text { font-size: 17px !important; min-height: 52px; border-radius: 14px !important; }
@@ -1139,6 +1160,13 @@ body.kb-open .ai-fab { display: none; }
       <div class="am-legend"><span><i></i>חיסורים</span><span><i class="avg"></i>ממוצע</span><span><i class="fut"></i>עוד לא</span></div>
       <div class="am-day" id="am-day"></div>
       <button type="button" class="am-all" onclick="showPage('absences')">לכל החיסורים ›</button>
+    </section>
+    <section class="eg" id="emp-grid-sec" aria-label="עובדים">
+      <div class="eg-h"><h2>עובדים <small id="eg-count"></small></h2>
+        <label class="eg-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="eg-q" type="search" placeholder="חיפוש" aria-label="חיפוש עובד" oninput="renderEmpGrid()"></label></div>
+      <div class="eg-sub" id="eg-sub"></div>
+      <div class="eg-grid" id="eg-grid"></div>
+      <button type="button" class="eg-all" onclick="openEmpListModal()">הצג את כל העובדים</button>
     </section>
 
 
@@ -3767,6 +3795,44 @@ function cleanGarbageEmployees() {
 
 
 // ===== גרף חיסורים לפי יום (דף הבית) =====
+// ===== עובדים בדף הבית: קוביות לפי כמה פותחים את הכרטיס =====
+// nep_emp_use = { empId: { s: ניקוד, t: זמן פתיחה אחרון } } — הניקוד דועך ~10% ליום, כך שעובדים שפותחים לאחרונה עולים למעלה
+function _egUse() { try { return JSON.parse(localStorage.getItem('nep_emp_use') || '{}') || {}; } catch (e) { return {}; } }
+function _egScore(u, now) { return u ? u.s * Math.pow(0.9, (now - u.t) / 86400000) : 0; }
+function trackEmpOpen(id) {
+  if (!id) return;
+  const use = _egUse(), now = Date.now(), u = use[id];
+  use[id] = { s: _egScore(u, now) + 1, t: now };
+  try { localStorage.setItem('nep_emp_use', JSON.stringify(use)); } catch (e) {}
+}
+function renderEmpGrid() {
+  const grid = document.getElementById('eg-grid'); if (!grid) return;
+  const act = employees.filter(e => e.status === 'active');
+  const cnt = document.getElementById('eg-count'); if (cnt) cnt.textContent = '· ' + act.length;
+  const qEl = document.getElementById('eg-q'), q = qEl ? qEl.value.trim() : '';
+  const t = todayISO();
+  const absT = {}, repT = {};
+  absences.forEach(a => { if (a.date === t) { absT[a.empId] = 1; if (a.replacementId) repT[a.replacementId] = 1; } });
+  const cl = e => (e.clients && e.clients.length ? e.clients[0] : e.client) || '';
+  let list, sub;
+  if (q) {
+    list = act.filter(e => empName(e).includes(q) || (e.clients || [e.client]).some(c => c && c.includes(q))).slice(0, 12);
+    sub = list.length ? 'תוצאות חיפוש' : '';
+  } else {
+    const use = _egUse(), now = Date.now();
+    const monthTouch = {};
+    absences.forEach(a => { if (a.date && a.date.startsWith(activeMonth)) { monthTouch[a.empId] = (monthTouch[a.empId] || 0) + 1; if (a.replacementId) monthTouch[a.replacementId] = (monthTouch[a.replacementId] || 0) + 1; } });
+    list = act.slice().sort((a, b) => (_egScore(use[b.id], now) - _egScore(use[a.id], now)) || ((monthTouch[b.id] || 0) - (monthTouch[a.id] || 0)) || empName(a).localeCompare(empName(b), 'he')).slice(0, 9);
+    sub = Object.keys(use).length ? 'הכי בשימוש' : '';
+  }
+  const se = document.getElementById('eg-sub'); if (se) { se.textContent = sub; se.hidden = !sub; }
+  grid.innerHTML = list.length ? list.map(e => {
+    const tag = absT[e.id] ? 'חסר/ה היום' : repT[e.id] ? 'מחליף/ה היום' : '';
+    return '<button type="button" class="eg-tile" data-id="' + e.id + '" onclick="openEmpProfile(this.dataset.id)"><span class="eg-n">' + escHtml(empName(e)) + '</span>' +
+      (cl(e) ? '<span class="eg-c">' + escHtml(cl(e)) + '</span>' : '') + (tag ? '<span class="eg-t">' + tag + '</span>' : '') + '</button>';
+  }).join('') : '<div class="eg-empty">' + (q ? 'לא נמצא עובד' : 'אין עובדים פעילים') + '</div>';
+}
+
 let _amSel = null; // תאריך נבחר בגרף (YYYY-MM-DD)
 function renderAbsMini() {
   const plot = document.getElementById('am-plot'); if (!plot) return;
@@ -3835,6 +3901,7 @@ function _amPick(d) {
 }
 function updateStats() {
   try { renderAbsMini(); } catch (e) {}
+  try { renderEmpGrid(); } catch (e) {}
   const activeEmps = employees.filter(e => e.status === 'active');
   const el = document.getElementById('stat-active');
   if (el) el.textContent = activeEmps.length;
@@ -6813,6 +6880,7 @@ function calcMonthStats(empId, monthStr) {
 
 
 function openEmpProfile(empId) {
+  try { trackEmpOpen(empId); } catch (e) {}
   currentProfileEmpId = empId;
   const emp = employees.find(e => e.id === empId);
   if (!emp) return;
