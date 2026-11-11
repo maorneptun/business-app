@@ -897,6 +897,41 @@ body.kb-open .ai-fab { display: none; }
 .rem-new svg { width: 16px; height: 16px; }
 .rem-empty { padding: 16px 2px; color: var(--text-muted); font-size: 14.5px; font-weight: 600; }
 
+/* ===== חלון תזכורות — נקי ===== */
+.rm-compose { display: flex; flex-direction: column; gap: 12px; }
+.rm-text { font-size: 17px !important; min-height: 52px; border-radius: 14px !important; }
+.rm-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.rm-chip { border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 0 16px; min-height: 38px; font-family: inherit; font-size: 14px; font-weight: 600; color: var(--text); cursor: pointer; transition: background .15s, border-color .15s, color .15s; }
+.rm-chip.on { background: var(--accent-light); border-color: var(--accent-mid); color: var(--accent); }
+.rm-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.rm-field { display: flex; flex-direction: column; gap: 5px; min-width: 0; margin: 0; }
+.rm-field > span { font-size: 12.5px; font-weight: 600; color: var(--text-muted); }
+.rm-field .form-control { width: 100% !important; max-width: 100%; box-sizing: border-box; min-width: 0; flex: none !important; margin: 0; }
+.rm-opts { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: var(--surface); }
+.rm-opt { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; padding: 0 14px; font-size: 15px; font-weight: 500; cursor: pointer; margin: 0; }
+.rm-opt + .rm-opt { border-top: 1px solid var(--border); }
+.rm-sw { appearance: none; -webkit-appearance: none; width: 46px !important; height: 28px !important; border-radius: 14px; background: #D5D9E0; position: relative; cursor: pointer; flex: 0 0 auto; margin: 0; border: 0; transition: background .2s; }
+.rm-sw::after { content: ''; position: absolute; top: 3px; right: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2); transition: transform .2s; }
+.rm-sw:checked { background: var(--accent); }
+.rm-sw:checked::after { transform: translateX(-18px); }
+.rm-sw:focus-visible, .rm-chip:focus-visible, .rm-del:focus-visible { outline: 3px solid var(--accent-mid); outline-offset: 2px; }
+.rm-hint { font-size: 12.5px; color: var(--text-muted); margin: -2px 2px 0; }
+.rm-add { width: 100%; min-height: 50px; font-size: 16px !important; border-radius: 14px !important; justify-content: center; }
+.rm-list { margin-top: 20px; border-top: 1px solid var(--border); }
+.rm-grp-h { font-size: 13px; font-weight: 700; color: var(--text-muted); margin: 18px 2px 2px; }
+.rm-grp-h.late { color: var(--danger); }
+.rm-row { display: flex; align-items: center; gap: 12px; min-height: 58px; border-bottom: 1px solid #F0F1F4; transition: opacity .25s, transform .25s; }
+.rm-row.gone { opacity: 0; transform: translateX(-14px); }
+.rm-row .rem-chk { width: 26px; height: 26px; }
+.rm-row .rem-chk svg { width: 14px; height: 14px; }
+.rm-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.rm-t { font-size: 15px; font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
+.rm-m { font-size: 12.5px; font-weight: 600; color: var(--text-muted); }
+.rm-del { flex: 0 0 auto; width: 40px; height: 40px; border: 0; background: none; color: #9AA0A8; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.rm-del:hover { background: var(--bg); color: var(--danger); }
+.rm-del svg { width: 18px; height: 18px; }
+.rm-empty { text-align: center; padding: 18px 0 6px; color: var(--text-muted); font-size: 14px; font-weight: 600; }
+
 /* ===== דוחות: רק "צור דוח שעות" (שאר הלשוניות מוסתרות כרגע) ===== */
 #page-reports .tabs-inner, #rpt-tab-summary, #rpt-tab-clock, #rpt-tab-client { display: none !important; }
 #page-emp-profile.rpt-mode #tab-btn-replacements, #page-emp-profile.rpt-mode #tab-btn-absences { display: none !important; }
@@ -1944,20 +1979,28 @@ body.kb-open .ai-fab { display: none; }
 <div class="modal-overlay" id="modal-reminders">
   <div class="modal" style="width:520px">
     <div class="modal-header">
-      <div class="modal-title">⏰ תזכורות</div>
-      <button class="modal-close" onclick="closeModal('modal-reminders')">×</button>
+      <div class="modal-title">תזכורת חדשה</div>
+      <button class="modal-close" onclick="closeModal('modal-reminders')" aria-label="סגור">×</button>
     </div>
-    <div class="sup-row" style="margin-bottom:8px">
-      <input class="form-control" id="rem-text" placeholder="מה להזכיר לך?" onkeydown="if(event.key==='Enter')addReminder()" style="flex:1 1 100%">
+    <div class="rm-compose">
+      <input class="form-control rm-text" id="rem-text" placeholder="מה להזכיר לך?" aria-label="מה להזכיר לך" onkeydown="if(event.key==='Enter')addReminder()">
+      <div class="rm-chips" role="group" aria-label="מתי">
+        <button type="button" class="rm-chip" data-off="0" onclick="remSetDate(0)">היום</button>
+        <button type="button" class="rm-chip" data-off="1" onclick="remSetDate(1)">מחר</button>
+        <button type="button" class="rm-chip" data-off="7" onclick="remSetDate(7)">בעוד שבוע</button>
+      </div>
+      <div class="rm-grid">
+        <label class="rm-field"><span>יום</span><input type="date" class="form-control" id="rem-date" onchange="remSyncChips()"></label>
+        <label class="rm-field"><span>שעה (לא חובה)</span><input type="time" class="form-control" id="rem-time"></label>
+      </div>
+      <div class="rm-opts">
+        <label class="rm-opt"><span>חוזר כל יום</span><input type="checkbox" class="rm-sw" id="rem-daily"></label>
+        <label class="rm-opt"><span>שלח גם לקבוצת הוואטסאפ</span><input type="checkbox" class="rm-sw" id="rem-wa" checked></label>
+      </div>
+      <p class="rm-hint">בלי שעה, התזכורת תקפוץ כשתפתח את המערכת באותו יום.</p>
+      <button type="button" class="btn btn-primary rm-add" onclick="addReminder()">הוסף תזכורת</button>
     </div>
-    <div class="sup-row">
-      <input type="date" class="form-control" id="rem-date" style="flex:1 1 140px">
-      <input type="time" class="form-control" id="rem-time" style="flex:0 1 120px" title="שעה (אופציונלי)">
-      <button class="btn btn-primary" onclick="addReminder()">הוסף</button>
-    </div>
-    <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:10px"><label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" id="rem-daily"> 🔁 חוזר כל יום</label><label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" id="rem-wa" checked> שלח גם לקבוצת הוואטסאפ</label></div>
-    <div style="font-size:12px;color:var(--text-muted);margin:6px 0 0">בלי שעה — התזכורת תקפוץ כשתפתח את המערכת באותו יום. תזכורת עם שעה תקפוץ בזמן, כל עוד המערכת פתוחה בדפדפן.</div>
-    <div id="rem-list" style="margin-top:12px;max-height:50vh;overflow:auto"></div>
+    <div id="rem-list" class="rm-list"></div>
   </div>
 </div>
 
@@ -4076,6 +4119,7 @@ function remTopToggle(id) {
 function openReminders() {
   document.getElementById('rem-date').value = _remToday();
   document.getElementById('rem-time').value = '';
+  remSyncChips();
   renderReminders();
   openModal('modal-reminders');
   setTimeout(() => document.getElementById('rem-text').focus(), 50);
@@ -4109,27 +4153,36 @@ function _remDayLabel(d) {
   if (d === tm) return 'מחר';
   return new Date(d + 'T12:00:00').toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'numeric' });
 }
+function remSetDate(off) { document.getElementById('rem-date').value = _isoLocal(new Date(Date.now() + off * 86400000)); remSyncChips(); }
+function remSyncChips() {
+  const v = (document.getElementById('rem-date') || {}).value;
+  document.querySelectorAll('#modal-reminders .rm-chip').forEach(c => {
+    const on = v === _isoLocal(new Date(Date.now() + (+c.dataset.off) * 86400000));
+    c.classList.toggle('on', on); c.setAttribute('aria-pressed', on);
+  });
+}
 function renderReminders() {
   const el = document.getElementById('rem-list');
   if (!el) return;
   rollDailyReminders();
   const t = _remToday();
   const open = reminders.filter(r => !r.done).sort((a, b) => (a.date + (a.time || '00:00')).localeCompare(b.date + (b.time || '00:00')));
-  const done = reminders.filter(r => r.done).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
-  const row = r => '<div class="sup-line' + (r.done ? ' sup-billed' : '') + '"><span>' +
-    (r.done ? '' : '<input type="checkbox" data-id="' + r.id + '" onchange="remDone(this.dataset.id)" style="margin-left:8px"> ') +
-    escHtml(r.text) + (r.time ? ' <b style="color:var(--text-muted)">· ' + r.time + '</b>' : '') + (r.repeat === 'daily' ? ' <span title="חוזר כל יום" style="font-size:12px">🔁</span>' : '') + (r.wa !== false ? ' <span title="יישלח לוואטסאפ" style="font-size:12px">💬</span>' : '') + '</span><span>' +
-    (r.done ? '<button class="x" data-id="' + r.id + '" onclick="remUndo(this.dataset.id)" title="החזר">↩</button>' : '') +
-    '<button class="x" data-id="' + r.id + '" onclick="remDel(this.dataset.id)">✕</button></span></div>';
+  const chk = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>';
+  const trash = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>';
+  const row = r => {
+    const meta = [r.time && r.time !== '00:00' ? r.time : '', r.repeat === 'daily' ? 'כל יום' : '', r.wa !== false ? 'וואטסאפ' : ''].filter(Boolean).join(' · ');
+    return '<div class="rm-row"><button type="button" class="rem-chk" aria-label="סמן כבוצע" data-id="' + r.id + '" onclick="var b=this;b.classList.add(\'on\');b.closest(\'.rm-row\').classList.add(\'gone\');setTimeout(function(){remDone(b.dataset.id)},280)">' + chk + '</button>' +
+      '<div class="rm-body"><div class="rm-t">' + escHtml(r.text) + '</div>' + (meta ? '<div class="rm-m">' + meta + '</div>' : '') + '</div>' +
+      '<button type="button" class="rm-del" aria-label="מחק תזכורת" data-id="' + r.id + '" onclick="remDel(this.dataset.id)">' + trash + '</button></div>';
+  };
   let h = '';
   const groups = {};
   open.forEach(r => (groups[r.date] = groups[r.date] || []).push(r));
   Object.keys(groups).sort().forEach(d => {
     const late = d < t;
-    h += '<div class="sup-grp"><div class="sup-grp-h"><span' + (late ? ' style="color:var(--danger)"' : '') + '>' + (late ? 'באיחור · ' : '') + _remDayLabel(d) + '</span></div>' + groups[d].map(row).join('') + '</div>';
+    h += '<div class="rm-grp-h' + (late ? ' late' : '') + '">' + (late ? 'באיחור · ' : '') + _remDayLabel(d) + '</div>' + groups[d].map(row).join('');
   });
-  if (!open.length) h = '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:13px">אין תזכורות פתוחות</div>';
-
+  if (!open.length) h = '<div class="rm-empty">אין תזכורות פתוחות</div>';
   el.innerHTML = h;
 }
 function checkReminders() {
