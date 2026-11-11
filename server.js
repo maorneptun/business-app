@@ -236,7 +236,8 @@ app.post('/api/files/:id/delete', async (req, res) => {
 app.all('/api/data', (req, res) => res.status(410).json({ error: 'הוחלף ב-/api/state' }));
 
 // ===== GREEN INVOICE (MORNING) =====
-const GI_BASE = 'https://api.greeninvoice.co.il/api/v1';
+// GREEN_INVOICE_BASE אפשר להפנות לסביבת הניסוי: https://sandbox.d.greeninvoice.co.il/api/v1
+const GI_BASE = process.env.GREEN_INVOICE_BASE || 'https://api.greeninvoice.co.il/api/v1';
 
 async function getGiToken() {
   const resp = await fetch(`${GI_BASE}/account/token`, {
@@ -286,6 +287,93 @@ app.post('/api/invoice/create', async (req, res) => {
     const data = await resp.json();
     res.json(data);
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== הפקת חשבונית חודשית ללקוח (מהכרטיס באפליקציה) =====
+// גוף הבקשה: { clientGiId, clientName, month: 'YYYY-MM', type: 305|300, lines: [{description, quantity, price}], remarks?, force? }
+// מחירים לפני מע"מ. מונע הפקה כפולה לאותו לקוח+חודש+סוג (אלא אם force).
+app.post('/api/invoice/issue', async (req, res) => {
+  try {
+    const b = req.body || {};
+    const type = parseInt(b.type, 10);
+    if (![300, 305].includes(type)) return res.status(400).json({ error: 'סוג המסמך לא נתמך כאן (רק חשבונית מס או חשבון עסקה)' });
+    if (!b.clientGiId) return res.status(400).json({ error: 'הלקוח לא מקושר למורנינג. ייבא את הלקוחות ממורנינג בדף הלקוחות.' });
+    if (!/^\d{4}-\d{2}$/.test(String(b.month || ''))) return res.status(400).json({ error: 'חודש לא תקין' });
+    const lines = Array.isArray(b.lines) ? b.lines : [];
+    const income = lines.map(l => ({
+      description: String(l.description || '').trim().slice(0, 300),
+      quantity: Number(l.quantity),
+      price: Number(l.price),
+      currency: 'ILS',
+      vatType: 0
+    }));
+    if (!income.length) return res.status(400).json({ error: 'אין שורות בחשבונית' });
+    if (income.some(i => !i.description || !(i.quantity > 0) || !(i.price > 0))) return res.status(400).json({ error: 'בכל שורה צריך תיאור, כמות ומחיר גדולים מאפס' });
+    if (!db) return res.status(503).json({ error: 'מסד הנתונים לא זמין כרגע, נסה שוב בעוד דקה' });
+
+    const key = { clientGiId: String(b.clientGiId), month: b.month, type };
+    const prev = await db.collection('invoices').findOne(key);
+    if (prev && !b.force) return res.status(409).json({ error: 'כבר הופק מסמך ללקוח הזה לחודש הזה', prev: { number: prev.number, url: prev.url, createdAt: prev.createdAt } });
+
+    const token = await getGiToken();
+    if (!token) return res.status(502).json({ error: 'לא הצלחתי להתחבר למורנינג (בדוק את מפתחות ה-API ב-Render)' });
+    const now = new Date();
+    const today = new Date(now.getTime() + 2 * 3600 * 1000).toISOString().slice(0, 10); // בערך שעון ישראל
+    const doc = {
+      type, date: today, lang: 'he', currency: 'ILS', vatType: 0,
+      description: String(b.description || '').slice(0, 200) || undefined,
+      remarks: String(b.remarks || '').slice(0, 500) || undefined,
+      client: { id: String(b.clientGiId), name: String(b.clientName || '') || undefined },
+      income
+    };
+    const r = await fetch(`${GI_BASE}/documents`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(doc)
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok || data.errorCode || data.errorMessage) {
+      console.error('GI issue failed', r.status, JSON.stringify(data).slice(0, 500));
+      return res.status(502).json({ error: 'מורנינג החזירה שגיאה: ' + (data.errorMessage || data.message || r.status), gi: data });
+    }
+    const url = (data.url && (data.url.he || data.url.origin)) || data.url || null;
+    const rec = { ...key, clientName: b.clientName || '', docId: data.id || null, number: data.number || null, url, total: income.reduce((s, i) => s + i.quantity * i.price, 0), createdAt: now };
+    await db.collection('invoices').insertOne(rec);
+    res.json({ ok: true, id: rec.docId, number: rec.number, url: rec.url });
+  } catch (err) {
+    console.error('invoice/issue', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== חשבוניות פתוחות של לקוח (מורנינג) =====
+// GET /api/invoice/open?giId=... → [{ id, number, type, date, dueDate, total, url }]
+// סטטוס 0 = פתוח (לא נסגר בקבלה). מסננים גם בצד שלנו לפי מזהה הלקוח, ליתר ביטחון.
+app.get('/api/invoice/open', async (req, res) => {
+  try {
+    const giId = String(req.query.giId || '');
+    if (!giId) return res.status(400).json({ error: 'חסר מזהה לקוח במורנינג' });
+    const token = await getGiToken();
+    if (!token) return res.status(502).json({ error: 'לא הצלחתי להתחבר למורנינג' });
+    const r = await fetch(`${GI_BASE}/documents/search`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ page: 1, pageSize: 100, clientId: giId, status: [0], type: [300, 305, 320], sort: 'documentDate' })
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok || data.errorCode) return res.status(502).json({ error: 'מורנינג החזירה שגיאה: ' + (data.errorMessage || r.status) });
+    const items = (data.items || []).filter(d => !d.client || !d.client.id || String(d.client.id) === giId).filter(d => d.status === undefined || d.status === 0);
+    res.json(items.map(d => ({
+      id: d.id, number: d.number, type: d.type,
+      date: d.documentDate || d.creationDate || null,
+      dueDate: d.dueDate || null,
+      total: Number(d.amount != null ? d.amount : (d.total != null ? d.total : d.amountLocal)) || 0,
+      url: (d.url && (d.url.he || d.url.origin)) || null
+    })));
+  } catch (err) {
+    console.error('invoice/open', err);
     res.status(500).json({ error: err.message });
   }
 });

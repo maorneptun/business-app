@@ -972,6 +972,30 @@ body.kb-open .ai-fab { display: none; }
 .cpx-seg button { min-height: 38px; padding: 0 18px; border: 0; border-radius: 8px; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
 .cpx-items-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .cpx-act:focus-visible, .cpx-ico:focus-visible, .cpx-back:focus-visible, .cpx-emp:focus-visible, .cpx-set summary:focus-visible { outline: 3px solid var(--accent-mid); outline-offset: 2px; }
+.cpx-done { display: flex; align-items: center; width: 100%; min-height: 44px; border: 0; border-radius: 12px; background: #EEF6F1; color: #2E6A48; font-family: inherit; font-size: 13.5px; font-weight: 600; padding: 0 12px; cursor: pointer; text-align: right; }
+.cpx-done[hidden] { display: none; }
+.ip-ctl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: end; margin-bottom: 12px; }
+.ip-rows { display: flex; flex-direction: column; gap: 10px; }
+.ip-row { background: var(--bg); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.ip-row .form-control { width: 100%; box-sizing: border-box; background: #fff; }
+.ip-nums { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 40px; gap: 8px; align-items: end; }
+.ip-nums label { display: flex; flex-direction: column; gap: 4px; margin: 0; min-width: 0; }
+.ip-nums span { font-size: 12px; font-weight: 600; color: var(--text-muted); }
+.ip-add { align-self: flex-start; min-height: 40px; border: 0; background: none; padding: 0; font-family: inherit; font-size: 14px; font-weight: 600; color: var(--accent); cursor: pointer; margin: 6px 0 4px; }
+.ip-err { background: #FDF0EE; color: #8A2E22; border-radius: 12px; padding: 10px 12px; font-size: 13.5px; font-weight: 600; margin: 8px 0; }
+.ip-link { border: 0; background: none; padding: 0; font: inherit; color: inherit; text-decoration: underline; cursor: pointer; }
+.ip-confirm { background: #FFF8EF; color: #6B3A00; border-radius: 12px; padding: 10px 12px; font-size: 14px; font-weight: 500; }
+.ip-ok { display: flex; flex-direction: column; gap: 10px; background: #EEF6F1; color: #2E6A48; border-radius: 12px; padding: 14px; font-size: 14.5px; font-weight: 600; }
+.ip-ok .btn { min-height: 46px; justify-content: center; text-decoration: none; }
+.cpx-refresh { border: 0; background: none; padding: 0; min-height: 32px; font-family: inherit; font-size: 13px; font-weight: 600; color: var(--accent); cursor: pointer; }
+.op-row { display: flex; align-items: center; gap: 10px; min-height: 54px; border-top: 1px solid #F0F1F4; text-decoration: none; color: var(--text); }
+.op-row:first-child { border-top: 0; }
+.op-b { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.op-n { font-size: 15px; font-weight: 600; }
+.op-m { font-size: 12.5px; font-weight: 500; color: var(--text-muted); }
+.op-m.late { color: #9A4A00; }
+.op-v { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.op-tot { display: flex; justify-content: space-between; font-size: 14px; font-weight: 700; padding-top: 10px; border-top: 2px solid var(--border); }
 /* איש קשר */
 .ct-wrap { display: flex; flex-direction: column; gap: 14px; }
 .ct-view { display: flex; flex-direction: column; gap: 4px; background: var(--bg); border-radius: 14px; padding: 14px; }
@@ -1857,7 +1881,13 @@ body.kb-open .ai-fab { display: none; }
           <div><b id="cpx-amt"></b><span id="cpx-amt-l"></span></div>
           <div><b id="cpx-abs"></b><span id="cpx-abs-l"></span></div>
         </div>
+        <button type="button" class="cpx-done" id="cpx-inv" onclick="openInvoicePreview()" hidden></button>
         <button type="button" class="cpx-alert" id="cpx-alert" onclick="cpxGoSupplies()" hidden></button>
+      </section>
+
+      <section class="cpx-card" id="cpx-open-sec">
+        <div class="cpx-h"><h2>חשבוניות פתוחות</h2><button type="button" class="cpx-refresh" onclick="cpxLoadOpen(true)" aria-label="רענן חשבוניות">רענן</button></div>
+        <div id="cpx-open"></div>
       </section>
 
       <section class="cpx-card">
@@ -9712,6 +9742,7 @@ function openClientProfile(id) {
   const setEl = document.getElementById('cpx-set'); if (setEl) setEl.open = false;
   renderClientSupplies();
   cpxRefresh();
+  cpxLoadOpen(false);
   showPage('client-profile');
   window.scrollTo(0, 0);
 }
@@ -9849,6 +9880,9 @@ function cpxRefresh() {
   document.getElementById('cpx-amt-l').textContent = fixed ? 'לחיוב (סכום קבוע)' : (c.rate ? 'לחיוב (' + Math.round(r.hours) + ' שעות)' : 'שעות · אין תעריף');
   document.getElementById('cpx-abs').textContent = r.abs;
   document.getElementById('cpx-abs-l').textContent = r.abs ? 'חיסורים · ' + r.absWithRepl + ' עם מחליף' : 'חיסורים';
+  const inv = c.invoices && c.invoices[activeMonth];
+  const ib = document.getElementById('cpx-inv');
+  if (ib) { ib.hidden = !inv; if (inv) ib.textContent = (DOC_TYPES[inv.type] || 'מסמך') + (inv.number ? ' ' + inv.number : '') + ' הופק' + (inv.date ? ' ב-' + inv.date : '') + ' ›'; }
   const al = document.getElementById('cpx-alert');
   if (r.supOpen.length) { al.hidden = false; al.textContent = r.supOpen.length + (r.supOpen.length === 1 ? ' הזמנת חומרים עוד לא חויבה' : ' הזמנות חומרים עוד לא חויבו') + ' ›'; } else al.hidden = true;
   // איש קשר
@@ -9867,6 +9901,41 @@ function cpxRefresh() {
       '<span class="cpx-emp-s">' + x.perDay + ' שעות ביום · ' + Math.round(x.hours) + ' שעות ב' + MN + '</span></span>' + (tag ? '<span class="cpx-tag">' + tag + '</span>' : '') +
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>';
   }).join('') : '<div class="cpx-empty">אין עובדים משויכים. משייכים לקוח מתוך כרטיס העובד.</div>';
+}
+// חשבוניות פתוחות של הלקוח ממורנינג (נשמר 5 דקות בזיכרון)
+const OPEN_API = 'https://business-app-hf5y.onrender.com/api/invoice/open';
+const _openCache = {};
+async function cpxLoadOpen(force) {
+  const c = clientsData.find(x => x.id === currentClientId); const el = document.getElementById('cpx-open'); if (!c || !el) return;
+  if (!c.giId) { el.innerHTML = '<div class="cpx-empty">הלקוח לא מקושר למורנינג. ייבא לקוחות ממורנינג בדף הלקוחות.</div>'; return; }
+  const hit = _openCache[c.giId];
+  if (hit && !force && Date.now() - hit.t < 300000) { _cpxOpenRender(hit.list); return; }
+  el.innerHTML = '<div class="cpx-empty">טוען ממורנינג…</div>';
+  const cid = c.id;
+  try {
+    const res = await fetch(OPEN_API + '?giId=' + encodeURIComponent(c.giId));
+    const j = await res.json().catch(() => ({}));
+    if (res.status === 401) throw new Error('צריך להתחבר לסנכרון כדי לראות חשבוניות');
+    if (!res.ok || !Array.isArray(j)) throw new Error(j.error || 'לא הצלחתי לטעון ממורנינג');
+    _openCache[c.giId] = { t: Date.now(), list: j };
+    if (currentClientId === cid) _cpxOpenRender(j);
+  } catch (e) { if (currentClientId === cid) el.innerHTML = '<div class="cpx-empty">' + escHtml(e.message) + '</div>'; }
+}
+function _cpxOpenRender(list) {
+  const el = document.getElementById('cpx-open'); if (!el) return;
+  if (!list.length) { el.innerHTML = '<div class="cpx-empty">אין חשבוניות פתוחות 👍</div>'; return; }
+  const now = Date.now();
+  const fmt = d => d ? d.slice(0, 10).split('-').reverse().join('/') : '';
+  let sum = 0;
+  const rows = list.slice().sort((a, b) => String(a.date).localeCompare(String(b.date))).map(d => {
+    sum += d.total;
+    const days = d.date ? Math.floor((now - new Date(d.date.slice(0, 10) + 'T12:00:00').getTime()) / 86400000) : 0;
+    const late = days > 30;
+    const inner = '<span class="op-b"><span class="op-n">' + (DOC_TYPES[String(d.type)] || 'מסמך') + (d.number ? ' ' + escHtml(String(d.number)) : '') + '</span>' +
+      '<span class="op-m' + (late ? ' late' : '') + '">' + fmt(d.date) + (days > 0 ? ' · פתוחה ' + days + ' ימים' : '') + '</span></span><span class="op-v">' + _ils(d.total) + '</span>';
+    return d.url ? '<a class="op-row" href="' + escHtml(d.url) + '" target="_blank" rel="noopener">' + inner + '</a>' : '<div class="op-row">' + inner + '</div>';
+  }).join('');
+  el.innerHTML = rows + (list.length > 1 ? '<div class="op-tot"><span>סה״כ פתוח</span><span>' + _ils(sum) + '</span></div>' : '');
 }
 function cpxGoSupplies() {
   const d = document.getElementById('cp-sup-date'); if (d && !d.value) d.value = todayISO();
@@ -9889,33 +9958,104 @@ function openClientContact() {
   }
   openModal('modal-cpct');
 }
-function openInvoicePreview() {
-  const c = clientsData.find(x => x.id === currentClientId); if (!c) return;
+// ===== טיוטת חשבונית עם עריכה + הפקה במורנינג =====
+const INV_API = 'https://business-app-hf5y.onrender.com/api/invoice/issue';
+function _ipBuild(c, perEmp) {
   const r = cpxCalc(c, activeMonth);
   const [y, m] = activeMonth.split('-').map(Number);
   const MN = _HEB_MN[m - 1] + ' ' + y;
-  const doc = DOC_TYPES[c.docType || '305'];
-  let lines = [], sub = 0;
-  if (r.fixed) { lines.push({ n: 'שירותי ניקיון — ' + MN, c: 'סכום קבוע', v: c.monthlyFee || 0 }); sub = c.monthlyFee || 0; }
-  else {
-    r.rows.forEach(x => { if (x.hours) { const v = x.hours * r.rate; sub += v; lines.push({ n: empName(x.e), c: Math.round(x.hours * 100) / 100 + ' × ₪' + r.rate, v }); } });
-    if (r.replH) { const v = r.replH * r.rate; sub += v; lines.push({ n: 'חילופים', c: r.replH + ' × ₪' + r.rate, v }); }
-  }
-  const vat = sub * 0.18, tot = sub + vat;
-  const supTxt = r.supOpen.map(x => x.text).join(', ');
-  let h = '<div class="ip-top"><b>' + escHtml(c.name) + '</b><span>' + doc + ' · ' + MN + (activeMonth === todayISO().slice(0, 7) ? ' (עד היום)' : '') + '</span></div>';
-  h += lines.length ? lines.map(l => '<div class="ip-l"><span class="n">' + escHtml(l.n) + '</span><span class="c">' + l.c + '</span><span class="v">' + _ils(l.v) + '</span></div>').join('') : '<div class="cpx-empty">אין שעות לחיוב בחודש הזה' + (r.fixed || r.rate ? '' : ' (לא הוגדר תעריף)') + '</div>';
-  if (supTxt) h += '<div class="ip-l"><span class="n">חומרי ניקיון: ' + escHtml(supTxt) + '</span><span class="v">[מחיר]</span></div>';
-  h += '<div class="ip-sum"><span>לפני מע״מ</span><span>' + _ils(sub) + '</span></div><div class="ip-sum"><span>מע״מ 18%</span><span>' + _ils(vat) + '</span></div><div class="ip-tot"><span>סה״כ</span><span>' + _ils(tot) + '</span></div>';
-  h += '<p class="ip-note">השעות מחושבות לפי ימי עבודה, חיסורים וחילופים. בדוק לפני ההפקה.</p>';
-  h += '<div class="ip-acts"><button class="btn btn-primary" onclick="copyInvoicePreview()">העתק פירוט</button><button class="btn btn-secondary" disabled title="בשלב הבא">הפקה ישירה במורנינג — בשלב הבא</button></div>';
-  window._ipText = c.name + ' — ' + doc + ' — ' + MN + '\n' + lines.map(l => l.n + ': ' + l.c + ' = ' + _ils(l.v)).join('\n') + (supTxt ? '\nחומרי ניקיון: ' + supTxt : '') + '\nלפני מע״מ: ' + _ils(sub) + '\nמע״מ 18%: ' + _ils(vat) + '\nסה״כ: ' + _ils(tot);
-  document.getElementById('invprev-body').innerHTML = h;
+  const L = [];
+  if (r.fixed) L.push({ d: 'שירותי ניקיון — ' + MN, q: 1, p: c.monthlyFee || 0 });
+  else if (perEmp) {
+    r.rows.forEach(x => { if (x.hours) L.push({ d: 'שעות ניקיון — ' + empName(x.e) + ' — ' + MN, q: Math.round(x.hours * 100) / 100, p: r.rate }); });
+    if (r.replH) L.push({ d: 'שעות ניקיון — חילופים — ' + MN, q: r.replH, p: r.rate });
+  } else if (r.hours) L.push({ d: 'שעות ניקיון — ' + MN, q: Math.round(r.hours * 100) / 100, p: r.rate });
+  if (r.supOpen.length) L.push({ d: 'חומרי ניקיון: ' + r.supOpen.map(x => x.text).join(', '), q: 1, p: 0 });
+  return { L, MN };
+}
+function openInvoicePreview() {
+  const c = clientsData.find(x => x.id === currentClientId); if (!c) return;
+  const done = c.invoices && c.invoices[activeMonth];
+  const b = _ipBuild(c, true);
+  window._ip = { cid: c.id, month: activeMonth, MN: b.MN, type: c.docType === '300' ? '300' : (c.docType === '320' ? '320' : '305'), perEmp: true, lines: b.L, step: 0, busy: false, done: done || null, err: '' };
+  _ipRender();
   openModal('modal-invprev');
 }
+function _ipTotals() { const sub = window._ip.lines.reduce((s, l) => s + (Number(l.q) || 0) * (Number(l.p) || 0), 0); return { sub, vat: sub * 0.18, tot: sub * 1.18 }; }
+function _ipRender() {
+  const ip = window._ip, c = clientsData.find(x => x.id === ip.cid); if (!c) return;
+  const t = _ipTotals();
+  let h = '<div class="ip-top"><b>' + escHtml(c.name) + '</b><span>' + ip.MN + (ip.month === todayISO().slice(0, 7) ? ' (עד היום)' : '') + '</span></div>';
+  if (ip.done) {
+    h += '<div class="ip-ok">' + (DOC_TYPES[ip.done.type] || 'מסמך') + (ip.done.number ? ' מס׳ ' + escHtml(String(ip.done.number)) : '') + ' הופק' + (ip.done.date ? ' ב-' + ip.done.date : '') + ' · ' + _ils(ip.done.total * 1.18) + ' כולל מע״מ' +
+      (ip.done.url ? '<a class="btn btn-primary" href="' + escHtml(ip.done.url) + '" target="_blank" rel="noopener">פתח את המסמך</a>' : '') + '</div>';
+    h += '<p class="ip-note">כדי לתקן מסמך שהופק, מוציאים חשבונית זיכוי במורנינג.</p>';
+    document.getElementById('invprev-body').innerHTML = h; return;
+  }
+  h += '<div class="ip-ctl"><label class="cpx-f"><span class="cpx-l">סוג מסמך</span><select class="form-control" onchange="_ip.type=this.value;_ipRender()">' +
+    Object.keys(DOC_TYPES).map(k => '<option value="' + k + '"' + (ip.type === k ? ' selected' : '') + '>' + DOC_TYPES[k] + '</option>').join('') + '</select></label>' +
+    (c.billingType !== 'fixed' ? '<div class="cpx-f"><span class="cpx-l">פירוט</span><div class="cpx-seg"><button type="button" onclick="_ipMode(true)" style="' + _ipSeg(ip.perEmp) + '">לפי עובד</button><button type="button" onclick="_ipMode(false)" style="' + _ipSeg(!ip.perEmp) + '">שורה אחת</button></div></div>' : '') + '</div>';
+  h += '<div class="ip-rows">' + ip.lines.map((l, i) =>
+    '<div class="ip-row"><input class="form-control ip-d" value="' + escHtml(l.d) + '" aria-label="תיאור" oninput="_ip.lines[' + i + '].d=this.value">' +
+    '<div class="ip-nums"><label><span>כמות</span><input class="form-control" type="number" inputmode="decimal" step="0.25" min="0" value="' + l.q + '" oninput="_ip.lines[' + i + '].q=this.value;_ipTot()"></label>' +
+    '<label><span>מחיר ליחידה ₪</span><input class="form-control" type="number" inputmode="decimal" step="0.5" min="0" value="' + (l.p || '') + '" placeholder="0" oninput="_ip.lines[' + i + '].p=this.value;_ipTot()"></label>' +
+    '<button type="button" class="rm-del" aria-label="הסר שורה" onclick="_ip.lines.splice(' + i + ',1);_ipRender()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div></div>').join('') + '</div>';
+  h += '<button type="button" class="ip-add" onclick="_ip.lines.push({d:\'\',q:1,p:0});_ipRender()">+ שורה</button>';
+  h += '<div id="ip-tots"></div>';
+  if (ip.err) h += '<div class="ip-err">' + ip.err + '</div>';
+  const can = ip.type !== '320';
+  h += '<div class="ip-acts">';
+  if (!can) h += '<p class="ip-note">חשבונית מס / קבלה דורשת פרטי תשלום, ועדיין לא נתמכת כאן. אפשר להעתיק את הפירוט ולהפיק במורנינג.</p>';
+  else if (ip.step === 0) h += '<button class="btn btn-primary" onclick="_ipAsk()">הפק ' + DOC_TYPES[ip.type] + ' במורנינג</button>';
+  else h += '<div class="ip-confirm">להפיק ' + DOC_TYPES[ip.type] + ' על <b>' + _ils(t.tot) + '</b> כולל מע״מ? אחרי ההפקה אי אפשר למחוק, רק לזכות.</div><button class="btn btn-primary" id="ip-go" onclick="_ipIssue(false)"' + (ip.busy ? ' disabled' : '') + '>' + (ip.busy ? 'מפיק…' : 'כן, להפיק') + '</button><button class="btn btn-secondary" onclick="_ip.step=0;_ipRender()">ביטול</button>';
+  h += '<button class="btn btn-secondary" onclick="copyInvoicePreview()">העתק פירוט</button></div>';
+  document.getElementById('invprev-body').innerHTML = h;
+  _ipTot();
+}
+function _ipSeg(on) { return on ? 'background:#fff;color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.08)' : 'background:transparent;color:var(--text-muted)'; }
+function _ipMode(per) { const c = clientsData.find(x => x.id === _ip.cid); _ip.perEmp = per; _ip.lines = _ipBuild(c, per).L; _ip.step = 0; _ipRender(); }
+function _ipTot() {
+  const el = document.getElementById('ip-tots'); if (!el) return;
+  const t = _ipTotals();
+  el.innerHTML = '<div class="ip-sum"><span>לפני מע״מ</span><span>' + _ils(t.sub) + '</span></div><div class="ip-sum"><span>מע״מ 18%</span><span>' + _ils(t.vat) + '</span></div><div class="ip-tot"><span>סה״כ</span><span>' + _ils(t.tot) + '</span></div>';
+}
+function _ipValid() {
+  const c = clientsData.find(x => x.id === _ip.cid);
+  if (!c.giId) return 'הלקוח לא מקושר למורנינג. בדף הלקוחות לחץ על ייבוא לקוחות ממורנינג, ואז נסה שוב.';
+  if (!_ip.lines.length) return 'אין שורות בחשבונית';
+  const bad = _ip.lines.findIndex(l => !String(l.d).trim() || !(Number(l.q) > 0) || !(Number(l.p) > 0));
+  if (bad > -1) return 'בשורה ' + (bad + 1) + ' חסר תיאור, כמות או מחיר. מלא או הסר אותה.';
+  return '';
+}
+function _ipAsk() { _ip.err = _ipValid(); _ip.step = _ip.err ? 0 : 1; _ipRender(); }
+async function _ipIssue(force) {
+  const c = clientsData.find(x => x.id === _ip.cid); if (!c || _ip.busy) return;
+  const v = _ipValid(); if (v) { _ip.err = v; _ip.step = 0; _ipRender(); return; }
+  _ip.busy = true; _ip.err = ''; _ipRender();
+  try {
+    const res = await fetch(INV_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+      clientGiId: c.giId, clientName: c.name, month: _ip.month, type: Number(_ip.type), force: !!force,
+      description: 'שירותי ניקיון — ' + _ip.MN,
+      lines: _ip.lines.map(l => ({ description: String(l.d).trim(), quantity: Number(l.q), price: Number(l.p) })) }) });
+    const j = await res.json().catch(() => ({}));
+    if (res.status === 409) { _ip.busy = false; _ip.step = 0; _ip.err = 'כבר הופק מסמך ללקוח הזה לחודש הזה' + (j.prev && j.prev.number ? ' (מס׳ ' + escHtml(String(j.prev.number)) + ')' : '') + '. <button type="button" class="ip-link" onclick="if(confirm(\'להפיק מסמך נוסף לאותו חודש?\'))_ipIssue(true)">להפיק בכל זאת</button>'; _ipRender(); return; }
+    if (res.status === 401) throw new Error('צריך להתחבר לסנכרון (הגדרות › סנכרון בין מכשירים)');
+    if (!res.ok || !j.ok) throw new Error(j.error || ('שגיאה ' + res.status));
+    const t = _ipTotals();
+    c.invoices = c.invoices || {};
+    c.invoices[_ip.month] = { number: j.number || '', url: j.url || '', type: _ip.type, total: t.sub, date: todayISO().split('-').reverse().join('/') };
+    saveClientsData();
+    _ip.busy = false; _ip.done = c.invoices[_ip.month];
+    _ipRender(); try { cpxRefresh(); cpxLoadOpen(true); } catch (e) {}
+    showToast('✅ המסמך הופק במורנינג');
+  } catch (e) {
+    _ip.busy = false; _ip.step = 0; _ip.err = escHtml(e.message || 'השרת לא זמין כרגע. נסה שוב בעוד דקה.'); _ipRender();
+  }
+}
 function copyInvoicePreview() {
-  const t = window._ipText || '';
-  (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => showToast('✅ הפירוט הועתק')).catch(() => showToast('לא הצלחתי להעתיק'));
+  const ip = window._ip, c = clientsData.find(x => x.id === ip.cid), t = _ipTotals();
+  const txt = c.name + ' — ' + DOC_TYPES[ip.type] + ' — ' + ip.MN + '\n' + ip.lines.map(l => l.d + ': ' + l.q + ' × ₪' + (l.p || 0) + ' = ' + _ils((Number(l.q) || 0) * (Number(l.p) || 0))).join('\n') + '\nלפני מע״מ: ' + _ils(t.sub) + '\nמע״מ 18%: ' + _ils(t.vat) + '\nסה״כ: ' + _ils(t.tot);
+  (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => showToast('✅ הפירוט הועתק')).catch(() => showToast('לא הצלחתי להעתיק'));
 }
 function saveClientInline() {
   if (!currentClientId) return;
