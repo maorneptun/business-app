@@ -921,6 +921,71 @@ body.kb-open .ai-fab { display: none; }
 .rem-new svg { width: 16px; height: 16px; }
 .rem-empty { padding: 16px 2px; color: var(--text-muted); font-size: 14.5px; font-weight: 600; }
 
+/* ===== כרטיס לקוח (עיצוב חדש) ===== */
+.cpx { max-width: 720px; display: flex; flex-direction: column; gap: 14px; }
+.cpx-top { display: flex; align-items: center; justify-content: space-between; }
+.cpx-back { display: flex; align-items: center; gap: 4px; min-height: 40px; border: 0; background: none; padding: 0; font-family: inherit; font-size: 14px; font-weight: 600; color: var(--accent); cursor: pointer; }
+.cpx-back svg { width: 18px; height: 18px; }
+.cpx-tools { display: flex; gap: 8px; }
+.cpx-ico { width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--text); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.cpx-ico svg { width: 18px; height: 18px; }
+.cpx-ico.danger { color: var(--danger); }
+.cpx-name { margin: 0; font-size: 26px; font-weight: 700; color: var(--text); }
+.cpx-sub { font-size: 14px; font-weight: 500; color: var(--text-muted); margin-top: -8px; }
+.cpx-acts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.cpx-act { min-height: 66px; border: 0; border-radius: 14px; background: var(--surface); box-shadow: 0 1px 2px rgba(20,30,50,.06); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; font-family: inherit; font-size: 13px; font-weight: 600; color: var(--text); text-decoration: none; cursor: pointer; text-align: center; padding: 6px; }
+.cpx-act svg { width: 20px; height: 20px; color: var(--accent); }
+.cpx-act.pri { background: var(--accent); color: #fff; }
+.cpx-act.pri svg { color: #fff; }
+.cpx-act span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cpx-card { background: var(--surface); border-radius: 18px; padding: 16px; box-shadow: 0 1px 2px rgba(20,30,50,.06), 0 4px 16px rgba(20,30,50,.04); display: flex; flex-direction: column; gap: 12px; }
+.cpx-h { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.cpx-h h2 { margin: 0; font-size: 16px; font-weight: 700; color: var(--text); }
+.cpx-h small, .cpx-muted { font-size: 12.5px; font-weight: 500; color: var(--text-muted); }
+.cpx-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.cpx-stats > div { background: var(--bg); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cpx-stats b { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.cpx-stats span { font-size: 12.5px; font-weight: 500; color: var(--text-muted); }
+.cpx-alert { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; border: 0; border-radius: 12px; background: #FFF8EF; color: #6B3A00; font-family: inherit; font-size: 13.5px; font-weight: 600; padding: 0 12px; cursor: pointer; text-align: right; }
+.cpx-alert[hidden] { display: none; }
+.cpx-emp { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 54px; border: 0; border-top: 1px solid #F0F1F4; background: none; padding: 0; font-family: inherit; color: var(--text); cursor: pointer; text-align: right; }
+.cpx-emp:first-child { border-top: 0; }
+.cpx-emp-b { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.cpx-emp-n { font-size: 15px; font-weight: 600; }
+.cpx-emp-s { font-size: 12.5px; font-weight: 500; color: var(--text-muted); }
+.cpx-tag { font-size: 11.5px; font-weight: 600; background: #F1F3F6; color: #4A4F57; border-radius: 999px; padding: 3px 8px; white-space: nowrap; }
+.cpx-emp svg { width: 16px; height: 16px; color: #9AA0A8; flex: 0 0 auto; transform: scaleX(-1); }
+.cpx-empty { font-size: 14px; font-weight: 500; color: var(--text-muted); padding: 4px 0; }
+.cpx-set { padding: 0; gap: 0; }
+.cpx-set summary { list-style: none; display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 0 16px; cursor: pointer; }
+.cpx-set summary::-webkit-details-marker { display: none; }
+.cpx-set-t { flex: 1; font-size: 15px; font-weight: 700; }
+.cpx-set summary small { font-size: 13px; font-weight: 500; color: var(--text-muted); }
+.cpx-chev { width: 18px; height: 18px; color: var(--text-muted); transition: transform .2s; }
+.cpx-set[open] .cpx-chev { transform: rotate(180deg); }
+.cpx-set-body { padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 14px; border-top: 1px solid #F0F1F4; }
+.cpx-f { display: flex; flex-direction: column; gap: 6px; margin: 0; min-width: 0; }
+.cpx-l { font-size: 12.5px; font-weight: 600; color: var(--text-muted); }
+.cpx-f .form-control { width: 100%; box-sizing: border-box; }
+.cpx-grid2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.cpx-seg { display: flex; background: #EEF1F5; border-radius: 10px; padding: 3px; width: fit-content; }
+.cpx-seg button { min-height: 38px; padding: 0 18px; border: 0; border-radius: 8px; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.cpx-items-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cpx-act:focus-visible, .cpx-ico:focus-visible, .cpx-back:focus-visible, .cpx-emp:focus-visible, .cpx-set summary:focus-visible { outline: 3px solid var(--accent-mid); outline-offset: 2px; }
+/* טיוטת חשבונית */
+.ip-top { display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px; }
+.ip-top b { font-size: 17px; }
+.ip-top span { font-size: 13px; font-weight: 500; color: var(--text-muted); }
+.ip-l { display: flex; align-items: center; gap: 10px; min-height: 44px; border-bottom: 1px solid #F0F1F4; font-size: 14px; }
+.ip-l .n { flex: 1; min-width: 0; }
+.ip-l .c { font-size: 12.5px; color: var(--text-muted); white-space: nowrap; direction: ltr; unicode-bidi: isolate; }
+.ip-l .v { min-width: 78px; text-align: left; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ip-sum { display: flex; justify-content: space-between; font-size: 14px; padding: 6px 0; color: var(--text-muted); }
+.ip-tot { display: flex; justify-content: space-between; font-size: 18px; font-weight: 700; padding: 8px 0 4px; border-top: 2px solid var(--border); margin-top: 4px; }
+.ip-note { font-size: 12.5px; color: var(--text-muted); margin: 8px 0 12px; }
+.ip-acts { display: flex; flex-direction: column; gap: 8px; }
+.ip-acts .btn { width: 100%; min-height: 48px; justify-content: center; }
+
 /* ===== עובדים בדף הבית — קוביות לפי שימוש ===== */
 .eg { display: flex; flex-direction: column; gap: 10px; max-width: 900px; margin-top: 14px; scroll-margin-top: 70px; }
 .eg-grid { align-content: start; }
@@ -1761,73 +1826,75 @@ body.kb-open .ai-fab { display: none; }
 
   <!-- ===== PAGE: SETTINGS ===== -->
   <div id="page-client-profile" class="page">
-    <div class="page-header">
-      <button class="btn btn-secondary btn-sm" onclick="showPage('clients')" style="gap:6px">← חזור</button>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-secondary" onclick="openClientModal(currentClientId)" style="display:inline-flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:1em;height:1em;vertical-align:-2px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> עריכה</button>
-        <button class="btn btn-secondary" onclick="deleteClientFromProfile()" style="color:var(--danger);display:inline-flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:1em;height:1em;vertical-align:-2px"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg> מחיקה</button>
-      </div>
-    </div>
-
-    <!-- פרופיל לקוח -->
-    <div style="max-width:700px">
-      <div class="card" style="margin-bottom:16px;padding:20px">
-        <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
-          <div style="width:52px;height:52px;border-radius:14px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:26px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:26px;height:26px"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1M9 13h1M14 9h1M14 13h1"/></svg></div>
-          <div id="client-profile-name" style="font-size:20px;font-weight:800"></div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:14px">
-          <!-- סוג חיוב -->
-          <div>
-            <label class="form-label" style="font-size:11px">סוג חיוב</label>
-            <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;width:fit-content">
-              <button id="billing-type-hourly" onclick="setBillingType('hourly')" style="padding:8px 20px;font-size:13px;border:none;cursor:pointer;font-family:inherit;font-weight:600;background:var(--accent);color:white">לפי שעות</button>
-              <button id="billing-type-fixed" onclick="setBillingType('fixed')" style="padding:8px 20px;font-size:13px;border:none;cursor:pointer;font-family:inherit;font-weight:600;background:var(--bg);color:var(--text-muted)">סכום קבוע</button>
-            </div>
-          </div>
-          <!-- שדה שעות -->
-          <div id="field-hourly">
-            <label class="form-label" style="font-size:11px">תעריף לשעה (₪)</label>
-            <input type="number" class="form-control" id="client-inline-rate" placeholder="0" min="0" step="0.5" onchange="saveClientInline()" style="font-size:15px;font-weight:600;max-width:200px">
-          </div>
-          <!-- שדה קבוע -->
-          <div id="field-fixed" style="display:none">
-            <label class="form-label" style="font-size:11px">סכום חודשי קבוע (₪) <span title="סכום קבוע ללא קשר לשעות — ניתן לשינוי בכל חודש" style="cursor:help;color:var(--text-muted);font-size:13px">ⓘ</span></label>
-            <input type="number" class="form-control" id="client-inline-monthly" placeholder="0" min="0" step="1" onchange="saveClientInline()" style="font-size:15px;font-weight:600;max-width:200px">
-          </div>
-          <!-- הערות -->
-          <div>
-            <label class="form-label" style="font-size:11px">הערות</label>
-            <input type="text" class="form-control" id="client-inline-note" placeholder="הערה אופציונלית" onchange="saveClientInline()">
-          </div>
+    <div class="cpx">
+      <div class="cpx-top">
+        <button type="button" class="cpx-back" onclick="showPage('clients')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>לקוחות</button>
+        <div class="cpx-tools">
+          <button type="button" class="cpx-ico" aria-label="עריכת שם הלקוח" onclick="openClientModal(currentClientId)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
+          <button type="button" class="cpx-ico danger" aria-label="מחיקת לקוח" onclick="deleteClientFromProfile()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button>
         </div>
       </div>
+      <h1 id="client-profile-name" class="cpx-name"></h1>
+      <div id="cpx-sub" class="cpx-sub"></div>
 
-      <!-- פריטי חיוב -->
-      <div class="card" style="margin-bottom:16px;padding:20px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-          <div style="font-weight:700;font-size:14px;display:flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:1em;height:1em;vertical-align:-2px"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg> פריטי חיוב חוזרים</div>
-          <button class="btn btn-secondary btn-sm" onclick="loadItemsFromGreenInvoice()" id="btn-load-gi" style="font-size:12px;display:inline-flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:1em;height:1em;vertical-align:-2px"><path d="M17 2.1l4 4-4 4"/><path d="M3 12.6v-2a4 4 0 0 1 4-4h14"/><path d="M7 21.9l-4-4 4-4"/><path d="M21 11.4v2a4 4 0 0 1-4 4H3"/></svg> טען מחשבונית ירוקה</button>
-        </div>
-        <div id="client-profile-items"></div>
+      <div class="cpx-acts">
+        <a id="cpx-contact" class="cpx-act" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.8 2z"/></svg><span id="cpx-contact-l">איש קשר</span></a>
+        <button type="button" class="cpx-act" onclick="cpxGoSupplies()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>חומרים</button>
+        <button type="button" class="cpx-act pri" onclick="openInvoicePreview()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>הפק חשבונית</button>
       </div>
 
-      <!-- חומרי ניקיון ללקוח -->
-      <div class="card" style="margin-bottom:16px;padding:20px">
-        <div style="font-weight:700;font-size:14px;margin-bottom:14px">🧴 חומרי ניקיון <span id="cp-sup-month" style="color:var(--text-muted);font-weight:500"></span></div>
+      <section class="cpx-card">
+        <div class="cpx-h"><h2 id="cpx-month"></h2><small id="cpx-month-note"></small></div>
+        <div class="cpx-stats">
+          <div><b id="cpx-amt"></b><span id="cpx-amt-l"></span></div>
+          <div><b id="cpx-abs"></b><span id="cpx-abs-l"></span></div>
+        </div>
+        <button type="button" class="cpx-alert" id="cpx-alert" onclick="cpxGoSupplies()" hidden></button>
+      </section>
+
+      <section class="cpx-card">
+        <div class="cpx-h"><h2>עובדים אצל הלקוח</h2></div>
+        <div id="client-profile-employees"></div>
+      </section>
+
+      <section class="cpx-card" id="cpx-sup-sec">
+        <div class="cpx-h"><h2>חומרי ניקיון <span id="cp-sup-month" class="cpx-muted"></span></h2></div>
         <div class="sup-row">
           <input class="form-control" id="cp-sup-text" placeholder="מה להוסיף? למשל: 3 סבון רצפות" onkeydown="if(event.key==='Enter')addClientSupply()" style="flex:1 1 220px">
           <input type="date" class="form-control" id="cp-sup-date" title="תאריך" style="flex:0 1 150px">
           <button class="btn btn-primary" onclick="addClientSupply()">הוסף</button>
         </div>
         <div id="client-profile-supplies"></div>
-      </div>
+      </section>
 
-      <!-- עובדים משויכים -->
-      <div class="card" style="padding:20px">
-        <div style="font-weight:700;font-size:14px;margin-bottom:14px;display:flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:1em;height:1em;vertical-align:-2px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg> עובדים משויכים</div>
-        <div id="client-profile-employees"></div>
-      </div>
+      <details class="cpx-card cpx-set" id="cpx-set">
+        <summary><span class="cpx-set-t">הגדרות חיוב ופרטים</span><small id="cpx-set-sum"></small><svg class="cpx-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary>
+        <div class="cpx-set-body">
+          <div class="cpx-f"><span class="cpx-l">סוג חיוב</span>
+            <div class="cpx-seg">
+              <button type="button" id="billing-type-hourly" onclick="setBillingType('hourly');cpxRefresh()">לפי שעות</button>
+              <button type="button" id="billing-type-fixed" onclick="setBillingType('fixed');cpxRefresh()">סכום קבוע</button>
+            </div>
+          </div>
+          <label class="cpx-f" id="field-hourly"><span class="cpx-l">תעריף לשעה (₪)</span><input type="number" class="form-control" id="client-inline-rate" placeholder="0" min="0" step="0.5" inputmode="decimal" onchange="saveClientInline()"></label>
+          <label class="cpx-f" id="field-fixed" style="display:none"><span class="cpx-l">סכום חודשי קבוע (₪)</span><input type="number" class="form-control" id="client-inline-monthly" placeholder="0" min="0" step="1" inputmode="decimal" onchange="saveClientInline()"></label>
+          <label class="cpx-f"><span class="cpx-l">סוג מסמך בסוף החודש</span>
+            <select class="form-control" id="client-inline-doctype" onchange="saveClientInline()">
+              <option value="305">חשבונית מס</option>
+              <option value="300">חשבון עסקה</option>
+              <option value="320">חשבונית מס / קבלה</option>
+            </select></label>
+          <div class="cpx-grid2">
+            <label class="cpx-f"><span class="cpx-l">איש קשר</span><input type="text" class="form-control" id="client-inline-cname" placeholder="שם" onchange="saveClientInline()"></label>
+            <label class="cpx-f"><span class="cpx-l">טלפון</span><input type="tel" class="form-control" id="client-inline-cphone" placeholder="050-0000000" inputmode="tel" dir="ltr" onchange="saveClientInline()"></label>
+          </div>
+          <label class="cpx-f"><span class="cpx-l">הערות</span><input type="text" class="form-control" id="client-inline-note" placeholder="הערה אופציונלית" onchange="saveClientInline()"></label>
+          <div class="cpx-f">
+            <div class="cpx-items-h"><span class="cpx-l">פריטי חיוב (מורנינג)</span><button type="button" class="btn btn-secondary btn-sm" onclick="loadItemsFromGreenInvoice()" id="btn-load-gi">טען ממורנינג</button></div>
+            <div id="client-profile-items"></div>
+          </div>
+        </div>
+      </details>
     </div>
   </div>
 
@@ -4543,6 +4610,7 @@ function renderClientSupplies() {
   if (!el || !currentClientId) return;
   const c = clientsData.find(x => x.id === currentClientId);
   if (!c) return;
+  try { if (document.getElementById('cpx-sub')) cpxRefresh(); } catch (e) {}
   const dEl = document.getElementById('cp-sup-date');
   if (dEl && !dEl.value) dEl.value = todayISO();
   // רק החודש הפעיל (לפי הבחירה בראש הדף)
@@ -9639,31 +9707,18 @@ function openClientProfile(id) {
         </tr>`).join('')}</tbody>
       </table>`;
   } else {
-    itemsEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:8px 0">אין פריטי חיוב — ניתן להוסיף דרך עריכה</div>';
-  }
-
-  // עובדים משויכים
-  const clientEmps = employees.filter(e => {
-    const ec = e.clients && e.clients.length ? e.clients : (e.client ? [e.client] : []);
-    return ec.includes(c.name);
-  });
-  const empsEl = document.getElementById('client-profile-employees');
-  if (clientEmps.length) {
-    empsEl.innerHTML = clientEmps.map(e => `
-      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
-        <div class="avatar" style="width:32px;height:32px;font-size:12px">${empInitials(e)}</div>
-        <div>
-          <div style="font-size:13px;font-weight:600">${empName(e)}</div>
-          <div style="font-size:11px;color:var(--text-muted)">${e.clientHours && e.clientHours[c.name] ? e.clientHours[c.name] + " שע' ביום" : (e.dailyHours || 8) + " שע' ביום"}</div>
-        </div>
-      </div>`).join('');
-  } else {
-    empsEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px">אין עובדים משויכים</div>';
+    itemsEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:4px 0">אין פריטים. אפשר לטעון ממורנינג.</div>';
   }
 
   const cpd = document.getElementById('cp-sup-date'); if (cpd) cpd.value = todayISO();
+  const dtEl = document.getElementById('client-inline-doctype'); if (dtEl) dtEl.value = c.docType || '305';
+  const cnEl = document.getElementById('client-inline-cname'); if (cnEl) cnEl.value = c.contactName || '';
+  const cpEl = document.getElementById('client-inline-cphone'); if (cpEl) cpEl.value = c.contactPhone || '';
+  const setEl = document.getElementById('cpx-set'); if (setEl) setEl.open = false;
   renderClientSupplies();
+  cpxRefresh();
   showPage('client-profile');
+  window.scrollTo(0, 0);
 }
 
 async function loadItemsFromGreenInvoice() {
@@ -9742,15 +9797,115 @@ function applyGIItems() {
 function setBillingType(type) {
   document.getElementById('field-hourly').style.display = type === 'hourly' ? 'block' : 'none';
   document.getElementById('field-fixed').style.display = type === 'fixed' ? 'block' : 'none';
-  document.getElementById('billing-type-hourly').style.background = type === 'hourly' ? 'var(--accent)' : 'var(--bg)';
-  document.getElementById('billing-type-hourly').style.color = type === 'hourly' ? 'white' : 'var(--text-muted)';
-  document.getElementById('billing-type-fixed').style.background = type === 'fixed' ? 'var(--accent)' : 'var(--bg)';
-  document.getElementById('billing-type-fixed').style.color = type === 'fixed' ? 'white' : 'var(--text-muted)';
+  ['hourly', 'fixed'].forEach(t => { const b = document.getElementById('billing-type-' + t); if (!b) return; const on = t === type;
+    b.style.background = on ? '#fff' : 'transparent'; b.style.color = on ? 'var(--text)' : 'var(--text-muted)'; b.style.boxShadow = on ? '0 1px 2px rgba(0,0,0,.08)' : 'none'; b.setAttribute('aria-pressed', on); });
   if (!currentClientId) return;
   const idx = clientsData.findIndex(c => c.id === currentClientId);
   if (idx >= 0) { clientsData[idx].billingType = type; saveClientsData(); }
 }
 
+// ===== כרטיס לקוח: חישוב החודש, עובדים, טיוטת חשבונית =====
+const DOC_TYPES = { '305': 'חשבונית מס', '300': 'חשבון עסקה', '320': 'חשבונית מס / קבלה' };
+function _cpxEmpClients(e) { return e.clients && e.clients.length ? e.clients : (e.client ? [e.client] : []); }
+// שעות משוערות של הלקוח בחודש: ימי עבודה (בלי שישי/שבת/חג) עד היום × שעות ביום אצל הלקוח, פחות חיסורים, ועוד שעות חילוף אצל הלקוח
+function cpxCalc(c, month) {
+  const [y, m] = month.split('-').map(Number);
+  const days = new Date(y, m, 0).getDate();
+  const t = todayISO(), cur = t.slice(0, 7);
+  const lastDay = month < cur ? days : month > cur ? 0 : parseInt(t.slice(8, 10), 10);
+  const emps = employees.filter(e => e.status === 'active' && _cpxEmpClients(e).includes(c.name));
+  const absM = absences.filter(a => a.date && a.date.startsWith(month) && (a.client === c.name || (!a.client && (() => { const e = employees.find(x => x.id === a.empId); return e && _cpxEmpClients(e).includes(c.name); })())));
+  const rows = emps.map(e => {
+    const perDay = (e.clientHours && parseFloat(e.clientHours[c.name])) || e.dailyHours || 8;
+    const extra = e.extraWorkdays || [];
+    let h = 0;
+    for (let d = 1; d <= lastDay; d++) {
+      const ds = month + '-' + String(d).padStart(2, '0');
+      const dow = new Date(y, m - 1, d).getDay();
+      const work = !HOLIDAYS[ds] && dow !== 6 && (dow !== 5 || extra.includes(ds));
+      if (!work) continue;
+      if (absM.some(a => a.empId === e.id && a.date === ds)) continue;
+      h += perDay;
+    }
+    return { e, perDay, hours: h };
+  });
+  let replH = 0;
+  absM.forEach(a => { if (a.date.slice(8, 10) <= String(lastDay).padStart(2, '0') && (a.replacementId || a.replExtName)) replH += parseFloat(a.replHours) || 0; });
+  const hours = rows.reduce((s, r) => s + r.hours, 0) + replH;
+  const fixed = c.billingType === 'fixed';
+  const rate = c.rate || 0;
+  const amount = fixed ? (c.monthlyFee || 0) : hours * rate;
+  const absWithRepl = absM.filter(a => a.replacementId || a.replExtName).length;
+  const sup = supplyLog.filter(x => x.client === c.name && x.date.startsWith(month));
+  return { rows, replH, hours, amount, fixed, rate, abs: absM.length, absWithRepl, absM, supOpen: sup.filter(x => !x.billed), lastDay, days };
+}
+const _ils = n => '₪' + Math.round(n).toLocaleString('he-IL');
+function cpxRefresh() {
+  const c = clientsData.find(x => x.id === currentClientId); if (!c) return;
+  const r = cpxCalc(c, activeMonth);
+  const [y, m] = activeMonth.split('-').map(Number);
+  const MN = _HEB_MN[m - 1];
+  const fixed = c.billingType === 'fixed';
+  document.getElementById('cpx-sub').textContent = (fixed ? 'סכום קבוע · ' + _ils(c.monthlyFee || 0) + ' לחודש' : 'לפי שעות · ' + (c.rate ? '₪' + c.rate + ' לשעה' : 'תעריף לא הוגדר')) + ' · ' + r.rows.length + ' עובדים';
+  const cur = todayISO().slice(0, 7);
+  document.getElementById('cpx-month').textContent = MN + (activeMonth === cur ? ' עד היום' : ' ' + y);
+  document.getElementById('cpx-month-note').textContent = fixed ? '' : 'לפי ימי עבודה';
+  document.getElementById('cpx-amt').textContent = (!fixed && !c.rate) ? Math.round(r.hours) + ' ש׳' : _ils(r.amount);
+  document.getElementById('cpx-amt-l').textContent = fixed ? 'לחיוב (סכום קבוע)' : (c.rate ? 'לחיוב (' + Math.round(r.hours) + ' שעות)' : 'שעות · אין תעריף');
+  document.getElementById('cpx-abs').textContent = r.abs;
+  document.getElementById('cpx-abs-l').textContent = r.abs ? 'חיסורים · ' + r.absWithRepl + ' עם מחליף' : 'חיסורים';
+  const al = document.getElementById('cpx-alert');
+  if (r.supOpen.length) { al.hidden = false; al.textContent = r.supOpen.length + (r.supOpen.length === 1 ? ' הזמנת חומרים עוד לא חויבה' : ' הזמנות חומרים עוד לא חויבו') + ' ›'; } else al.hidden = true;
+  // איש קשר
+  const ct = document.getElementById('cpx-contact'), ctl = document.getElementById('cpx-contact-l');
+  if (c.contactPhone) { ct.href = 'tel:' + c.contactPhone.replace(/[^\d+]/g, ''); ct.onclick = null; ctl.textContent = c.contactName || 'התקשר'; }
+  else { ct.href = '#'; ct.onclick = ev => { ev.preventDefault(); const st = document.getElementById('cpx-set'); st.open = true; setTimeout(() => { st.scrollIntoView({ block: 'start', behavior: 'smooth' }); document.getElementById('client-inline-cname').focus({ preventScroll: true }); }, 50); }; ctl.textContent = 'הוסף איש קשר'; }
+  document.getElementById('cpx-set-sum').textContent = (fixed ? _ils(c.monthlyFee || 0) : (c.rate ? '₪' + c.rate + ' לשעה' : 'אין תעריף')) + ' · ' + (DOC_TYPES[c.docType || '305']);
+  // עובדים
+  const t = todayISO();
+  const absT = {}, repT = {};
+  absences.forEach(a => { if (a.date === t) { absT[a.empId] = 1; if (a.replacementId) repT[a.replacementId] = 1; } });
+  const el = document.getElementById('client-profile-employees');
+  el.innerHTML = r.rows.length ? r.rows.map(x => {
+    const tag = absT[x.e.id] ? 'חסר/ה היום' : repT[x.e.id] ? 'מחליף/ה היום' : '';
+    return '<button type="button" class="cpx-emp" data-id="' + x.e.id + '" onclick="openEmpProfile(this.dataset.id)"><span class="cpx-emp-b"><span class="cpx-emp-n">' + escHtml(empName(x.e)) + '</span>' +
+      '<span class="cpx-emp-s">' + x.perDay + ' שעות ביום · ' + Math.round(x.hours) + ' שעות ב' + MN + '</span></span>' + (tag ? '<span class="cpx-tag">' + tag + '</span>' : '') +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>';
+  }).join('') : '<div class="cpx-empty">אין עובדים משויכים. משייכים לקוח מתוך כרטיס העובד.</div>';
+}
+function cpxGoSupplies() {
+  const sec = document.getElementById('cpx-sup-sec');
+  if (sec) sec.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  setTimeout(() => { const i = document.getElementById('cp-sup-text'); if (i) i.focus({ preventScroll: true }); }, 350);
+}
+function openInvoicePreview() {
+  const c = clientsData.find(x => x.id === currentClientId); if (!c) return;
+  const r = cpxCalc(c, activeMonth);
+  const [y, m] = activeMonth.split('-').map(Number);
+  const MN = _HEB_MN[m - 1] + ' ' + y;
+  const doc = DOC_TYPES[c.docType || '305'];
+  let lines = [], sub = 0;
+  if (r.fixed) { lines.push({ n: 'שירותי ניקיון — ' + MN, c: 'סכום קבוע', v: c.monthlyFee || 0 }); sub = c.monthlyFee || 0; }
+  else {
+    r.rows.forEach(x => { if (x.hours) { const v = x.hours * r.rate; sub += v; lines.push({ n: empName(x.e), c: Math.round(x.hours * 100) / 100 + ' × ₪' + r.rate, v }); } });
+    if (r.replH) { const v = r.replH * r.rate; sub += v; lines.push({ n: 'חילופים', c: r.replH + ' × ₪' + r.rate, v }); }
+  }
+  const vat = sub * 0.18, tot = sub + vat;
+  const supTxt = r.supOpen.map(x => x.text).join(', ');
+  let h = '<div class="ip-top"><b>' + escHtml(c.name) + '</b><span>' + doc + ' · ' + MN + (activeMonth === todayISO().slice(0, 7) ? ' (עד היום)' : '') + '</span></div>';
+  h += lines.length ? lines.map(l => '<div class="ip-l"><span class="n">' + escHtml(l.n) + '</span><span class="c">' + l.c + '</span><span class="v">' + _ils(l.v) + '</span></div>').join('') : '<div class="cpx-empty">אין שעות לחיוב בחודש הזה' + (r.fixed || r.rate ? '' : ' (לא הוגדר תעריף)') + '</div>';
+  if (supTxt) h += '<div class="ip-l"><span class="n">חומרי ניקיון: ' + escHtml(supTxt) + '</span><span class="v">[מחיר]</span></div>';
+  h += '<div class="ip-sum"><span>לפני מע״מ</span><span>' + _ils(sub) + '</span></div><div class="ip-sum"><span>מע״מ 18%</span><span>' + _ils(vat) + '</span></div><div class="ip-tot"><span>סה״כ</span><span>' + _ils(tot) + '</span></div>';
+  h += '<p class="ip-note">השעות מחושבות לפי ימי עבודה, חיסורים וחילופים. בדוק לפני ההפקה.</p>';
+  h += '<div class="ip-acts"><button class="btn btn-primary" onclick="copyInvoicePreview()">העתק פירוט</button><button class="btn btn-secondary" disabled title="בשלב הבא">הפקה ישירה במורנינג — בשלב הבא</button></div>';
+  window._ipText = c.name + ' — ' + doc + ' — ' + MN + '\n' + lines.map(l => l.n + ': ' + l.c + ' = ' + _ils(l.v)).join('\n') + (supTxt ? '\nחומרי ניקיון: ' + supTxt : '') + '\nלפני מע״מ: ' + _ils(sub) + '\nמע״מ 18%: ' + _ils(vat) + '\nסה״כ: ' + _ils(tot);
+  document.getElementById('invprev-body').innerHTML = h;
+  openModal('modal-invprev');
+}
+function copyInvoicePreview() {
+  const t = window._ipText || '';
+  (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => showToast('✅ הפירוט הועתק')).catch(() => showToast('לא הצלחתי להעתיק'));
+}
 function saveClientInline() {
   if (!currentClientId) return;
   const idx = clientsData.findIndex(c => c.id === currentClientId);
@@ -9759,7 +9914,11 @@ function saveClientInline() {
   clientsData[idx].monthlyFee = parseFloat(document.getElementById('client-inline-monthly').value) || 0;
   clientsData[idx].currency = 'ILS';
   clientsData[idx].note = document.getElementById('client-inline-note').value.trim();
+  const dt = document.getElementById('client-inline-doctype'); if (dt) clientsData[idx].docType = dt.value;
+  const cn = document.getElementById('client-inline-cname'); if (cn) clientsData[idx].contactName = cn.value.trim();
+  const cph = document.getElementById('client-inline-cphone'); if (cph) clientsData[idx].contactPhone = cph.value.trim();
   saveClientsData();
+  try { cpxRefresh(); } catch (e) {}
   showToast('✅ נשמר');
 }
 
@@ -9898,6 +10057,17 @@ function renderClients() {
 
 init();
 </script>
+
+<!-- ===== MODAL: טיוטת חשבונית ללקוח ===== -->
+<div class="modal-overlay" id="modal-invprev">
+  <div class="modal" style="width:520px">
+    <div class="modal-header">
+      <div class="modal-title">טיוטת חשבונית</div>
+      <button class="modal-close" onclick="closeModal('modal-invprev')" aria-label="סגור">×</button>
+    </div>
+    <div id="invprev-body"></div>
+  </div>
+</div>
 
 <!-- ===== MODAL: CLIENT ===== -->
 <div class="modal-overlay" id="modal-client">
