@@ -972,6 +972,14 @@ body.kb-open .ai-fab { display: none; }
 .cpx-seg button { min-height: 38px; padding: 0 18px; border: 0; border-radius: 8px; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
 .cpx-items-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .cpx-act:focus-visible, .cpx-ico:focus-visible, .cpx-back:focus-visible, .cpx-emp:focus-visible, .cpx-set summary:focus-visible { outline: 3px solid var(--accent-mid); outline-offset: 2px; }
+/* איש קשר */
+.ct-wrap { display: flex; flex-direction: column; gap: 14px; }
+.ct-view { display: flex; flex-direction: column; gap: 4px; background: var(--bg); border-radius: 14px; padding: 14px; }
+.ct-view[hidden] { display: none; }
+.ct-view b { font-size: 18px; }
+.ct-view span { font-size: 15px; color: var(--text-muted); text-align: right; }
+.ct-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.ct-btns .btn, .ct-save { min-height: 46px; justify-content: center; text-decoration: none; }
 /* טיוטת חשבונית */
 .ip-top { display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px; }
 .ip-top b { font-size: 17px; }
@@ -1857,15 +1865,6 @@ body.kb-open .ai-fab { display: none; }
         <div id="client-profile-employees"></div>
       </section>
 
-      <section class="cpx-card" id="cpx-sup-sec">
-        <div class="cpx-h"><h2>חומרי ניקיון <span id="cp-sup-month" class="cpx-muted"></span></h2></div>
-        <div class="sup-row">
-          <input class="form-control" id="cp-sup-text" placeholder="מה להוסיף? למשל: 3 סבון רצפות" onkeydown="if(event.key==='Enter')addClientSupply()" style="flex:1 1 220px">
-          <input type="date" class="form-control" id="cp-sup-date" title="תאריך" style="flex:0 1 150px">
-          <button class="btn btn-primary" onclick="addClientSupply()">הוסף</button>
-        </div>
-        <div id="client-profile-supplies"></div>
-      </section>
 
       <details class="cpx-card cpx-set" id="cpx-set">
         <summary><span class="cpx-set-t">הגדרות חיוב ופרטים</span><small id="cpx-set-sum"></small><svg class="cpx-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary>
@@ -1884,10 +1883,6 @@ body.kb-open .ai-fab { display: none; }
               <option value="300">חשבון עסקה</option>
               <option value="320">חשבונית מס / קבלה</option>
             </select></label>
-          <div class="cpx-grid2">
-            <label class="cpx-f"><span class="cpx-l">איש קשר</span><input type="text" class="form-control" id="client-inline-cname" placeholder="שם" onchange="saveClientInline()"></label>
-            <label class="cpx-f"><span class="cpx-l">טלפון</span><input type="tel" class="form-control" id="client-inline-cphone" placeholder="050-0000000" inputmode="tel" dir="ltr" onchange="saveClientInline()"></label>
-          </div>
           <label class="cpx-f"><span class="cpx-l">הערות</span><input type="text" class="form-control" id="client-inline-note" placeholder="הערה אופציונלית" onchange="saveClientInline()"></label>
           <div class="cpx-f">
             <div class="cpx-items-h"><span class="cpx-l">פריטי חיוב (מורנינג)</span><button type="button" class="btn btn-secondary btn-sm" onclick="loadItemsFromGreenInvoice()" id="btn-load-gi">טען ממורנינג</button></div>
@@ -9858,8 +9853,8 @@ function cpxRefresh() {
   if (r.supOpen.length) { al.hidden = false; al.textContent = r.supOpen.length + (r.supOpen.length === 1 ? ' הזמנת חומרים עוד לא חויבה' : ' הזמנות חומרים עוד לא חויבו') + ' ›'; } else al.hidden = true;
   // איש קשר
   const ct = document.getElementById('cpx-contact'), ctl = document.getElementById('cpx-contact-l');
-  if (c.contactPhone) { ct.href = 'tel:' + c.contactPhone.replace(/[^\d+]/g, ''); ct.onclick = null; ctl.textContent = c.contactName || 'התקשר'; }
-  else { ct.href = '#'; ct.onclick = ev => { ev.preventDefault(); const st = document.getElementById('cpx-set'); st.open = true; setTimeout(() => { st.scrollIntoView({ block: 'start', behavior: 'smooth' }); document.getElementById('client-inline-cname').focus({ preventScroll: true }); }, 50); }; ctl.textContent = 'הוסף איש קשר'; }
+  ct.href = '#'; ct.onclick = ev => { ev.preventDefault(); openClientContact(); };
+  ctl.textContent = c.contactName || (c.contactPhone ? 'איש קשר' : 'הוסף איש קשר');
   document.getElementById('cpx-set-sum').textContent = (fixed ? _ils(c.monthlyFee || 0) : (c.rate ? '₪' + c.rate + ' לשעה' : 'אין תעריף')) + ' · ' + (DOC_TYPES[c.docType || '305']);
   // עובדים
   const t = todayISO();
@@ -9874,9 +9869,25 @@ function cpxRefresh() {
   }).join('') : '<div class="cpx-empty">אין עובדים משויכים. משייכים לקוח מתוך כרטיס העובד.</div>';
 }
 function cpxGoSupplies() {
-  const sec = document.getElementById('cpx-sup-sec');
-  if (sec) sec.scrollIntoView({ block: 'start', behavior: 'smooth' });
-  setTimeout(() => { const i = document.getElementById('cp-sup-text'); if (i) i.focus({ preventScroll: true }); }, 350);
+  const d = document.getElementById('cp-sup-date'); if (d && !d.value) d.value = todayISO();
+  renderClientSupplies();
+  openModal('modal-cpsup');
+}
+// טלפון ישראלי לוואטסאפ: 050-1234567 → 972501234567
+function _waNum(ph) { let n = (ph || '').replace(/\D/g, ''); if (n.startsWith('0')) n = '972' + n.slice(1); return n; }
+function openClientContact() {
+  const c = clientsData.find(x => x.id === currentClientId); if (!c) return;
+  document.getElementById('client-inline-cname').value = c.contactName || '';
+  document.getElementById('client-inline-cphone').value = c.contactPhone || '';
+  const has = !!c.contactPhone;
+  document.getElementById('ct-view').hidden = !has;
+  if (has) {
+    document.getElementById('ct-name').textContent = c.contactName || c.name;
+    document.getElementById('ct-phone').textContent = c.contactPhone;
+    document.getElementById('ct-call').href = 'tel:' + c.contactPhone.replace(/[^\d+]/g, '');
+    document.getElementById('ct-wa').href = 'https://wa.me/' + _waNum(c.contactPhone);
+  }
+  openModal('modal-cpct');
 }
 function openInvoicePreview() {
   const c = clientsData.find(x => x.id === currentClientId); if (!c) return;
@@ -10057,6 +10068,44 @@ function renderClients() {
 
 init();
 </script>
+
+<!-- ===== MODAL: איש קשר של לקוח ===== -->
+<div class="modal-overlay" id="modal-cpct">
+  <div class="modal" style="width:460px">
+    <div class="modal-header">
+      <div class="modal-title">איש קשר</div>
+      <button class="modal-close" onclick="closeModal('modal-cpct')" aria-label="סגור">×</button>
+    </div>
+    <div class="ct-wrap">
+      <div class="ct-view" id="ct-view" hidden>
+        <b id="ct-name"></b><span id="ct-phone" dir="ltr"></span>
+        <div class="ct-btns">
+          <a class="btn btn-primary" id="ct-call" href="#">התקשר</a>
+          <a class="btn btn-secondary" id="ct-wa" href="#" target="_blank" rel="noopener">וואטסאפ</a>
+        </div>
+      </div>
+      <label class="cpx-f"><span class="cpx-l">שם</span><input type="text" class="form-control" id="client-inline-cname" placeholder="שם איש הקשר"></label>
+      <label class="cpx-f"><span class="cpx-l">טלפון</span><input type="tel" class="form-control" id="client-inline-cphone" placeholder="050-0000000" inputmode="tel" dir="ltr"></label>
+      <button type="button" class="btn btn-primary ct-save" onclick="saveClientInline();closeModal('modal-cpct')">שמור</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: חומרי ניקיון של לקוח ===== -->
+<div class="modal-overlay" id="modal-cpsup">
+  <div class="modal" style="width:560px">
+    <div class="modal-header">
+      <div class="modal-title">חומרי ניקיון <span id="cp-sup-month" class="cpx-muted"></span></div>
+      <button class="modal-close" onclick="closeModal('modal-cpsup')" aria-label="סגור">×</button>
+    </div>
+    <div class="sup-row">
+      <input class="form-control" id="cp-sup-text" placeholder="מה להוסיף? למשל: 3 סבון רצפות" onkeydown="if(event.key==='Enter')addClientSupply()" style="flex:1 1 220px">
+      <input type="date" class="form-control" id="cp-sup-date" title="תאריך" style="flex:0 1 150px">
+      <button class="btn btn-primary" onclick="addClientSupply()">הוסף</button>
+    </div>
+    <div id="client-profile-supplies"></div>
+  </div>
+</div>
 
 <!-- ===== MODAL: טיוטת חשבונית ללקוח ===== -->
 <div class="modal-overlay" id="modal-invprev">
