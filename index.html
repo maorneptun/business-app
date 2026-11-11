@@ -922,7 +922,8 @@ body.kb-open .ai-fab { display: none; }
 .rem-empty { padding: 16px 2px; color: var(--text-muted); font-size: 14.5px; font-weight: 600; }
 
 /* ===== עובדים בדף הבית — קוביות לפי שימוש ===== */
-.eg { display: flex; flex-direction: column; gap: 10px; max-width: 900px; margin-top: 14px; }
+.eg { display: flex; flex-direction: column; gap: 10px; max-width: 900px; margin-top: 14px; scroll-margin-top: 70px; }
+.eg-grid { align-content: start; }
 .eg-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .eg-h h2 { margin: 0; font-size: 17px; font-weight: 700; color: var(--text); white-space: nowrap; flex: 0 0 auto; }
 .eg-h small { font-size: 14px; font-weight: 500; color: var(--text-muted); }
@@ -1163,7 +1164,7 @@ body.kb-open .ai-fab { display: none; }
     </section>
     <section class="eg" id="emp-grid-sec" aria-label="עובדים">
       <div class="eg-h"><h2>עובדים <small id="eg-count"></small></h2>
-        <label class="eg-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="eg-q" type="search" placeholder="חיפוש" aria-label="חיפוש עובד" oninput="renderEmpGrid()"></label></div>
+        <label class="eg-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="eg-q" type="search" placeholder="חיפוש" aria-label="חיפוש עובד" oninput="renderEmpGrid()" onfocus="_egFocus()"></label></div>
       <div class="eg-sub" id="eg-sub"></div>
       <div class="eg-grid" id="eg-grid"></div>
       <button type="button" class="eg-all" onclick="openEmpListModal()">הצג את כל העובדים</button>
@@ -3826,11 +3827,20 @@ function renderEmpGrid() {
     sub = Object.keys(use).length ? 'הכי בשימוש' : '';
   }
   const se = document.getElementById('eg-sub'); if (se) { se.textContent = sub; se.hidden = !sub; }
+  // בזמן חיפוש הגובה נשמר, כדי שהדף לא יקפוץ למעלה כשיש פחות תוצאות
+  if (q) grid.style.minHeight = (window._egH || 0) + 'px'; else grid.style.minHeight = '';
   grid.innerHTML = list.length ? list.map(e => {
     const tag = absT[e.id] ? 'חסר/ה היום' : repT[e.id] ? 'מחליף/ה היום' : '';
     return '<button type="button" class="eg-tile" data-id="' + e.id + '" onclick="openEmpProfile(this.dataset.id)"><span class="eg-n">' + escHtml(empName(e)) + '</span>' +
       (cl(e) ? '<span class="eg-c">' + escHtml(cl(e)) + '</span>' : '') + (tag ? '<span class="eg-t">' + tag + '</span>' : '') + '</button>';
   }).join('') : '<div class="eg-empty">' + (q ? 'לא נמצא עובד' : 'אין עובדים פעילים') + '</div>';
+  if (!q && grid.offsetHeight) window._egH = grid.offsetHeight;
+}
+// בנייד: בלחיצה על החיפוש — האזור עולה לראש המסך כדי שיהיה מקום מעל המקלדת
+function _egFocus() {
+  if (window.innerWidth > 700) return;
+  const sec = document.getElementById('emp-grid-sec');
+  setTimeout(() => { try { sec.scrollIntoView({ block: 'start', behavior: 'smooth' }); } catch (e) {} }, 300);
 }
 
 let _amSel = null; // תאריך נבחר בגרף (YYYY-MM-DD)
