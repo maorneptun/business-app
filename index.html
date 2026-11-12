@@ -622,6 +622,23 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
 #sl-btn:disabled{opacity:.6}
 #sl-pk{width:100%;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--surface);color:var(--accent);border:1px solid var(--accent-mid);border-radius:12px;padding:12px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer}
 #sl-pk[hidden]{display:none}
+/* נעילת האפליקציה עם זיהוי פנים */
+#app-lock{display:none;position:fixed;inset:0;z-index:6000;background:var(--bg);align-items:center;justify-content:center;padding:24px}
+html.app-locked #app-lock{display:flex}
+html.app-locked .app,html.app-locked #ai-fab{visibility:hidden}
+.al-box{display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;max-width:320px;text-align:center}
+.al-box img{border-radius:22px;box-shadow:0 6px 24px rgba(0,0,0,.08)}
+.al-box h2{margin:0;font-size:22px;font-weight:700;color:var(--text)}
+#al-face{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;min-height:54px;border:0;border-radius:14px;background:var(--accent);color:#fff;font-family:inherit;font-size:17px;font-weight:700;cursor:pointer}
+#al-face svg{width:24px;height:24px}
+#al-face:disabled{opacity:.6}
+#al-pwf{width:100%;display:flex;gap:8px}
+#al-pwf[hidden]{display:none}
+#al-pwf input{flex:1;min-width:0;font-size:17px;padding:12px;border:1px solid var(--border-strong);border-radius:12px;font-family:inherit;text-align:center;background:var(--surface)}
+#al-pwf button{border:0;border-radius:12px;background:var(--accent);color:#fff;font-family:inherit;font-weight:700;padding:0 18px;cursor:pointer}
+#al-alt{border:0;background:none;color:var(--text-muted);font-family:inherit;font-size:14px;cursor:pointer;min-height:40px}
+#al-alt[hidden]{display:none}
+#al-msg{min-height:18px;color:var(--danger);font-size:13px;font-weight:600}
 #sl-pk svg{width:22px;height:22px}
 #sl-pk:disabled{opacity:.6}
 #sl-msg{display:none;margin-top:12px;color:var(--danger);font-size:13px;font-weight:600}
@@ -1198,6 +1215,17 @@ body.kb-open .ai-fab { display: none; }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
+<script>try{if(localStorage.getItem('nep__lock')==='1')document.documentElement.classList.add('app-locked')}catch(e){}</script>
+<div id="app-lock" role="dialog" aria-modal="true" aria-label="האפליקציה נעולה">
+  <div class="al-box">
+    <img src="icons/icon-192.png?v=2" alt="" width="84" height="84">
+    <h2>נפטון נעולה</h2>
+    <button type="button" id="al-face" onclick="nepSync.unlock(false)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M9 9v1M15 9v1M12 9v4h-1M9.5 15.5a3.5 3.5 0 0 0 5 0"/></svg>פתח עם זיהוי פנים</button>
+    <form id="al-pwf" hidden onsubmit="return nepSync.unlockPw(event)"><input type="password" id="al-pw" placeholder="סיסמה" autocomplete="current-password"><button type="submit">פתח</button></form>
+    <button type="button" id="al-alt" onclick="document.getElementById('al-pwf').hidden=false;this.hidden=true;document.getElementById('al-pw').focus()">פתח עם סיסמה</button>
+    <div id="al-msg" role="alert"></div>
+  </div>
+</div>
 
 <div id="sync-banner"><span>התקבלו עדכונים ממכשיר אחר</span><button onclick="nepSync.reload()">רענן</button></div>
 <div id="sync-login">
@@ -3144,10 +3172,12 @@ function todayISO(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMo
         authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required', residentKey: 'preferred' },
         attestation: 'none', timeout: 60000 } });
     }).then(function (c) {
+      window._pkLastId = b64(c.rawId);
       return api('/auth/passkey/register', { method: 'POST', body: { clientDataJSON: b64(c.response.clientDataJSON), attestationObject: b64(c.response.attestationObject), name: S.device } });
     }).then(function (j) {
       if (j._status !== 200) throw new Error(j.error || 'הרישום נכשל');
       s('nep__pk', '1');
+      try { if (window._pkLastId) s('nep__pkid', window._pkLastId); } catch (e) {}
     });
   }
   function loginFace() {
@@ -3171,6 +3201,41 @@ function todayISO(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMo
       if (m) { m.textContent = e.message === 'Failed to fetch' ? 'אין חיבור לשרת. נסה שוב בעוד דקה.' : pkErr(e); m.style.display = 'block'; }
     }).then(function () { if (btn) btn.disabled = false; });
   }
+
+  // ---- נעילת האפליקציה בכל פתיחה (במכשיר הזה). זיהוי הפנים נבדק במכשיר עצמו — מהיר ועובד גם כשהשרת ישן
+  var LOCK_AFTER = 10 * 1000; // אחרי כמה זמן ברקע לנעול
+  function lockOn() { return pkHere() && g('nep__lock') === '1'; }
+  function lockNow() { if (!lockOn()) return; document.documentElement.classList.add('app-locked'); var f = document.getElementById('al-face'); if (f) f.disabled = false; var m = document.getElementById('al-msg'); if (m) m.textContent = ''; }
+  function unlockDone() { document.documentElement.classList.remove('app-locked'); var pf = document.getElementById('al-pwf'), alt = document.getElementById('al-alt'); if (pf) pf.hidden = true; if (alt) alt.hidden = false; }
+  function faceCheck() {
+    var ch = new Uint8Array(32); crypto.getRandomValues(ch);
+    var pk = { challenge: ch, rpId: location.hostname, userVerification: 'required', timeout: 60000 };
+    var id = g('nep__pkid'); if (id) pk.allowCredentials = [{ type: 'public-key', id: u8(id) }];
+    return navigator.credentials.get({ publicKey: pk });
+  }
+  function unlock(auto) {
+    var f = document.getElementById('al-face'), m = document.getElementById('al-msg');
+    if (f) f.disabled = true; if (m) m.textContent = '';
+    faceCheck().then(function (c) { if (c) { if (!g('nep__pkid')) s('nep__pkid', c.id); unlockDone(); } })
+      .catch(function (e) { if (m && auto !== true) m.textContent = pkErr(e); })
+      .then(function () { if (f) f.disabled = false; });
+  }
+  function unlockPw(e) {
+    if (e) e.preventDefault();
+    var i = document.getElementById('al-pw'), m = document.getElementById('al-msg');
+    if (!i.value) return false;
+    api('/auth/login', { method: 'POST', body: { password: i.value } }).then(function (j) {
+      if (j.token) { i.value = ''; unlockDone(); } else if (m) m.textContent = j.error || 'סיסמה שגויה';
+    }).catch(function () { if (m) m.textContent = 'אין חיבור לשרת'; });
+    return false;
+  }
+  var _hiddenAt = 0;
+  document.addEventListener('visibilitychange', function () {
+    if (!lockOn()) return;
+    if (document.hidden) _hiddenAt = Date.now();
+    else if (_hiddenAt && Date.now() - _hiddenAt > LOCK_AFTER) { lockNow(); setTimeout(function () { unlock(true); }, 250); }
+  });
+  if (lockOn()) { lockNow(); setTimeout(function () { unlock(true); }, 300); } else document.documentElement.classList.remove('app-locked');
 
   // ---- מסך כניסה
   function showLogin(msg) {
@@ -3215,8 +3280,9 @@ function todayISO(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMo
       '<div class="sync-row"><span>המכשיר הזה</span><b>' + S.device + '</b></div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">';
     if (on && pkOk) html += '<div class="sync-row"><span>זיהוי פנים</span><b>' + (pkHere() ? 'פעיל במכשיר הזה ✓' : 'לא פעיל') + '</b></div>';
+    if (on && pkHere()) html += '<div class="sync-row"><span>נעילה בכל פתיחה</span><b>' + (lockOn() ? 'פעילה ✓' : 'כבויה') + '</b></div>';
     if (on) html += '<button class="btn btn-primary btn-sm" onclick="nepSync.now()">סנכרן עכשיו</button>' +
-      (pkOk ? (pkHere() ? '<button class="btn btn-secondary btn-sm" onclick="nepSync.disableFace()">כבה זיהוי פנים</button>' : '<button class="btn btn-secondary btn-sm" onclick="nepSync.enableFace()">הפעל כניסה עם זיהוי פנים</button>') : '') +
+      (pkOk ? (pkHere() ? (lockOn() ? '<button class="btn btn-secondary btn-sm" onclick="nepSync.setLock(false)">כבה נעילה בפתיחה</button>' : '<button class="btn btn-primary btn-sm" onclick="nepSync.setLock(true)">נעל עם זיהוי פנים בכל פתיחה</button>') + '<button class="btn btn-secondary btn-sm" onclick="nepSync.disableFace()">כבה זיהוי פנים</button>' : '<button class="btn btn-secondary btn-sm" onclick="nepSync.enableFace()">הפעל כניסה עם זיהוי פנים</button>') : '') +
       '<button class="btn btn-secondary btn-sm" onclick="nepSync.backups()">גיבויים בשרת</button>' +
       '<button class="btn btn-secondary btn-sm" onclick="nepSync.logout()">התנתק במכשיר הזה</button>';
     else if (S.configured) html += '<button class="btn btn-primary btn-sm" onclick="nepSync.showLogin()">כניסה לסנכרון</button>';
@@ -3259,10 +3325,18 @@ function todayISO(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMo
     backups: backups, restore: restore, merge3: merge3, state: S, reload: function () { location.reload(); },
     loginFace: loginFace,
     enableFace: function () {
-      registerFace().then(function () { renderSettings(); if (typeof showToast === 'function') showToast('✅ זיהוי פנים הופעל. בפעם הבאה תיכנס בלי סיסמה'); })
+      registerFace().then(function () { s('nep__lock', '1'); renderSettings(); if (typeof showToast === 'function') showToast('✅ זיהוי פנים הופעל — האפליקציה תיפתח איתו בכל פעם'); })
         .catch(function (e) { if (typeof showToast === 'function') showToast(pkErr(e)); });
     },
-    disableFace: function () { if (confirm('לכבות כניסה עם זיהוי פנים במכשיר הזה?')) { r('nep__pk'); renderSettings(); } }
+    disableFace: function () { if (confirm('לכבות כניסה עם זיהוי פנים במכשיר הזה?')) { r('nep__pk'); r('nep__lock'); renderSettings(); } },
+    unlock: unlock, unlockPw: unlockPw,
+    setLock: function (v) {
+      if (!v) { r('nep__lock'); renderSettings(); if (typeof showToast === 'function') showToast('הנעילה כובתה'); return; }
+      faceCheck().then(function (c) {
+        if (!c) return; s('nep__lock', '1'); if (!g('nep__pkid')) s('nep__pkid', c.id);
+        renderSettings(); if (typeof showToast === 'function') showToast('🔒 מעכשיו האפליקציה תיפתח עם זיהוי פנים');
+      }).catch(function (e) { if (typeof showToast === 'function') showToast(pkErr(e)); });
+    }
   };
 
   // ---- הפעלה
@@ -10046,9 +10120,9 @@ async function loadMoney(fresh) {
   if (rb && fresh) { rb.disabled = true; rb.textContent = 'מרענן…'; }
   try {
     const res = await fetch(SUM_API + '?month=' + month + (fresh ? '&fresh=1' : ''));
-    if (res.status === 401) { sec.hidden = true; return null; } // לא מחובר לסנכרון — לא מציגים
+    if (res.status === 401) throw new Error('כדי לראות תשלומים צריך להתחבר לסנכרון במכשיר הזה (הגדרות › סנכרון בין מכשירים)');
     const j = await res.json().catch(() => ({}));
-    if (!res.ok || !j.paid) throw new Error(j.error || 'לא הצלחתי לטעון ממורנינג');
+    if (!res.ok || !j.paid) throw new Error((j.error || 'לא הצלחתי לטעון ממורנינג') + ' (' + res.status + ')');
     window._money = j;
     if (month === activeMonth) _moneyRender(j);
     if (rb) { rb.disabled = false; rb.textContent = 'רענן'; }
@@ -10059,7 +10133,8 @@ async function loadMoney(fresh) {
     sec.hidden = false;
     document.getElementById('mny-paid').textContent = '—'; document.getElementById('mny-open').textContent = '—';
     document.getElementById('mny-late').innerHTML = '';
-    document.getElementById('mny-note').textContent = e.message || 'מורנינג לא זמינה כרגע';
+    document.getElementById('mny-note').textContent = (e.message === 'Failed to fetch' ? 'אין חיבור לשרת כרגע' : (e.message || 'מורנינג לא זמינה כרגע'));
+    console.warn('money card', e);
     if (rb) { rb.disabled = false; rb.textContent = 'רענן'; }
     return null;
   }
