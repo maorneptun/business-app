@@ -371,37 +371,44 @@ app.all('/api/data', (req, res) => res.status(410).json({ error: 'הוחלף ב-
 // GREEN_INVOICE_BASE אפשר להפנות לסביבת הניסוי: https://sandbox.d.greeninvoice.co.il/api/v1
 const GI_BASE = process.env.GREEN_INVOICE_BASE || 'https://api.greeninvoice.co.il/api/v1';
 
-// טוקן של מורנינג תקף כשעה — שומרים אותו בזיכרון ל-50 דקות (פחות קריאות, פחות חסימות)
+// ===== אימות מול מורנינג =====
+// מאוקטובר 2026 מורנינג מנפיקה טוקן דרך OAuth (client credentials) ב-api.morning.co.
+// הנתיב הישן /account/token מחזיר 404. מפתחות ה-API הקיימים (id/secret) ממשיכים לעבוד.
+// קריאות ה-API עצמן נשארות ב-api.greeninvoice.co.il/api/v1.
+const GI_AUTH_BASE = process.env.MORNING_AUTH_BASE || (/sandbox/.test(GI_BASE) ? 'https://api.sandbox.morning.dev' : 'https://api.morning.co');
 let _giTok = { v: null, exp: 0 };
 async function getGiToken(force) {
   if (!force && _giTok.v && Date.now() < _giTok.exp) return _giTok.v;
-  if (!process.env.GREEN_INVOICE_API_KEY_ID || !process.env.GREEN_INVOICE_API_KEY_SECRET) throw new Error('חסרים מפתחות API של מורנינג ב-Render');
-  const resp = await fetch(`${GI_BASE}/account/token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      id: process.env.GREEN_INVOICE_API_KEY_ID,
-      secret: process.env.GREEN_INVOICE_API_KEY_SECRET
-    })
-  });
-  const text = await resp.text();
-  let data = {};
-  try { data = text ? JSON.parse(text) : {}; } catch (e) {}
-  if (!resp.ok || !data.token) {
+  const id = process.env.GREEN_INVOICE_API_KEY_ID, secret = process.env.GREEN_INVOICE_API_KEY_SECRET;
+  if (!id || !secret) throw new Error('חסרים מפתחות API של מורנינג ב-Render');
+  const url = `${GI_AUTH_BASE}/idp/v1/oauth/token`;
+  const tryReq = async (asJson) => {
+    const resp = await fetch(url, asJson
+      ? { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ grant_type: 'client_credentials', client_id: id, client_secret: secret }) }
+      : { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' }, body: new URLSearchParams({ grant_type: 'client_credentials', client_id: id, client_secret: secret }).toString() });
+    const text = await resp.text();
+    let data = {}; try { data = text ? JSON.parse(text) : {}; } catch (e) {}
+    return { resp, text, data, tok: data.accessToken || data.access_token || data.token };
+  };
+  let r = await tryReq(false);
+  if (!r.tok) r = await tryReq(true);
+  if (!r.resp.ok || !r.tok) {
     _giTok = { v: null, exp: 0 };
-    const why = resp.status === 401 || resp.status === 403 ? 'מפתחות ה-API של מורנינג לא תקינים או בוטלו'
-      : resp.status === 429 ? 'מורנינג חסמה זמנית בגלל ריבוי בקשות'
-      : 'מורנינג לא החזירה טוקן';
-    throw new Error(why + ' (קוד ' + resp.status + (data.errorMessage ? ': ' + data.errorMessage : (text && text.length < 120 ? ': ' + text : '')) + ')');
+    const st = r.resp.status;
+    const why = st === 400 || st === 401 || st === 403 ? 'מפתחות ה-API של מורנינג לא תקינים או בוטלו'
+      : st === 429 ? 'מורנינג חסמה זמנית בגלל ריבוי בקשות' : 'מורנינג לא החזירה טוקן';
+    const msg = r.data.errorMessage || r.data.error_description || r.data.error || (r.text && r.text.length < 160 ? r.text : '');
+    throw new Error(why + ' (קוד ' + st + (msg ? ': ' + msg : '') + ')');
   }
-  _giTok = { v: data.token, exp: Date.now() + 50 * 60 * 1000 };
-  return data.token;
+  const ttl = Number(r.data.expiresIn || r.data.expires_in || 3600);
+  _giTok = { v: r.tok, exp: Date.now() + Math.max(60, Math.min(ttl, 3600) - 300) * 1000 };
+  return r.tok;
 }
 
 app.get('/api/health', async (req, res) => {
   try {
     const token = await getGiToken(!!req.query.fresh);
-    res.json({ ok: !!token, mongo: !!db, base: GI_BASE });
+    res.json({ ok: !!token, mongo: !!db, base: GI_BASE, auth: GI_AUTH_BASE });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
