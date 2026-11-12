@@ -489,14 +489,8 @@ app.get('/api/invoice/open', async (req, res) => {
     if (!giId) return res.status(400).json({ error: 'חסר מזהה לקוח במורנינג' });
     const token = await getGiToken();
     if (!token) return res.status(502).json({ error: 'לא הצלחתי להתחבר למורנינג' });
-    const r = await fetch(`${GI_BASE}/documents/search`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ page: 1, pageSize: 100, clientId: giId, status: [0], type: [300, 305, 320], sort: 'documentDate' })
-    });
-    const data = await r.json().catch(() => ({}));
-    if (!r.ok || data.errorCode) return res.status(502).json({ error: 'מורנינג החזירה שגיאה: ' + (data.errorMessage || r.status) });
-    const items = (data.items || []).filter(d => !d.client || !d.client.id || String(d.client.id) === giId).filter(d => d.status === undefined || d.status === 0);
+    const all = await giSearchAll(token, { clientId: giId, status: [0], type: [300, 305, 320], sort: 'documentDate' }, 3);
+    const items = all.filter(d => !d.client || !d.client.id || String(d.client.id) === giId).filter(d => d.status === undefined || d.status === 0);
     res.json(items.map(d => ({
       id: d.id, number: d.number, type: d.type,
       date: d.documentDate || d.creationDate || null,
@@ -515,20 +509,26 @@ app.get('/api/invoice/open', async (req, res) => {
 // paid: קבלות (400) וחשבוניות מס/קבלה (320) שהופקו בחודש. last: התשלום האחרון של כל לקוח ב-6 החודשים האחרונים.
 // open: חשבוניות מס / חשבונות עסקה (305/300) בסטטוס פתוח, לפי לקוח, כולל הוותיקה ביותר.
 const _sumCache = new Map();
+// העמוד הראשון בלי מספר עמוד (ברירת המחדל של מורנינג), ואז ממשיכים לפי מספר העמוד שמורנינג מחזירה — כך זה עובד בין אם הספירה מ-0 או מ-1
 async function giSearchAll(token, body, maxPages = 5) {
   const out = [];
-  for (let page = 1; page <= maxPages; page++) {
+  let page = null;
+  for (let i = 0; i < maxPages; i++) {
+    const q = { ...body, pageSize: 100 };
+    if (page !== null) q.page = page;
     const r = await fetch(`${GI_BASE}/documents/search`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ ...body, page, pageSize: 100 })
+      body: JSON.stringify(q)
     });
     const data = await r.json().catch(() => ({}));
     if (!r.ok || data.errorCode) throw new Error('מורנינג החזירה שגיאה: ' + (data.errorMessage || r.status));
     const items = data.items || [];
     out.push(...items);
-    const pages = data.pages || data.totalPages;
-    if (items.length < 100 || (pages && page >= pages)) break;
+    const total = Number(data.total || 0);
+    if (items.length < 100 || (total && out.length >= total)) break;
+    const cur = typeof data.page === 'number' ? data.page : (page === null ? 1 : page);
+    page = cur + 1;
   }
   return out;
 }
@@ -570,7 +570,7 @@ app.get('/api/invoice/summary', async (req, res) => {
       const b = open.byClient[id] || (open.byClient[id] = { name: cname(d), total: 0, count: 0, oldest: date });
       b.total += v; b.count++; if (date && (!b.oldest || date < b.oldest)) b.oldest = date;
     });
-    const data = { month, paid, open, last: lastPay, at: new Date().toISOString() };
+    const data = { month, paid, open, last: lastPay, at: new Date().toISOString(), diag: { receipts: receipts.length, openDocs: openDocs.length, sampleKeys: Object.keys(receipts[0] || openDocs[0] || {}).slice(0, 25) } };
     _sumCache.set(month, { t: Date.now(), data });
     res.json(data);
   } catch (err) {

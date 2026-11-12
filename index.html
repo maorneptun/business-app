@@ -1294,7 +1294,7 @@ body.kb-open .ai-fab { display: none; }
 
     
     <section class="card mny" id="mny" aria-label="תשלומים מלקוחות" hidden>
-      <div class="mny-h"><h2>תשלומים מלקוחות <small id="mny-m"></small></h2><button type="button" class="cpx-refresh" onclick="loadMoney(true)">רענן</button></div>
+      <div class="mny-h"><h2>תשלומים מלקוחות <small id="mny-m"></small></h2><button type="button" class="cpx-refresh" id="mny-ref" onclick="loadMoney(true)">רענן</button></div>
       <div class="mny-stats">
         <div><b id="mny-paid">—</b><span id="mny-paid-l">נכנס</span></div>
         <div><b id="mny-open">—</b><span id="mny-open-l">פתוח</span></div>
@@ -10042,6 +10042,8 @@ async function loadMoney(fresh) {
   const month = activeMonth;
   const [y, m] = month.split('-').map(Number);
   document.getElementById('mny-m').textContent = _HEB_MN[m - 1];
+  const rb = document.getElementById('mny-ref');
+  if (rb && fresh) { rb.disabled = true; rb.textContent = 'מרענן…'; }
   try {
     const res = await fetch(SUM_API + '?month=' + month + (fresh ? '&fresh=1' : ''));
     if (res.status === 401) { sec.hidden = true; return null; } // לא מחובר לסנכרון — לא מציגים
@@ -10049,6 +10051,8 @@ async function loadMoney(fresh) {
     if (!res.ok || !j.paid) throw new Error(j.error || 'לא הצלחתי לטעון ממורנינג');
     window._money = j;
     if (month === activeMonth) _moneyRender(j);
+    if (rb) { rb.disabled = false; rb.textContent = 'רענן'; }
+    if (fresh) showToast('✅ עודכן ממורנינג');
     try { if (currentClientId && document.getElementById('page-client-profile').classList.contains('active')) _cpxLastRender(); } catch (e) {}
     return j;
   } catch (e) {
@@ -10056,6 +10060,7 @@ async function loadMoney(fresh) {
     document.getElementById('mny-paid').textContent = '—'; document.getElementById('mny-open').textContent = '—';
     document.getElementById('mny-late').innerHTML = '';
     document.getElementById('mny-note').textContent = e.message || 'מורנינג לא זמינה כרגע';
+    if (rb) { rb.disabled = false; rb.textContent = 'רענן'; }
     return null;
   }
 }
@@ -10084,7 +10089,9 @@ function _moneyRender(j) {
     return '<button type="button" class="mny-row"' + (c ? ' data-cid="' + c.id + '" onclick="openClientProfile(this.dataset.cid)"' : ' disabled') + '><span class="b"><span class="n">' + escHtml((c && c.name) || x.name || 'לקוח') + '</span>' +
       '<span class="m">' + x.count + (x.count === 1 ? ' חשבונית' : ' חשבוניות') + ' · הוותיקה פתוחה ' + x.days + ' ימים</span></span><span class="v">' + _ils(x.total) + '</span></button>';
   }).join('') + (late.length > 4 ? '<div class="mny-note">ועוד ' + (late.length - 4) + ' לקוחות</div>' : '') : '';
-  document.getElementById('mny-note').textContent = (!late.length && j.open.count) ? 'אין חשבוניות באיחור מעל 30 יום' : '';
+  const at = j.at ? new Date(j.at).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) : '';
+  const dg = j.diag ? ' · נקראו ' + j.diag.receipts + ' קבלות ו-' + j.diag.openDocs + ' חשבוניות פתוחות' : '';
+  document.getElementById('mny-note').textContent = ((!late.length && j.open.count) ? 'אין חשבוניות באיחור מעל 30 יום · ' : '') + 'עודכן ממורנינג ' + at + dg;
 }
 function _cpxLastRender() {
   const el = document.getElementById('cpx-last'); if (!el) return;
