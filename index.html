@@ -921,6 +921,13 @@ body.kb-open .ai-fab { display: none; }
 .rem-new svg { width: 16px; height: 16px; }
 .rem-empty { padding: 16px 2px; color: var(--text-muted); font-size: 14.5px; font-weight: 600; }
 
+/* ===== ראש דף הבית: ברכה, תאריך ושעה ===== */
+.hello { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; margin: 4px 0 14px; max-width: 900px; }
+.hello-t { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.hello h1 { margin: 0; font-size: 24px; font-weight: 700; color: var(--text); }
+#hello-date { font-size: 14px; font-weight: 500; color: var(--text-muted); }
+.hello-time { font-size: 30px; font-weight: 300; line-height: 1; color: var(--text); font-variant-numeric: tabular-nums; flex: 0 0 auto; }
+
 /* ===== תשלומים מלקוחות (מורנינג) ===== */
 .mny { display: flex; flex-direction: column; gap: 12px; max-width: 900px; padding: 16px; border-radius: 18px; margin-bottom: 14px; }
 .mny[hidden] { display: none; }
@@ -1245,11 +1252,13 @@ body.kb-open .ai-fab { display: none; }
   <!-- ===== PAGE: EMPLOYEES ===== -->
   <div id="page-employees" class="page active">
 
-    <div class="page-header" style="margin-bottom:12px;margin-top:0">
-      <div>
-        <div class="page-title">בית</div>
-        <div class="page-subtitle" id="emp-count-sub"></div>
+    <div class="hello" id="hello">
+      <div class="hello-t">
+        <h1 id="hello-greet">שלום, מאור</h1>
+        <div id="hello-date"></div>
+        <div class="page-subtitle" id="emp-count-sub" hidden></div>
       </div>
+      <time class="hello-time" id="hello-time"></time>
     </div>
 
     <div id="notices-area"></div>
@@ -9937,6 +9946,21 @@ function cpxRefresh() {
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>';
   }).join('') : '<div class="cpx-empty">אין עובדים משויכים. משייכים לקוח מתוך כרטיס העובד.</div>';
 }
+// ===== ראש דף הבית: ברכה לפי השעה, יום, תאריך ושעה (מתעדכן כל חצי דקה) =====
+function renderHello() {
+  const g = document.getElementById('hello-greet'); if (!g) return;
+  const now = new Date(), h = now.getHours();
+  const greet = h < 5 ? 'לילה טוב' : h < 12 ? 'בוקר טוב' : h < 17 ? 'צהריים טובים' : h < 21 ? 'ערב טוב' : 'לילה טוב';
+  g.textContent = greet + ', מאור';
+  document.getElementById('hello-date').textContent = now.toLocaleDateString('he-IL', { weekday: 'long' }) + ' · ' + now.toLocaleDateString('he-IL', { day: 'numeric', month: 'long', year: 'numeric' });
+  const t = document.getElementById('hello-time');
+  t.textContent = now.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+  t.setAttribute('datetime', now.toISOString());
+}
+renderHello();
+setInterval(renderHello, 30000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) renderHello(); });
+
 // ===== תשלומים מלקוחות: שולם (קבלות) מול פתוח, ממורנינג =====
 const SUM_API = 'https://business-app-hf5y.onrender.com/api/invoice/summary';
 window._money = null;
