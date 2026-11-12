@@ -371,7 +371,11 @@ app.all('/api/data', (req, res) => res.status(410).json({ error: 'הוחלף ב-
 // GREEN_INVOICE_BASE אפשר להפנות לסביבת הניסוי: https://sandbox.d.greeninvoice.co.il/api/v1
 const GI_BASE = process.env.GREEN_INVOICE_BASE || 'https://api.greeninvoice.co.il/api/v1';
 
-async function getGiToken() {
+// טוקן של מורנינג תקף כשעה — שומרים אותו בזיכרון ל-50 דקות (פחות קריאות, פחות חסימות)
+let _giTok = { v: null, exp: 0 };
+async function getGiToken(force) {
+  if (!force && _giTok.v && Date.now() < _giTok.exp) return _giTok.v;
+  if (!process.env.GREEN_INVOICE_API_KEY_ID || !process.env.GREEN_INVOICE_API_KEY_SECRET) throw new Error('חסרים מפתחות API של מורנינג ב-Render');
   const resp = await fetch(`${GI_BASE}/account/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -380,14 +384,24 @@ async function getGiToken() {
       secret: process.env.GREEN_INVOICE_API_KEY_SECRET
     })
   });
-  const data = await resp.json();
+  const text = await resp.text();
+  let data = {};
+  try { data = text ? JSON.parse(text) : {}; } catch (e) {}
+  if (!resp.ok || !data.token) {
+    _giTok = { v: null, exp: 0 };
+    const why = resp.status === 401 || resp.status === 403 ? 'מפתחות ה-API של מורנינג לא תקינים או בוטלו'
+      : resp.status === 429 ? 'מורנינג חסמה זמנית בגלל ריבוי בקשות'
+      : 'מורנינג לא החזירה טוקן';
+    throw new Error(why + ' (קוד ' + resp.status + (data.errorMessage ? ': ' + data.errorMessage : (text && text.length < 120 ? ': ' + text : '')) + ')');
+  }
+  _giTok = { v: data.token, exp: Date.now() + 50 * 60 * 1000 };
   return data.token;
 }
 
 app.get('/api/health', async (req, res) => {
   try {
-    const token = await getGiToken();
-    res.json({ ok: !!token, mongo: !!db });
+    const token = await getGiToken(!!req.query.fresh);
+    res.json({ ok: !!token, mongo: !!db, base: GI_BASE });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
