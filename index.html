@@ -620,6 +620,10 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
 #sync-login input:focus{outline:none;border-color:var(--accent);background:#fff}
 #sl-btn{width:100%;margin-top:12px;background:var(--accent);color:#fff;border:0;border-radius:12px;padding:13px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer}
 #sl-btn:disabled{opacity:.6}
+#sl-pk{width:100%;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--surface);color:var(--accent);border:1px solid var(--accent-mid);border-radius:12px;padding:12px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer}
+#sl-pk[hidden]{display:none}
+#sl-pk svg{width:22px;height:22px}
+#sl-pk:disabled{opacity:.6}
 #sl-msg{display:none;margin-top:12px;color:var(--danger);font-size:13px;font-weight:600}
 #sl-skip{margin-top:16px;background:none;border:0;color:var(--text-muted);font-size:13px;font-family:inherit;cursor:pointer}
 .sync-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}
@@ -1202,6 +1206,7 @@ body.kb-open .ai-fab { display: none; }
     <p>הכנס סיסמה כדי לסנכרן את הנתונים בין המכשירים</p>
     <input type="password" id="sl-pw" placeholder="סיסמה" autocomplete="current-password">
     <button type="submit" id="sl-btn">כניסה</button>
+    <button type="button" id="sl-pk" onclick="nepSync.loginFace()" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M9 9v1M15 9v1M12 9v4h-1M9.5 15.5a3.5 3.5 0 0 0 5 0"/></svg>כניסה עם זיהוי פנים</button>
     <div id="sl-msg"></div>
     <button type="button" id="sl-skip" onclick="nepSyncSkipLogin()">לא עכשיו</button>
   </form>
@@ -3086,8 +3091,9 @@ function todayISO(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMo
   function hasLocalData() {
     try { return JSON.parse(g('nep_employees') || '[]').length > 0; } catch (e) { return false; }
   }
-  function login(pw) {
-    return api('/auth/login', { method: 'POST', body: { password: pw } }).then(function (j) {
+  function login(pw) { return loginToken(api('/auth/login', { method: 'POST', body: { password: pw } })); }
+  function loginToken(p) {
+    return p.then(function (j) {
       if (!j.token) throw new Error(j.error || 'שגיאה');
       S.token = j.token; s('nep__tok', S.token);
       return api('/state?since=0');
@@ -3121,12 +3127,58 @@ function todayISO(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMo
     if (expired) showLogin('הסיסמה השתנתה או שהכניסה פגה. היכנס שוב.');
   }
 
+  // ---- זיהוי פנים / טביעת אצבע (Passkey). הסימון 'nep__pk' נשמר רק במכשיר הזה
+  var pkOk = !!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.create);
+  function u8(b64) { b64 = String(b64).replace(/-/g, '+').replace(/_/g, '/'); while (b64.length % 4) b64 += '='; var bin = atob(b64), a = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); return a; }
+  function b64(buf) { var a = new Uint8Array(buf), bin = ''; for (var i = 0; i < a.length; i++) bin += String.fromCharCode(a[i]); return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+  function pkHere() { return pkOk && g('nep__pk') === '1'; }
+  function pkErr(e) { var n = e && e.name; if (n === 'NotAllowedError' || n === 'AbortError') return 'הזיהוי בוטל'; if (n === 'InvalidStateError') return 'המכשיר כבר רשום'; return (e && e.message) || 'הזיהוי נכשל'; }
+  function registerFace() {
+    if (!pkOk) return Promise.reject(new Error('המכשיר או הדפדפן לא תומכים בזיהוי פנים'));
+    return api('/auth/passkey/register-options', { method: 'POST', body: {} }).then(function (o) {
+      if (o._status !== 200) throw new Error(o.error || 'שגיאת שרת');
+      return navigator.credentials.create({ publicKey: {
+        challenge: u8(o.challenge), rp: { id: o.rpId, name: 'נפטון' },
+        user: { id: u8(o.userId), name: 'נפטון', displayName: 'נפטון' },
+        pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+        authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required', residentKey: 'preferred' },
+        attestation: 'none', timeout: 60000 } });
+    }).then(function (c) {
+      return api('/auth/passkey/register', { method: 'POST', body: { clientDataJSON: b64(c.response.clientDataJSON), attestationObject: b64(c.response.attestationObject), name: S.device } });
+    }).then(function (j) {
+      if (j._status !== 200) throw new Error(j.error || 'הרישום נכשל');
+      s('nep__pk', '1');
+    });
+  }
+  function loginFace() {
+    var btn = document.getElementById('sl-pk'), m = document.getElementById('sl-msg');
+    if (btn) btn.disabled = true; if (m) m.style.display = 'none';
+    var p = api('/auth/passkey/login-options', { method: 'POST', body: {} }).then(function (o) {
+      if (o._status !== 200) throw new Error(o.error || 'שגיאת שרת');
+      if (!o.ids || !o.ids.length) throw new Error('זיהוי פנים עוד לא הופעל. היכנס עם סיסמה והפעל אותו בהגדרות.');
+      return navigator.credentials.get({ publicKey: {
+        challenge: u8(o.challenge), rpId: o.rpId, userVerification: 'required', timeout: 60000,
+        allowCredentials: o.ids.map(function (id) { return { type: 'public-key', id: u8(id) }; }) } });
+    }).then(function (c) {
+      return api('/auth/passkey/login', { method: 'POST', body: { id: c.id, clientDataJSON: b64(c.response.clientDataJSON), authenticatorData: b64(c.response.authenticatorData), signature: b64(c.response.signature) } });
+    });
+    loginToken(p).then(function (res) {
+      if (res === 'downloaded') { setTimeout(function () { location.reload(); }, 300); return; }
+      hideLogin(); markOk();
+      if (typeof showToast === 'function') showToast('✅ נכנסת עם זיהוי פנים');
+    }).catch(function (e) {
+      S.token = ''; r('nep__tok');
+      if (m) { m.textContent = e.message === 'Failed to fetch' ? 'אין חיבור לשרת. נסה שוב בעוד דקה.' : pkErr(e); m.style.display = 'block'; }
+    }).then(function () { if (btn) btn.disabled = false; });
+  }
+
   // ---- מסך כניסה
   function showLogin(msg) {
     var o = document.getElementById('sync-login'); if (!o) return;
     o.style.display = 'flex';
     var m = document.getElementById('sl-msg'); m.textContent = msg || ''; m.style.display = msg ? 'block' : 'none';
-    setTimeout(function () { var i = document.getElementById('sl-pw'); if (i) i.focus(); }, 50);
+    var pb = document.getElementById('sl-pk'); if (pb) pb.hidden = !pkHere();
+    if (!pkHere()) setTimeout(function () { var i = document.getElementById('sl-pw'); if (i) i.focus(); }, 50);
   }
   function hideLogin() { var o = document.getElementById('sync-login'); if (o) o.style.display = 'none'; }
   window.nepSyncLoginSubmit = function (e) {
@@ -3138,6 +3190,7 @@ function todayISO(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMo
       i.value = '';
       if (res === 'downloaded') { btn.textContent = 'טוען נתונים…'; setTimeout(function () { location.reload(); }, 300); return; }
       hideLogin(); markOk();
+      if (pkOk && !pkHere()) setTimeout(function () { if (confirm('להפעיל כניסה עם זיהוי פנים במכשיר הזה? בפעם הבאה לא תצטרך סיסמה.')) window.nepSync.enableFace(); }, 600);
       if (typeof showToast === 'function') showToast(res === 'uploaded' ? '✅ הנתונים מהמכשיר הזה הועלו לשרת' : 'מחובר. עדיין אין נתונים בשרת — היכנס קודם מהמחשב');
     }).catch(function (err) {
       S.token = ''; r('nep__tok');
@@ -3161,7 +3214,9 @@ function todayISO(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMo
       '<div class="sync-row"><span>סנכרון אחרון</span><b dir="ltr">' + fmtTime(S.lastOk) + '</b></div>' +
       '<div class="sync-row"><span>המכשיר הזה</span><b>' + S.device + '</b></div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">';
+    if (on && pkOk) html += '<div class="sync-row"><span>זיהוי פנים</span><b>' + (pkHere() ? 'פעיל במכשיר הזה ✓' : 'לא פעיל') + '</b></div>';
     if (on) html += '<button class="btn btn-primary btn-sm" onclick="nepSync.now()">סנכרן עכשיו</button>' +
+      (pkOk ? (pkHere() ? '<button class="btn btn-secondary btn-sm" onclick="nepSync.disableFace()">כבה זיהוי פנים</button>' : '<button class="btn btn-secondary btn-sm" onclick="nepSync.enableFace()">הפעל כניסה עם זיהוי פנים</button>') : '') +
       '<button class="btn btn-secondary btn-sm" onclick="nepSync.backups()">גיבויים בשרת</button>' +
       '<button class="btn btn-secondary btn-sm" onclick="nepSync.logout()">התנתק במכשיר הזה</button>';
     else if (S.configured) html += '<button class="btn btn-primary btn-sm" onclick="nepSync.showLogin()">כניסה לסנכרון</button>';
@@ -3201,7 +3256,13 @@ function todayISO(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMo
       if (b && b.style.display === 'none' && typeof toggleSettingsSection === 'function') toggleSettingsSection('sync');
       renderSettings();
     },
-    backups: backups, restore: restore, merge3: merge3, state: S, reload: function () { location.reload(); }
+    backups: backups, restore: restore, merge3: merge3, state: S, reload: function () { location.reload(); },
+    loginFace: loginFace,
+    enableFace: function () {
+      registerFace().then(function () { renderSettings(); if (typeof showToast === 'function') showToast('✅ זיהוי פנים הופעל. בפעם הבאה תיכנס בלי סיסמה'); })
+        .catch(function (e) { if (typeof showToast === 'function') showToast(pkErr(e)); });
+    },
+    disableFace: function () { if (confirm('לכבות כניסה עם זיהוי פנים במכשיר הזה?')) { r('nep__pk'); renderSettings(); } }
   };
 
   // ---- הפעלה

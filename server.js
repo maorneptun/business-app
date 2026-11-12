@@ -74,6 +74,138 @@ app.post('/api/auth/login', (req, res) => {
   res.json({ token: expectedToken() });
 });
 
+// ===== כניסה עם זיהוי פנים / טביעת אצבע (Passkeys / WebAuthn) =====
+// רישום: רק מי שכבר מחובר (token). כניסה: אימות חתימה של המכשיר → אותו token כמו בסיסמה.
+// מפתחות ציבוריים נשמרים ב-collection 'passkeys'. בלי ספריות חיצוניות.
+const PK_ORIGINS = (process.env.PASSKEY_ORIGINS || 'https://neptun-employees.onrender.com').split(',').map(x => x.trim()).filter(Boolean);
+const pkChallenges = new Map(); // challenge → { kind, exp }
+const b64u = buf => Buffer.from(buf).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const fromB64u = str => Buffer.from(String(str || '').replace(/-/g, '+').replace(/_/g, '/'), 'base64');
+function pkNewChallenge(kind) {
+  const c = b64u(crypto.randomBytes(32));
+  pkChallenges.set(c, { kind, exp: Date.now() + 5 * 60 * 1000 });
+  for (const [k, v] of pkChallenges) if (v.exp < Date.now()) pkChallenges.delete(k);
+  return c;
+}
+function pkTakeChallenge(c, kind) {
+  const v = pkChallenges.get(c); pkChallenges.delete(c);
+  return !!(v && v.kind === kind && v.exp > Date.now());
+}
+function pkOrigin(req) { const o = String(req.get('origin') || ''); return PK_ORIGINS.includes(o) ? o : null; }
+// מפענח CBOR מינימלי (מספיק ל-attestationObject ולמפתח COSE)
+function cborDecode(buf) {
+  let pos = 0;
+  const readLen = ai => {
+    if (ai < 24) return ai;
+    if (ai === 24) return buf[pos++];
+    if (ai === 25) { const v = buf.readUInt16BE(pos); pos += 2; return v; }
+    if (ai === 26) { const v = buf.readUInt32BE(pos); pos += 4; return v; }
+    if (ai === 27) { const v = Number(buf.readBigUInt64BE(pos)); pos += 8; return v; }
+    throw new Error('cbor len');
+  };
+  const item = () => {
+    const ib = buf[pos++]; const mt = ib >> 5; const ai = ib & 31;
+    if (mt === 0) return readLen(ai);
+    if (mt === 1) return -1 - readLen(ai);
+    if (mt === 2) { const n = readLen(ai); const v = buf.subarray(pos, pos + n); pos += n; return v; }
+    if (mt === 3) { const n = readLen(ai); const v = buf.subarray(pos, pos + n).toString('utf8'); pos += n; return v; }
+    if (mt === 4) { const n = readLen(ai); const a = []; for (let i = 0; i < n; i++) a.push(item()); return a; }
+    if (mt === 5) { const n = readLen(ai); const m = new Map(); for (let i = 0; i < n; i++) { const k = item(); m.set(k, item()); } return m; }
+    if (mt === 7) { if (ai === 20) return false; if (ai === 21) return true; if (ai === 22) return null; }
+    throw new Error('cbor type ' + mt);
+  };
+  const v = item();
+  return { value: v, length: pos };
+}
+function coseToJwk(m) {
+  const kty = m.get(1), alg = m.get(3);
+  if (kty === 2 && alg === -7) return { alg: -7, jwk: { kty: 'EC', crv: 'P-256', x: b64u(m.get(-2)), y: b64u(m.get(-3)) } };
+  if (kty === 3 && alg === -257) return { alg: -257, jwk: { kty: 'RSA', n: b64u(m.get(-1)), e: b64u(m.get(-2)) } };
+  throw new Error('סוג מפתח לא נתמך');
+}
+function pkCheckClientData(cdjBuf, type, origin) {
+  const cd = JSON.parse(cdjBuf.toString('utf8'));
+  if (cd.type !== type) throw new Error('סוג בקשה שגוי');
+  if (cd.origin !== origin) throw new Error('מקור לא מורשה');
+  if (!pkTakeChallenge(cd.challenge, type)) throw new Error('האימות פג. נסה שוב.');
+}
+function pkCheckAuthData(ad, rpId) {
+  if (!ad.subarray(0, 32).equals(crypto.createHash('sha256').update(rpId).digest())) throw new Error('rpId לא תואם');
+  const flags = ad[32];
+  if (!(flags & 0x01)) throw new Error('לא אושר במכשיר');
+  return { flags, signCount: ad.readUInt32BE(33) };
+}
+
+app.get('/api/auth/passkey/status', async (req, res) => {
+  try { res.json({ count: db ? await db.collection('passkeys').countDocuments() : 0 }); } catch (e) { res.json({ count: 0 }); }
+});
+app.post('/api/auth/passkey/register-options', (req, res) => {
+  if (!tokenOk(req)) return res.status(401).json({ error: 'auth' });
+  const origin = pkOrigin(req); if (!origin) return res.status(400).json({ error: 'מקור לא מורשה' });
+  res.json({ challenge: pkNewChallenge('webauthn.create'), rpId: new URL(origin).hostname, userId: b64u(Buffer.from('neptun-owner')) });
+});
+app.post('/api/auth/passkey/register', async (req, res) => {
+  try {
+    if (!tokenOk(req)) return res.status(401).json({ error: 'auth' });
+    if (!db) return res.status(503).json({ error: 'מסד הנתונים לא זמין' });
+    const origin = pkOrigin(req); if (!origin) return res.status(400).json({ error: 'מקור לא מורשה' });
+    const b = req.body || {};
+    pkCheckClientData(fromB64u(b.clientDataJSON), 'webauthn.create', origin);
+    const att = cborDecode(fromB64u(b.attestationObject)).value;
+    const ad = att.get('authData');
+    pkCheckAuthData(ad, new URL(origin).hostname);
+    if (!(ad[32] & 0x40)) throw new Error('חסרים נתוני מפתח');
+    const credLen = ad.readUInt16BE(53);
+    const credId = ad.subarray(55, 55 + credLen);
+    const key = coseToJwk(cborDecode(ad.subarray(55 + credLen)).value);
+    await db.collection('passkeys').updateOne({ _id: b64u(credId) },
+      { $set: { jwk: key.jwk, alg: key.alg, signCount: ad.readUInt32BE(33), name: String(b.name || '').slice(0, 60), createdAt: new Date() } }, { upsert: true });
+    res.json({ ok: true });
+  } catch (e) { console.error('passkey/register', e.message); res.status(400).json({ error: e.message }); }
+});
+app.post('/api/auth/passkey/login-options', async (req, res) => {
+  const origin = pkOrigin(req); if (!origin) return res.status(400).json({ error: 'מקור לא מורשה' });
+  if (!db) return res.status(503).json({ error: 'מסד הנתונים לא זמין' });
+  const ids = (await db.collection('passkeys').find({}, { projection: { _id: 1 } }).toArray()).map(x => x._id);
+  res.json({ challenge: pkNewChallenge('webauthn.get'), rpId: new URL(origin).hostname, ids });
+});
+app.post('/api/auth/passkey/login', async (req, res) => {
+  const ip = (req.get('x-forwarded-for') || req.ip || '').split(',')[0].trim();
+  const now = Date.now();
+  const f = loginFails.get(ip) || { n: 0, t: now };
+  if (now - f.t > 15 * 60 * 1000) { f.n = 0; f.t = now; }
+  if (f.n >= 10) return res.status(429).json({ error: 'יותר מדי ניסיונות. נסה שוב בעוד רבע שעה.' });
+  try {
+    if (!process.env.APP_PASSWORD) return res.status(503).json({ error: 'not_configured' });
+    if (!db) return res.status(503).json({ error: 'מסד הנתונים לא זמין' });
+    const origin = pkOrigin(req); if (!origin) throw new Error('מקור לא מורשה');
+    const b = req.body || {};
+    const cred = await db.collection('passkeys').findOne({ _id: String(b.id || '') });
+    if (!cred) throw new Error('המכשיר לא רשום. היכנס עם סיסמה והפעל זיהוי פנים מחדש.');
+    const cdj = fromB64u(b.clientDataJSON);
+    pkCheckClientData(cdj, 'webauthn.get', origin);
+    const ad = fromB64u(b.authenticatorData);
+    const { signCount } = pkCheckAuthData(ad, new URL(origin).hostname);
+    const data = Buffer.concat([ad, crypto.createHash('sha256').update(cdj).digest()]);
+    const keyObj = crypto.createPublicKey({ key: cred.jwk, format: 'jwk' });
+    const ok = cred.alg === -257
+      ? crypto.verify('sha256', data, { key: keyObj, padding: crypto.constants.RSA_PKCS1_PADDING }, fromB64u(b.signature))
+      : crypto.verify('sha256', data, { key: keyObj, dsaEncoding: 'der' }, fromB64u(b.signature));
+    if (!ok) throw new Error('האימות נכשל');
+    if (signCount && cred.signCount && signCount <= cred.signCount) throw new Error('האימות נכשל (מונה)');
+    await db.collection('passkeys').updateOne({ _id: cred._id }, { $set: { signCount, lastUsed: new Date() } });
+    loginFails.delete(ip);
+    res.json({ token: expectedToken() });
+  } catch (e) {
+    f.n++; loginFails.set(ip, f);
+    res.status(401).json({ error: e.message || 'האימות נכשל' });
+  }
+});
+app.post('/api/auth/passkey/clear', async (req, res) => {
+  if (!tokenOk(req)) return res.status(401).json({ error: 'auth' });
+  try { const r = await db.collection('passkeys').deleteMany({}); res.json({ ok: true, deleted: r.deletedCount }); } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.get('/api/ping', (req, res) => res.json({ ok: true }));
 
 // ===== סנכרון נתונים בין מכשירים =====
