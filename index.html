@@ -10078,11 +10078,10 @@ function _moneyRender(j) {
   document.getElementById('mny-paid').textContent = _ils(j.paid.total);
   document.getElementById('mny-paid-l').textContent = 'נכנס' + (j.paid.count ? ' · ' + j.paid.count + ' קבלות' : '');
   document.getElementById('mny-open').textContent = _ils(j.open.total);
-  document.getElementById('mny-open-l').textContent = 'פתוח' + (j.open.count ? ' · ' + j.open.count + ' חשבוניות' : '');
+  const om = j.openMonth ? _HEB_MN[parseInt(j.openMonth.slice(5, 7), 10) - 1] : '';
+  document.getElementById('mny-open-l').textContent = 'פתוח מ' + (om || 'החודש הקודם') + (j.open.count ? ' · ' + j.open.count + ' חשבוניות' : '');
   const now = Date.now();
-  const late = Object.keys(j.open.byClient).map(id => ({ id, ...j.open.byClient[id] }))
-    .map(x => ({ ...x, days: x.oldest ? Math.floor((now - new Date(x.oldest + 'T12:00:00').getTime()) / 86400000) : 0 }))
-    .filter(x => x.days > 30).sort((a, b) => b.days - a.days);
+  const late = []; // רק החודש — בלי רשימת איחורים
   const el = document.getElementById('mny-late');
   el.innerHTML = late.length ? '<div class="mny-lh">באיחור מעל 30 יום</div>' + late.slice(0, 4).map(x => {
     const c = _clientByGi(x.id);
@@ -10091,7 +10090,7 @@ function _moneyRender(j) {
   }).join('') + (late.length > 4 ? '<div class="mny-note">ועוד ' + (late.length - 4) + ' לקוחות</div>' : '') : '';
   const at = j.at ? new Date(j.at).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) : '';
   const dg = j.diag ? ' · נקראו ' + j.diag.receipts + ' קבלות ו-' + j.diag.openDocs + ' חשבוניות פתוחות' : '';
-  document.getElementById('mny-note').textContent = ((!late.length && j.open.count) ? 'אין חשבוניות באיחור מעל 30 יום · ' : '') + 'עודכן ממורנינג ' + at + dg;
+  document.getElementById('mny-note').textContent = 'עודכן ממורנינג ' + at + dg;
 }
 function _cpxLastRender() {
   const el = document.getElementById('cpx-last'); if (!el) return;

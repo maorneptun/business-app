@@ -564,6 +564,7 @@ app.get('/api/invoice/summary', async (req, res) => {
     const [y, m] = month.split('-').map(Number);
     const last = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
     const from6 = new Date(Date.UTC(y, m - 6, 1)).toISOString().slice(0, 10);
+    const prevMonth = new Date(Date.UTC(y, m - 2, 1)).toISOString().slice(0, 7);
     const amt = d => Number(d.amount != null ? d.amount : (d.total != null ? d.total : d.amountLocal)) || 0;
     const dt = d => String(d.documentDate || d.creationDate || '').slice(0, 10);
     const cid = d => (d.client && (d.client.id || d.client.name)) ? String(d.client.id || d.client.name) : '';
@@ -587,11 +588,12 @@ app.get('/api/invoice/summary', async (req, res) => {
     openDocs.forEach(d => {
       if (d.status !== undefined && d.status !== 0) return;
       const id = cid(d); const date = dt(d); const v = amt(d);
+      if (!date.startsWith(prevMonth)) return; // החשבוניות מופקות על חודש אחורה — מציגים את הפתוחות מהחודש הקודם
       open.total += v; open.count++;
       const b = open.byClient[id] || (open.byClient[id] = { name: cname(d), total: 0, count: 0, oldest: date });
       b.total += v; b.count++; if (date && (!b.oldest || date < b.oldest)) b.oldest = date;
     });
-    const data = { month, paid, open, last: lastPay, at: new Date().toISOString(), diag: { receipts: receipts.length, openDocs: openDocs.length, sampleKeys: Object.keys(receipts[0] || openDocs[0] || {}).slice(0, 25) } };
+    const data = { month, openMonth: prevMonth, paid, open, last: lastPay, at: new Date().toISOString(), diag: { receipts: receipts.length, openDocs: openDocs.length, sampleKeys: Object.keys(receipts[0] || openDocs[0] || {}).slice(0, 25) } };
     _sumCache.set(month, { t: Date.now(), data });
     res.json(data);
   } catch (err) {
