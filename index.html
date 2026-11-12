@@ -1215,7 +1215,7 @@ body.kb-open .ai-fab { display: none; }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
-<script>try{if(localStorage.getItem('nep__lock')==='1')document.documentElement.classList.add('app-locked')}catch(e){}</script>
+<script>try{if(localStorage.getItem('nep__pk')==='1'&&localStorage.getItem('nep__lock')!=='0'&&window.PublicKeyCredential)document.documentElement.classList.add('app-locked')}catch(e){}</script>
 <div id="app-lock" role="dialog" aria-modal="true" aria-label="האפליקציה נעולה">
   <div class="al-box">
     <img src="icons/icon-192.png?v=2" alt="" width="84" height="84">
@@ -3204,7 +3204,7 @@ function todayISO(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMo
 
   // ---- נעילת האפליקציה בכל פתיחה (במכשיר הזה). זיהוי הפנים נבדק במכשיר עצמו — מהיר ועובד גם כשהשרת ישן
   var LOCK_AFTER = 10 * 1000; // אחרי כמה זמן ברקע לנעול
-  function lockOn() { return pkHere() && g('nep__lock') === '1'; }
+  function lockOn() { return pkHere() && g('nep__lock') !== '0'; } // ברירת מחדל: פעיל כשיש זיהוי פנים; '0' = כובה ידנית
   function lockNow() { if (!lockOn()) return; document.documentElement.classList.add('app-locked'); var f = document.getElementById('al-face'); if (f) f.disabled = false; var m = document.getElementById('al-msg'); if (m) m.textContent = ''; }
   function unlockDone() { document.documentElement.classList.remove('app-locked'); var pf = document.getElementById('al-pwf'), alt = document.getElementById('al-alt'); if (pf) pf.hidden = true; if (alt) alt.hidden = false; }
   function faceCheck() {
@@ -3331,7 +3331,7 @@ function todayISO(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMo
     disableFace: function () { if (confirm('לכבות כניסה עם זיהוי פנים במכשיר הזה?')) { r('nep__pk'); r('nep__lock'); renderSettings(); } },
     unlock: unlock, unlockPw: unlockPw,
     setLock: function (v) {
-      if (!v) { r('nep__lock'); renderSettings(); if (typeof showToast === 'function') showToast('הנעילה כובתה'); return; }
+      if (!v) { s('nep__lock', '0'); renderSettings(); if (typeof showToast === 'function') showToast('הנעילה כובתה'); return; }
       faceCheck().then(function (c) {
         if (!c) return; s('nep__lock', '1'); if (!g('nep__pkid')) s('nep__pkid', c.id);
         renderSettings(); if (typeof showToast === 'function') showToast('🔒 מעכשיו האפליקציה תיפתח עם זיהוי פנים');
