@@ -570,30 +570,32 @@ app.get('/api/invoice/summary', async (req, res) => {
     const cid = d => (d.client && (d.client.id || d.client.name)) ? String(d.client.id || d.client.name) : '';
     const cname = d => (d.client && d.client.name) || '';
 
+    const pStart = prevMonth + '-01';
+    const pEnd = new Date(Date.UTC(y, m - 1, 0)).toISOString().slice(0, 10);
+    const url = d => (d.url && (d.url.he || d.url.origin)) || (typeof d.url === 'string' ? d.url : null);
+    // חשבוניות החודש הקודם (מופקות על חודש אחורה): פתוחות (0) מול שולמו/נסגרו (1, 2). מבוטלות (3, 4) לא נספרות.
+    const invs = await giSearchAll(token, { type: [300, 305, 320], fromDate: pStart, toDate: pEnd, sort: 'documentDate' });
     const receipts = await giSearchAll(token, { type: [400, 320], fromDate: from6, toDate: last, sort: 'documentDate' });
-    const openDocs = await giSearchAll(token, { type: [300, 305], status: [0], sort: 'documentDate' });
 
-    const paid = { total: 0, count: 0, byClient: {} };
     const lastPay = {};
     receipts.forEach(d => {
-      const id = cid(d); const date = dt(d); const v = amt(d);
-      if (date.startsWith(month)) {
-        paid.total += v; paid.count++;
-        const b = paid.byClient[id] || (paid.byClient[id] = { name: cname(d), total: 0 });
-        b.total += v;
-      }
-      if (id && date <= last && (!lastPay[id] || date > lastPay[id].date)) lastPay[id] = { date, total: v, number: d.number || null };
+      const id = cid(d); const date = dt(d);
+      if (id && date <= last && (!lastPay[id] || date > lastPay[id].date)) lastPay[id] = { date, total: amt(d), number: d.number || null };
     });
-    const open = { total: 0, count: 0, byClient: {} };
-    openDocs.forEach(d => {
-      if (d.status !== undefined && d.status !== 0) return;
-      const id = cid(d); const date = dt(d); const v = amt(d);
-      if (!date.startsWith(prevMonth)) return; // החשבוניות מופקות על חודש אחורה — מציגים את הפתוחות מהחודש הקודם
-      open.total += v; open.count++;
-      const b = open.byClient[id] || (open.byClient[id] = { name: cname(d), total: 0, count: 0, oldest: date });
-      b.total += v; b.count++; if (date && (!b.oldest || date < b.oldest)) b.oldest = date;
+    const mk = () => ({ total: 0, count: 0, byClient: {} });
+    const open = mk(), paid = mk();
+    invs.forEach(d => {
+      const st = d.status === undefined ? 0 : d.status;
+      if (st === 3 || st === 4) return;
+      const date = dt(d); if (!date.startsWith(prevMonth)) return;
+      const bucket = st === 0 ? open : paid;
+      const id = cid(d); const v = amt(d);
+      bucket.total += v; bucket.count++;
+      const c = bucket.byClient[id] || (bucket.byClient[id] = { name: cname(d), total: 0, count: 0, oldest: date, docs: [] });
+      c.total += v; c.count++; if (date < c.oldest) c.oldest = date;
+      if (c.docs.length < 20) c.docs.push({ number: d.number || null, type: d.type, date, total: v, url: url(d) });
     });
-    const data = { month, openMonth: prevMonth, paid, open, last: lastPay, at: new Date().toISOString(), diag: { receipts: receipts.length, openDocs: openDocs.length, sampleKeys: Object.keys(receipts[0] || openDocs[0] || {}).slice(0, 25) } };
+    const data = { month, openMonth: prevMonth, paid, open, last: lastPay, at: new Date().toISOString(), diag: { invoices: invs.length, receipts: receipts.length, statuses: invs.reduce((o, d) => { o[d.status] = (o[d.status] || 0) + 1; return o; }, {}) } };
     _sumCache.set(month, { t: Date.now(), data });
     res.json(data);
   } catch (err) {

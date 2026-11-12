@@ -942,12 +942,12 @@ body.kb-open .ai-fab { display: none; }
 .mny-stats > div { background: var(--bg); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .mny-stats b { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .mny-stats span { font-size: 12.5px; font-weight: 500; color: var(--text-muted); }
-.mny-lh { font-size: 13px; font-weight: 700; color: #9A4A00; margin: 2px 2px 0; }
+.mny-lh { font-size: 13px; font-weight: 700; color: var(--text-muted); margin: 2px 2px 0; }
 .mny-row { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 50px; border: 0; border-top: 1px solid #F0F1F4; background: none; padding: 0; font-family: inherit; color: var(--text); cursor: pointer; text-align: right; }
 .mny-row:first-of-type { border-top: 0; }
 .mny-row .b { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .mny-row .n { font-size: 15px; font-weight: 600; }
-.mny-row .m { font-size: 12.5px; font-weight: 500; color: #9A4A00; }
+.mny-row .m { font-size: 12.5px; font-weight: 500; color: var(--text-muted); }
 .mny-row .v { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .mny-note { font-size: 12.5px; color: var(--text-muted); }
 .mny-note:empty { display: none; }
@@ -10075,22 +10075,24 @@ function _moneyMaybe() {
 function _clientByGi(id) { return clientsData.find(c => c.giId && String(c.giId) === String(id)) || clientsData.find(c => c.name === id); }
 function _moneyRender(j) {
   const sec = document.getElementById('mny'); sec.hidden = false;
+  const om = j.openMonth ? _HEB_MN[parseInt(j.openMonth.slice(5, 7), 10) - 1] : 'החודש הקודם';
   document.getElementById('mny-paid').textContent = _ils(j.paid.total);
-  document.getElementById('mny-paid-l').textContent = 'נכנס' + (j.paid.count ? ' · ' + j.paid.count + ' קבלות' : '');
+  document.getElementById('mny-paid-l').textContent = 'שולם מ' + om + (j.paid.count ? ' · ' + j.paid.count + ' חשבוניות' : '');
   document.getElementById('mny-open').textContent = _ils(j.open.total);
-  const om = j.openMonth ? _HEB_MN[parseInt(j.openMonth.slice(5, 7), 10) - 1] : '';
-  document.getElementById('mny-open-l').textContent = 'פתוח מ' + (om || 'החודש הקודם') + (j.open.count ? ' · ' + j.open.count + ' חשבוניות' : '');
-  const now = Date.now();
-  const late = []; // רק החודש — בלי רשימת איחורים
+  document.getElementById('mny-open-l').textContent = 'פתוח מ' + om + (j.open.count ? ' · ' + j.open.count + ' חשבוניות' : '');
+  const list = Object.keys(j.open.byClient).map(id => ({ id, ...j.open.byClient[id] })).sort((a, b) => b.total - a.total);
+  const all = !!window._mnyAll, shown = all ? list : list.slice(0, 6);
   const el = document.getElementById('mny-late');
-  el.innerHTML = late.length ? '<div class="mny-lh">באיחור מעל 30 יום</div>' + late.slice(0, 4).map(x => {
+  el.innerHTML = list.length ? '<div class="mny-lh">לקוחות עם חשבוניות פתוחות מ' + om + '</div>' + shown.map(x => {
     const c = _clientByGi(x.id);
-    return '<button type="button" class="mny-row"' + (c ? ' data-cid="' + c.id + '" onclick="openClientProfile(this.dataset.cid)"' : ' disabled') + '><span class="b"><span class="n">' + escHtml((c && c.name) || x.name || 'לקוח') + '</span>' +
-      '<span class="m">' + x.count + (x.count === 1 ? ' חשבונית' : ' חשבוניות') + ' · הוותיקה פתוחה ' + x.days + ' ימים</span></span><span class="v">' + _ils(x.total) + '</span></button>';
-  }).join('') + (late.length > 4 ? '<div class="mny-note">ועוד ' + (late.length - 4) + ' לקוחות</div>' : '') : '';
+    const nums = (x.docs || []).map(d => d.number).filter(Boolean).slice(0, 4).join(', ');
+    const act = c ? ' data-cid="' + c.id + '" onclick="openClientProfile(this.dataset.cid)"' : ((x.docs && x.docs[0] && x.docs[0].url) ? ' data-u="' + escHtml(x.docs[0].url) + '" onclick="window.open(this.dataset.u,\'_blank\')"' : ' disabled');
+    return '<button type="button" class="mny-row"' + act + '><span class="b"><span class="n">' + escHtml((c && c.name) || x.name || 'לקוח') + '</span>' +
+      '<span class="m">' + x.count + (x.count === 1 ? ' חשבונית' : ' חשבוניות') + (nums ? ' · מס׳ ' + escHtml(nums) : '') + '</span></span><span class="v">' + _ils(x.total) + '</span></button>';
+  }).join('') + (list.length > 6 ? '<button type="button" class="cpx-refresh" style="align-self:flex-start" onclick="window._mnyAll=!window._mnyAll;_moneyRender(window._money)">' + (all ? 'הצג פחות' : 'הצג את כל ' + list.length + ' הלקוחות') + '</button>' : '')
+    : (j.open.count === 0 ? '<div class="mny-note">כל החשבוניות מ' + om + ' שולמו 👍</div>' : '');
   const at = j.at ? new Date(j.at).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) : '';
-  const dg = j.diag ? ' · נקראו ' + j.diag.receipts + ' קבלות ו-' + j.diag.openDocs + ' חשבוניות פתוחות' : '';
-  document.getElementById('mny-note').textContent = 'עודכן ממורנינג ' + at + dg;
+  document.getElementById('mny-note').textContent = 'עודכן ממורנינג ' + at;
 }
 function _cpxLastRender() {
   const el = document.getElementById('cpx-last'); if (!el) return;
