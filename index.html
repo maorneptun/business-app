@@ -1210,6 +1210,78 @@ body.kb-open .ai-fab { display: none; }
 .cpx-sub { margin-top: -14px; }
 .cpx-name { margin-top: 4px; }
 
+.vr-modal { width: 860px; max-width: 96vw; display: flex; flex-direction: column; }
+.vr-mode { margin: 0 0 12px; }
+.vr-pages { flex: 1; overflow-y: auto; max-height: 68vh; background: var(--bg); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+.vr-pg { overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.12); background: #fff; flex: none; }
+#vat-print { display: none; }
+@media print {
+  @page { size: A4; margin: 0; }
+  body.vat-printing > *:not(#vat-print) { display: none !important; }
+  body.vat-printing #vat-print { display: block !important; }
+  body.vat-printing { background: #fff !important; padding: 0 !important; margin: 0 !important; }
+  #vat-print .vp-pg { page-break-after: always; break-after: page; }
+  #vat-print .vp-pg:last-child { page-break-after: auto; break-after: auto; }
+  #vat-print .vp-pg > div { height: 296mm !important; width: 210mm !important; }
+  #vat-print * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+/* ===== מע״מ ===== */
+.vat-wrap { max-width: 800px; display: flex; flex-direction: column; gap: var(--gap-sec); padding-bottom: 90px; }
+.vat-per { display: flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 3px; }
+.vat-per b { min-width: 120px; text-align: center; font-size: 15px; }
+.vat-arr { width: 40px; height: 40px; border: none; background: none; border-radius: 10px; color: var(--text); cursor: pointer; display: grid; place-items: center; }
+.vat-arr:hover { background: var(--bg); }
+.vat-arr svg { width: 20px; height: 20px; }
+.vat-sum { display: flex; flex-direction: column; gap: 10px; padding: 18px; border-radius: 18px; margin: 0 !important; }
+.vat-k { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+.vat-due { direction: ltr; unicode-bidi: isolate; text-align: right; font-size: 34px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.vat-line { height: 1px; background: var(--border); }
+.vat-row { display: flex; justify-content: space-between; gap: 10px; font-size: 15px; color: var(--text-muted); }
+.vat-row b { color: var(--text); font-variant-numeric: tabular-nums; font-weight: 600; direction: ltr; unicode-bidi: isolate; }
+.vat-note { font-size: 12.5px; color: var(--text-muted); }
+.vat-note:empty { display: none; }
+.vat-card { padding: 16px; border-radius: 18px; margin: 0 !important; display: flex; flex-direction: column; gap: 6px; }
+.vat-h { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.vat-h h2 { margin: 0; font-size: 17px; font-weight: 700; }
+.vat-h small { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+.vat-link { border: none; background: none; color: var(--accent); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; min-height: 36px; padding: 0 4px; }
+.vat-cat { display: flex; justify-content: space-between; align-items: baseline; margin-top: 12px; padding: 0 2px 2px; font-size: 13px; font-weight: 700; color: var(--text-muted); }
+.vat-cat span:last-child { font-variant-numeric: tabular-nums; }
+.vat-it { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; border: none; background: none; font: inherit; color: inherit; text-align: right; padding: 11px 2px; border-bottom: 1px solid var(--border); cursor: pointer; min-height: 52px; }
+.vat-it:last-child { border-bottom: none; }
+.vat-it .a { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.vat-it .a b { font-size: 15px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vat-it .a small { font-size: 12.5px; color: var(--text-muted); }
+.vat-it .v { direction: ltr; unicode-bidi: isolate; align-items: flex-start; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: left; display: flex; flex-direction: column; gap: 2px; }
+.vat-it .v small { font-size: 12px; font-weight: 500; color: var(--text-muted); }
+.vat-it.warn .a small { color: #A05A00; }
+.vat-empty { font-size: 14px; color: var(--text-muted); padding: 10px 2px; }
+.vat-pdf { min-height: 54px; font-size: 16px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 16px; }
+.vat-pdf svg { width: 20px; height: 20px; }
+.vat-add { position: fixed; bottom: 24px; left: 90px; min-height: 54px; padding: 0 24px; font-size: 16px; font-weight: 600; border-radius: 16px; z-index: 200; box-shadow: 0 6px 18px rgba(68,114,168,.28); }
+#page-vat:not(.active) .vat-add { display: none; }
+@media (max-width: 700px) { .vat-add { left: 84px; right: 16px; bottom: calc(90px + env(safe-area-inset-bottom)); } .vat-wrap { padding-bottom: 80px; } }
+.vat-set { padding: 0; border-radius: 18px; margin: 0 !important; }
+.vat-set summary { padding: 16px; font-weight: 600; cursor: pointer; min-height: 52px; box-sizing: border-box; }
+.vat-set-b { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 12px; }
+.vat-set-r { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.vat-set-t { font-size: 13px; color: var(--text-muted); }
+.vat-dr { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+.vat-dr select { min-height: 38px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); font: inherit; padding: 0 8px; }
+.vat-src { display: flex; gap: 10px; margin: 6px 0 14px; }
+.vat-srcb { flex: 1; min-height: 88px; border-radius: 16px; border: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-weight: 600; font-size: 15px; cursor: pointer; }
+.vat-srcb svg { width: 26px; height: 26px; }
+.vat-srcb.pri { background: var(--accent); color: #fff; border-color: var(--accent); }
+.vat-srcb:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.vat-srct { font-size: 13px; color: var(--text-muted); margin-bottom: 10px; }
+.vd-top { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+.vd-th { width: 72px; height: 92px; flex: none; border-radius: 12px; border: 1px solid var(--border); background: var(--bg) center/cover no-repeat; font-size: 12px; color: var(--text-muted); cursor: pointer; font-family: inherit; }
+.vd-th:empty::after { content: "אין קובץ"; }
+.vd-th[data-none="1"] { cursor: default; }
+.vd-stat { font-size: 14px; color: var(--text-muted); }
+.vd-lbl { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+#vd-cats { gap: 6px; }
+#vd-cats .rm-chip { min-height: 36px; padding: 0 12px; font-size: 13.5px; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -1260,6 +1332,9 @@ body.kb-open .ai-fab { display: none; }
     </div>
     <div class="nav-item" onclick="showPage('clients')">
       <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1M9 13h1M14 9h1M14 13h1"/></svg></span> לקוחות
+    </div>
+    <div class="nav-item" onclick="showPage('vat')">
+      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></span> מע״מ
     </div>
     <div class="nav-item" onclick="showPage('settings')">
       <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span> הגדרות
@@ -2039,6 +2114,58 @@ body.kb-open .ai-fab { display: none; }
       <div style="font-size:16px;font-weight:600;margin-bottom:6px" id="clients-empty-title">אין לקוחות עדיין</div>
       <div style="font-size:13px" id="clients-empty-sub">לחץ על "הוסף לקוח" להתחיל</div>
     </div>
+  </div>
+
+  <!-- ===== PAGE: VAT ===== -->
+  <div id="page-vat" class="page">
+    <div class="page-header">
+      <div>
+        <div class="page-title">מע״מ</div>
+        <div class="page-subtitle" id="vat-sub">הכנה לדוח</div>
+      </div>
+      <div class="vat-per">
+        <button type="button" class="vat-arr" onclick="vatStep(-1)" aria-label="תקופה קודמת"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+        <b id="vat-plabel"></b>
+        <button type="button" class="vat-arr" onclick="vatStep(1)" aria-label="תקופה הבאה"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+      </div>
+    </div>
+    <div class="vat-wrap">
+      <section class="card vat-sum" aria-label="סיכום מע״מ">
+        <span class="vat-k" id="vat-due-l">צפי לתשלום</span>
+        <b class="vat-due" id="vat-due">—</b>
+        <div class="vat-line"></div>
+        <div class="vat-row"><span id="vat-out-l">מע״מ עסקאות</span><b id="vat-out">—</b></div>
+        <div class="vat-row"><span id="vat-in-l">מע״מ תשומות</span><b id="vat-in">—</b></div>
+        <div class="vat-note" id="vat-note"></div>
+      </section>
+
+      <section class="card vat-card" aria-label="הוצאות">
+        <div class="vat-h"><h2>הוצאות</h2><small id="vat-exp-c"></small></div>
+        <div id="vat-exp"></div>
+      </section>
+
+      <section class="card vat-card" aria-label="הכנסות">
+        <div class="vat-h"><h2>הכנסות ממורנינג</h2><button type="button" class="vat-link" id="vat-inc-ref" onclick="vatLoad(true)">רענון</button></div>
+        <div id="vat-inc"></div>
+      </section>
+
+      <button type="button" class="btn btn-secondary vat-pdf" id="vat-pdf" onclick="vatPdf()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4M9 13h6M9 17h6"/></svg>
+        הפקת דוח PDF לרו״ח
+      </button>
+
+      <details class="card vat-set">
+        <summary>הגדרות דיווח</summary>
+        <div class="vat-set-b">
+          <div class="vat-set-r"><span>תדירות דיווח</span>
+            <div class="rm-chips"><button type="button" class="rm-chip" id="vat-f1" onclick="vatSetBi(false)">חודשי</button><button type="button" class="rm-chip" id="vat-f2" onclick="vatSetBi(true)">דו-חודשי</button></div>
+          </div>
+          <div class="vat-set-t">אחוז המע״מ שמנוכה בכל קטגוריה (ברירת מחדל — כדאי לאשר מול רו״ח)</div>
+          <div id="vat-ded"></div>
+        </div>
+      </details>
+    </div>
+    <button type="button" class="btn btn-primary vat-add" onclick="openModal('modal-vatadd')">+ הוספת מסמך</button>
   </div>
 
   <!-- ===== PAGE: SETTINGS ===== -->
@@ -3733,7 +3860,7 @@ function showPage(name) {
   const pageEl = document.getElementById('page-' + name);
   if (pageEl) pageEl.classList.add('active');
   const items = document.querySelectorAll('.nav-item');
-  const map = {employees:0, absences:1, reports:2, clients:3, 'client-profile':3, settings:4};
+  const map = {employees:0, absences:1, reports:2, clients:3, 'client-profile':3, vat:4, settings:5};
   if (map[name] !== undefined && items[map[name]]) items[map[name]].classList.add('active');
 
   // Show/hide add-emp button based on page
@@ -3754,6 +3881,7 @@ function showPage(name) {
   if (name === 'inactive-employees') { renderInactiveEmployees(); }
   if (name === 'replacements-dashboard') { renderReplacementsDashboard(); }
   if (name === 'settings') { renderSettingsStats(); }
+  if (name === 'vat') { vatInit(); }
   if (name === 'emp-profile') { /* already rendered by openEmpProfile */ }
 }
 
@@ -11506,5 +11634,481 @@ function clearManualHours() {
   _mhStore(); closeModal('modal-mhours'); showToast('חזרנו לחישוב האוטומטי');
 }
 </script>
+<!-- ===== מע״מ: הוספת מסמך ===== -->
+<div class="modal-overlay" id="modal-vatadd">
+  <div class="modal" style="width:460px">
+    <div class="modal-header">
+      <div class="modal-title">הוספת מסמך</div>
+      <button class="modal-close" onclick="closeModal('modal-vatadd')" aria-label="סגור">×</button>
+    </div>
+    <div class="vat-src">
+      <label class="vat-srcb pri"><input type="file" accept="image/*" capture="environment" onchange="vatPick(this,'צילום')" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>צילום</label>
+      <label class="vat-srcb"><input type="file" accept="image/*" capture="environment" onchange="vatPick(this,'סריקה')" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V5h3M17 5h3v3M20 16v3h-3M7 19H4v-3"/><path d="M8 12h8"/></svg>סריקה</label>
+      <label class="vat-srcb"><input type="file" accept="image/*,application/pdf" onchange="vatPick(this,'קובץ')" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4M12 11v6M9 14h6"/></svg>מקובץ</label>
+    </div>
+    <div class="vat-srct">סריקה מצלמת ומשפרת את המסמך לשחור-לבן חד. אפשר גם להוסיף מסמך בלי קובץ:</div>
+    <button type="button" class="btn btn-secondary" style="width:100%" onclick="closeModal('modal-vatadd');vatOpenDoc(null)">הזנה ידנית</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-vatrep">
+  <div class="modal vr-modal">
+    <div class="modal-header">
+      <div><div class="modal-title" id="vr-title">דוח מע״מ</div><div class="vd-stat" id="vr-n"></div></div>
+      <button class="modal-close" onclick="closeModal('modal-vatrep')" aria-label="סגור">×</button>
+    </div>
+    <div class="rm-chips vr-mode"><button type="button" class="rm-chip on" id="vr-m-full" onclick="vatRepMode('full')">דוח מלא</button><button type="button" class="rm-chip" id="vr-m-exp" onclick="vatRepMode('exp')">הוצאות בלבד + צילומים</button></div>
+    <div class="vr-pages" id="vr-pages"></div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" id="vr-print" onclick="vatRepPrint()">הדפסה</button>
+      <button type="button" class="btn btn-primary" id="vr-pdf" onclick="vatRepPdf(this)">שמירה כ-PDF</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-vatdoc">
+  <div class="modal" style="width:520px">
+    <div class="modal-header">
+      <div class="modal-title" id="vd-title">מסמך הוצאה</div>
+      <button class="modal-close" onclick="closeModal('modal-vatdoc')" aria-label="סגור">×</button>
+    </div>
+    <div class="vd-top">
+      <button type="button" class="vd-th" id="vd-th" onclick="vatView()" aria-label="הצג מסמך"></button>
+      <div class="vd-stat" id="vd-stat" aria-live="polite"></div>
+    </div>
+    <div class="vd-f">
+      <div class="form-group"><label for="vd-sup">ספק</label><input class="form-control" id="vd-sup" list="vd-sups" autocomplete="off" oninput="vatSupInput()"><datalist id="vd-sups"></datalist></div>
+      <div class="form-row">
+        <div class="form-group"><label for="vd-date">תאריך</label><input class="form-control" type="date" id="vd-date"></div>
+        <div class="form-group"><label for="vd-num">מס׳ מסמך</label><input class="form-control" id="vd-num" inputmode="numeric"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label for="vd-total">סכום כולל מע״מ</label><input class="form-control" type="number" step="0.01" inputmode="decimal" id="vd-total" oninput="vatAutoVat()"></div>
+        <div class="form-group"><label for="vd-vat">מע״מ במסמך</label><input class="form-control" type="number" step="0.01" inputmode="decimal" id="vd-vat" oninput="this.dataset.man='1'"></div>
+      </div>
+      <div class="form-group"><span class="vd-lbl">קטגוריה</span><div class="rm-chips" id="vd-cats"></div></div>
+      <div class="form-group"><label for="vd-note">הערה</label><input class="form-control" id="vd-note"></div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" id="vd-del" onclick="vatDelete()" style="display:none">מחיקה</button>
+      <button type="button" class="btn btn-primary" id="vd-save" onclick="vatSave()">שמירה</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== מע״מ: הכנה לדוח — הכנסות ממורנינג + מסמכי הוצאות + דוח PDF לרו״ח ===== */
+var VAT_API = 'https://business-app-hf5y.onrender.com/api/vat';
+var VAT_RATE = 0.18;
+var VAT_CATS = ['חומרי ניקיון וציוד', 'דלק', 'רכב — טיפולים וחלקים', 'תקשורת', 'ביטוח', 'שכירות', 'שירותים מקצועיים', 'פרסום', 'ציוד משרדי ומחשוב', 'כיבוד ואירוח', 'אחר'];
+// אחוז ניכוי ברירת מחדל: רכב פרטי — 2/3, כיבוד — לא מנוכה
+var VAT_DED0 = { 'דלק': 66.67, 'רכב — טיפולים וחלקים': 66.67, 'כיבוד ואירוח': 0 };
+var VAT_KW = [
+  ['דלק', /פז|דלק|סונול|דור.?אלון|אלון|ten|yellow|delek|sonol|paz|תחנת/i],
+  ['חומרי ניקיון וציוד', /ניקיון|ניקוי|כימיקל|סנו|חומרי|ספוג|מגבונ|נייר טואלט|אקונומיקה/i],
+  ['תקשורת', /בזק|סלקום|פרטנר|הוט|גולן|פלאפון|012|013|019|bezeq|cellcom|partner|hot mobile/i],
+  ['ביטוח', /ביטוח|הראל|מגדל|הפניקס|כלל|מנורה|איילון|ליברה|ישיר|הכשרה/i],
+  ['רכב — טיפולים וחלקים', /מוסך|צמיג|טסט|רישוי|פנצ|שמן|חלפים|קאר/i],
+  ['שירותים מקצועיים', /רו.?ח|רואה חשבון|עו.?ד|עורך דין|יועץ|הנהלת חשבונות|מורנינג|חשבונית ירוקה/i],
+  ['פרסום', /פרסום|facebook|meta|google|גוגל|פייסבוק|דפוס|שלט/i],
+  ['ציוד משרדי ומחשוב', /אופיס|office|מחשב|ksp|באג|ivory|אייבורי|מדפסת|דיו/i],
+  ['כיבוד ואירוח', /מסעדה|קפה|פיצה|בורגר|וולט|wolt|תן ביס|מאפה|שווארמה|פלאפל/i],
+  ['שכירות', /שכירות|שכ.?ד|דמי ניהול/i]
+];
+var vatS = { start: null, docs: [], inc: null, incErr: '', loading: false, cur: null, file: null, src: '', blobs: {} };
+
+function _vatOnline() { return window.__PV || (window.nepSync && nepSync.state && nepSync.state.token); }
+function _vEsc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function _vm(n) { var v = Math.round(Number(n) || 0); return (v < 0 ? '−₪' : '₪') + Math.abs(v).toLocaleString('he-IL'); }
+function _vm2(n) { var v = Number(n) || 0; return (v < 0 ? '−' : '') + Math.abs(v).toLocaleString('he-IL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function _vCfg() { try { return JSON.parse(localStorage.getItem('nep_vat_cfg') || '{}') || {}; } catch (e) { return {}; } }
+function _vSetCfg(c) { localStorage.setItem('nep_vat_cfg', JSON.stringify(c)); }
+function _vDed(cat) { var d = (_vCfg().ded || {})[cat]; if (d === undefined) d = VAT_DED0[cat]; return d === undefined ? 100 : Number(d); }
+function _vBi() { return !!_vCfg().bi; }
+function _vAdd(ym, k) { var p = ym.split('-').map(Number), d = new Date(p[0], p[1] - 1 + k, 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
+function _vAlign(ym) { if (!_vBi()) return ym; var p = ym.split('-').map(Number); return p[1] % 2 ? ym : _vAdd(ym, -1); }
+function _vEnd() { return _vBi() ? _vAdd(vatS.start, 1) : vatS.start; }
+function _vMonthName(ym) { var p = ym.split('-').map(Number); return new Date(p[0], p[1] - 1, 1).toLocaleDateString('he-IL', { month: 'long' }); }
+function _vLabel() { var y = vatS.start.slice(0, 4); return _vBi() ? _vMonthName(vatS.start) + '–' + _vMonthName(_vEnd()) + ' ' + y : _vMonthName(vatS.start) + ' ' + y; }
+function _vDueDate() { return '15.' + String(Number(_vAdd(_vEnd(), 1).slice(5))).padStart(2, '0') + '.' + _vAdd(_vEnd(), 1).slice(0, 4); }
+function _vNorm(s) { return String(s || '').replace(/["'״׳.,\-–()]/g, '').replace(/\s+/g, ' ').trim().toLowerCase(); }
+function _vSupMap() { try { return JSON.parse(localStorage.getItem('nep_vat_sup') || '{}') || {}; } catch (e) { return {}; } }
+function _vGuessCat(sup) {
+  var n = _vNorm(sup); if (!n) return '';
+  var m = _vSupMap(); if (m[n]) return m[n];
+  for (var i = 0; i < VAT_KW.length; i++) if (VAT_KW[i][1].test(sup)) return VAT_KW[i][0];
+  return '';
+}
+
+function vatInit() {
+  if (!vatS.start) { var t = new Date(); vatS.start = _vAlign(_vAdd(t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0'), _vBi() ? -2 : -1)); }
+  vatRenderSet(); vatLoad(false);
+}
+function vatStep(k) { vatS.start = _vAdd(vatS.start, k * (_vBi() ? 2 : 1)); vatLoad(false); }
+function vatSetBi(on) { var c = _vCfg(); c.bi = !!on; _vSetCfg(c); vatS.start = _vAlign(vatS.start); vatRenderSet(); vatLoad(false); }
+function vatRenderSet() {
+  var bi = _vBi();
+  document.getElementById('vat-f1').classList.toggle('on', !bi); document.getElementById('vat-f2').classList.toggle('on', bi);
+  var opts = [[100, '100%'], [66.67, '2/3'], [25, '1/4'], [0, 'לא מנוכה']];
+  document.getElementById('vat-ded').innerHTML = VAT_CATS.map(function (c) {
+    var d = _vDed(c);
+    return '<div class="vat-dr"><span>' + _vEsc(c) + '</span><select aria-label="אחוז ניכוי — ' + _vEsc(c) + '" onchange="vatSetDed(' + VAT_CATS.indexOf(c) + ',this.value)">' +
+      opts.map(function (o) { return '<option value="' + o[0] + '"' + (Math.abs(o[0] - d) < 0.01 ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>';
+  }).join('');
+}
+function vatSetDed(i, v) { var c = _vCfg(); c.ded = c.ded || {}; c.ded[VAT_CATS[i]] = Number(v); _vSetCfg(c); vatRender(); }
+
+function vatLoad(fresh) {
+  document.getElementById('vat-plabel').textContent = _vLabel();
+  document.getElementById('vat-sub').textContent = 'הכנה לדוח · הגשה עד ' + _vDueDate();
+  var from = vatS.start, to = _vEnd(), key = from + to;
+  vatS.key = key; vatS.loading = true; vatS.inc = null; vatS.incErr = ''; vatS.docs = vatS.docs.filter(function () { return false; });
+  vatRender();
+  if (!_vatOnline()) { vatS.loading = false; vatS.incErr = 'כדי לראות נתונים צריך להיות מחובר (הגדרות ← סנכרון).'; vatS.docsErr = vatS.incErr; vatRender(); return; }
+  var q = '?from=' + from + '&to=' + to;
+  var pd = fetch(VAT_API + '/docs' + q).then(function (r) { return r.json(); }).then(function (j) {
+    if (vatS.key !== key) return; if (!Array.isArray(j)) throw new Error(j.error || 'x'); vatS.docs = j; vatS.docsErr = '';
+  }).catch(function (e) { if (vatS.key === key) vatS.docsErr = 'לא הצלחתי לטעון את המסמכים (' + (e.message || 'שגיאה') + ')'; });
+  var pi = fetch(VAT_API + '/income' + q + (fresh ? '&fresh=1' : '')).then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(r.status === 401 ? 'צריך להתחבר מחדש' : (j.error || r.status)); return j; }); })
+    .then(function (j) { if (vatS.key === key) vatS.inc = j; })
+    .catch(function (e) { if (vatS.key === key) vatS.incErr = 'לא הצלחתי למשוך ממורנינג: ' + (e.message || 'שגיאה'); });
+  Promise.all([pd, pi]).then(function () { if (vatS.key !== key) return; vatS.loading = false; vatRender(); if (fresh) showToast('עודכן ממורנינג'); });
+}
+function _vCalc() {
+  var inc = (vatS.inc && vatS.inc.items) || [], out = 0, net = 0, inn = 0, innFull = 0, exp = 0;
+  inc.forEach(function (d) { out += d.vat; net += d.net; });
+  vatS.docs.forEach(function (d) { var v = Number(d.vat) || 0; innFull += v; inn += v * _vDed(d.category || 'אחר') / 100; exp += Number(d.total) || 0; });
+  return { out: out, net: net, inn: inn, innFull: innFull, exp: exp, due: out - inn, n: inc.length };
+}
+function vatRender() {
+  if (!document.getElementById('vat-due')) return;
+  var c = _vCalc(), ld = vatS.loading;
+  var dueEl = document.getElementById('vat-due');
+  document.getElementById('vat-due-l').textContent = c.due < 0 ? 'החזר צפוי' : 'צפי לתשלום';
+  dueEl.textContent = ld ? 'טוען…' : _vm(Math.abs(c.due));
+  document.getElementById('vat-out-l').textContent = 'מע״מ עסקאות' + (vatS.inc ? ' · ' + c.n + ' חשבוניות' : '');
+  document.getElementById('vat-out').textContent = vatS.inc ? _vm(c.out) : '—';
+  document.getElementById('vat-in-l').textContent = 'מע״מ תשומות · ' + vatS.docs.length + ' מסמכים';
+  document.getElementById('vat-in').textContent = (c.inn ? '−' : '') + _vm(c.inn);
+  var notes = [];
+  if (c.innFull - c.inn > 1) notes.push(_vm(c.innFull - c.inn) + ' מע״מ לא מנוכה (רכב 2/3, כיבוד וכו׳)');
+  if (vatS.incErr && !ld) notes.push(vatS.incErr);
+  document.getElementById('vat-note').textContent = notes.join(' · ');
+
+  // הוצאות לפי קטגוריה
+  var ex = document.getElementById('vat-exp');
+  document.getElementById('vat-exp-c').textContent = vatS.docs.length ? vatS.docs.length + ' מסמכים · ' + _vm(c.exp) : '';
+  if (ld && !vatS.docs.length) ex.innerHTML = '<div class="vat-empty">טוען…</div>';
+  else if (vatS.docsErr) ex.innerHTML = '<div class="vat-empty">' + _vEsc(vatS.docsErr) + '</div>';
+  else if (!vatS.docs.length) ex.innerHTML = '<div class="vat-empty">עוד אין מסמכי הוצאות לתקופה. לחץ "הוספת מסמך" כדי לצלם, לסרוק או להעלות.</div>';
+  else {
+    var groups = {}; vatS.docs.forEach(function (d) { var k = d.category || 'אחר'; (groups[k] = groups[k] || []).push(d); });
+    var keys = VAT_CATS.filter(function (k) { return groups[k]; }).concat(Object.keys(groups).filter(function (k) { return VAT_CATS.indexOf(k) < 0; }));
+    var seen = {};
+    ex.innerHTML = keys.map(function (k) {
+      var arr = groups[k], tot = arr.reduce(function (s, d) { return s + (Number(d.total) || 0); }, 0);
+      return '<div class="vat-cat"><span>' + _vEsc(k) + '</span><span>' + _vm(tot) + '</span></div>' + arr.map(function (d) {
+        var dk = _vNorm(d.supplier) + '|' + String(d.number || '').trim(), dup = d.number && seen[dk]; seen[dk] = 1;
+        var miss = !d.supplier || !d.total || !d.date;
+        var sub = (d.date ? d.date.slice(8, 10) + '.' + d.date.slice(5, 7) : 'בלי תאריך') + (d.number ? ' · מס׳ ' + _vEsc(d.number) : '') + (d.name ? '' : ' · בלי קובץ') + (dup ? ' · כפול?' : '') + (miss && !dup ? ' · חסרים פרטים' : '');
+        return '<button type="button" class="vat-it' + (dup || miss ? ' warn' : '') + '" onclick="vatOpenDoc(\'' + d.id + '\')"><span class="a"><b>' + _vEsc(d.supplier || 'ללא שם ספק') + '</b><small>' + sub + '</small></span>' +
+          '<span class="v">' + _vm(d.total) + '<small>מע״מ ' + _vm(d.vat) + '</small></span></button>';
+      }).join('');
+    }).join('');
+  }
+
+  // הכנסות לפי לקוח
+  var ib = document.getElementById('vat-inc');
+  if (ld && !vatS.inc) ib.innerHTML = '<div class="vat-empty">טוען ממורנינג…</div>';
+  else if (!vatS.inc) ib.innerHTML = '<div class="vat-empty">' + _vEsc(vatS.incErr || 'אין נתונים') + '</div>';
+  else if (!vatS.inc.items.length) ib.innerHTML = '<div class="vat-empty">לא נמצאו חשבוניות מס בתקופה הזו.</div>';
+  else {
+    var by = {}; vatS.inc.items.forEach(function (d) { var k = d.client || '—'; var o = by[k] || (by[k] = { n: 0, net: 0, vat: 0, total: 0 }); o.n++; o.net += d.net; o.vat += d.vat; o.total += d.total; });
+    var list = Object.keys(by).sort(function (a, b) { return by[b].total - by[a].total; });
+    var show = vatS.incAll ? list : list.slice(0, 6);
+    ib.innerHTML = '<div class="vat-cat"><span>לפני מע״מ ' + _vm(c.net) + '</span><span>כולל ' + _vm(c.net + c.out) + '</span></div>' + show.map(function (k) {
+      var o = by[k];
+      return '<div class="vat-it" style="cursor:default"><span class="a"><b>' + _vEsc(k) + '</b><small>' + o.n + ' ' + (o.n > 1 ? 'מסמכים' : 'מסמך') + '</small></span><span class="v">' + _vm(o.total) + '<small>מע״מ ' + _vm(o.vat) + '</small></span></div>';
+    }).join('') + (list.length > 6 ? '<button type="button" class="vat-link" onclick="vatS.incAll=!vatS.incAll;vatRender()">' + (vatS.incAll ? 'הצג פחות' : 'הצג את כל ' + list.length + ' הלקוחות') + '</button>' : '');
+  }
+}
+
+/* --- הוספה / עריכה --- */
+function _vEnhance(file) {
+  // "סריקה": שחור-לבן חד, רקע לבן
+  return new Promise(function (res) {
+    var img = new Image(), u = URL.createObjectURL(file);
+    img.onload = function () {
+      var max = 2000, k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+      var c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+      var x = c.getContext('2d'); x.drawImage(img, 0, 0, c.width, c.height);
+      try {
+        var id = x.getImageData(0, 0, c.width, c.height), p = id.data, hist = new Uint32Array(256), n = p.length / 4;
+        for (var i = 0; i < p.length; i += 4) { var g = (p[i] * 0.299 + p[i + 1] * 0.587 + p[i + 2] * 0.114) | 0; p[i] = g; hist[g]++; }
+        var lo = 0, hi = 255, acc = 0; for (; lo < 255 && (acc += hist[lo]) < n * 0.02; lo++); acc = 0; for (; hi > 0 && (acc += hist[hi]) < n * 0.25; hi--);
+        if (hi - lo < 40) { lo = 0; hi = 255; }
+        for (i = 0; i < p.length; i += 4) { var v = (p[i] - lo) * 255 / (hi - lo); v = v < 0 ? 0 : v > 255 ? 255 : v; v = v > 200 ? 255 : v * 0.9; p[i] = p[i + 1] = p[i + 2] = v; }
+        x.putImageData(id, 0, 0);
+      } catch (e) {}
+      c.toBlob(function (b) { URL.revokeObjectURL(u); res(b ? new File([b], 'scan.jpg', { type: 'image/jpeg' }) : file); }, 'image/jpeg', 0.85);
+    };
+    img.onerror = function () { URL.revokeObjectURL(u); res(file); };
+    img.src = u;
+  });
+}
+function _vCompress(file) {
+  if (typeof _rcCompress === 'function') return _rcCompress(file);
+  return Promise.resolve(file);
+}
+function _vB64(blob) { return new Promise(function (res, rej) { var r = new FileReader(); r.onload = function () { res(String(r.result).split(',')[1] || ''); }; r.onerror = rej; r.readAsDataURL(blob); }); }
+function vatPick(input, src) {
+  var f = input.files && input.files[0]; input.value = '';
+  if (!f) return;
+  if (!_vatOnline()) { showToast('כדי לשמור מסמכים צריך להיות מחובר לסנכרון'); return; }
+  closeModal('modal-vatadd');
+  var isImg = /^image\//.test(f.type) || /\.(jpe?g|png|heic|webp)$/i.test(f.name);
+  if (!isImg && !/pdf/.test(f.type) && !/\.pdf$/i.test(f.name)) { showToast('אפשר להעלות תמונה או PDF'); return; }
+  vatOpenDoc(null);
+  _vStat('מכין את המסמך…');
+  (src === 'סריקה' && isImg ? _vEnhance(f) : isImg ? _vCompress(f) : Promise.resolve(f)).then(function (ff) {
+    if (ff.size > 15 * 1024 * 1024) { _vStat('הקובץ גדול מדי (עד 15MB)'); return; }
+    var type = ff.type || (isImg ? 'image/jpeg' : 'application/pdf');
+    vatS.file = { blob: ff, type: type, name: isImg ? 'מסמך-' + src + '.jpg' : (f.name || 'מסמך.pdf') }; vatS.src = src;
+    _vThumb(isImg ? URL.createObjectURL(ff) : null, !isImg);
+    _vStat('קורא את הפרטים מהמסמך…');
+    return _vB64(ff).then(function (b64) {
+      vatS.file.b64 = b64;
+      if (!/^image\/(jpeg|png|webp|gif)$|^application\/pdf$/.test(type)) { _vStat('מלא את הפרטים ושמור'); return; }
+      return fetch(VAT_API + '/scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: b64, type: type }) })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, st: r.status, j: j }; }); })
+        .then(function (x) {
+          if (!document.getElementById('modal-vatdoc').classList.contains('open') || vatS.cur) return;
+          if (!x.ok) { _vStat(x.st === 501 ? 'מלא את הפרטים ושמור' : 'לא הצלחתי לקרוא אוטומטית — מלא את הפרטים'); return; }
+          var j = x.j || {}, g = function (id) { return document.getElementById(id); };
+          if (j.supplier && !g('vd-sup').value) g('vd-sup').value = j.supplier;
+          if (j.date && /^\d{4}-\d{2}-\d{2}$/.test(j.date) && !g('vd-date').value) g('vd-date').value = j.date;
+          if (j.number && !g('vd-num').value) g('vd-num').value = j.number;
+          if (j.total && !g('vd-total').value) g('vd-total').value = j.total;
+          if (j.vat != null && !g('vd-vat').dataset.man) { g('vd-vat').value = j.vat; g('vd-vat').dataset.man = '1'; }
+          var cat = _vGuessCat(j.supplier || '') || j.category; if (cat && !vatS.catTouched) _vSetCat(cat);
+          _vStat('✓ הפרטים נקראו מהמסמך — בדוק ושמור');
+        });
+    });
+  }).catch(function () { _vStat('מלא את הפרטים ושמור'); });
+}
+function _vStat(t) { document.getElementById('vd-stat').textContent = t || ''; }
+function _vThumb(url, pdf) {
+  var th = document.getElementById('vd-th');
+  th.style.backgroundImage = url ? 'url(' + url + ')' : 'none';
+  th.textContent = pdf ? 'PDF' : (url ? '' : '');
+  th.dataset.none = (url || pdf) ? '0' : '1';
+}
+function _vSetCat(cat) { vatS.cat = cat; document.querySelectorAll('#vd-cats .rm-chip').forEach(function (b) { b.classList.toggle('on', b.dataset.c === cat); }); }
+function vatSupInput() { if (vatS.catTouched) return; var c = _vGuessCat(document.getElementById('vd-sup').value); if (c) _vSetCat(c); }
+function vatAutoVat() {
+  var v = document.getElementById('vd-vat'); if (v.dataset.man) return;
+  var t = Number(document.getElementById('vd-total').value) || 0;
+  v.value = t ? (Math.round(t * VAT_RATE / (1 + VAT_RATE) * 100) / 100) : '';
+}
+function vatOpenDoc(id) {
+  var d = id ? vatS.docs.find(function (x) { return x.id === id; }) : null;
+  vatS.cur = d || null; vatS.file = null; vatS.catTouched = false; vatS.cat = '';
+  var g = function (k) { return document.getElementById(k); };
+  g('vd-title').textContent = d ? 'עריכת מסמך' : 'מסמך הוצאה חדש';
+  g('vd-sup').value = d ? d.supplier || '' : '';
+  g('vd-date').value = d ? d.date || '' : '';
+  g('vd-num').value = d ? d.number || '' : '';
+  g('vd-total').value = d && d.total ? d.total : '';
+  g('vd-vat').value = d ? (d.vat != null ? d.vat : '') : ''; if (d) g('vd-vat').dataset.man = '1'; else delete g('vd-vat').dataset.man;
+  g('vd-note').value = d ? d.note || '' : '';
+  g('vd-del').style.display = d ? '' : 'none'; g('vd-save').disabled = false; g('vd-save').textContent = 'שמירה';
+  var sups = {}; vatS.docs.forEach(function (x) { if (x.supplier) sups[x.supplier] = 1; });
+  g('vd-sups').innerHTML = Object.keys(sups).map(function (s) { return '<option value="' + _vEsc(s) + '">'; }).join('');
+  g('vd-cats').innerHTML = VAT_CATS.map(function (c) { return '<button type="button" class="rm-chip" data-c="' + _vEsc(c) + '" onclick="vatS.catTouched=true;_vSetCat(this.dataset.c)">' + _vEsc(c) + '</button>'; }).join('');
+  _vSetCat(d ? d.category || 'אחר' : '');
+  _vStat(d ? (d.name ? '' : 'אין קובץ מצורף') : '');
+  _vThumb(null, d && d.name && !/^image\//.test(d.type));
+  if (d && d.name && /^image\//.test(d.type)) _vBlob(d.id).then(function (u) { if (vatS.cur === d) _vThumb(u, false); }).catch(function () {});
+  openModal('modal-vatdoc');
+}
+function _vBlob(id) {
+  if (vatS.blobs[id]) return Promise.resolve(vatS.blobs[id]);
+  return fetch(VAT_API + '/doc/' + id + '/file').then(function (r) { if (!r.ok) throw new Error('x'); return r.blob(); }).then(function (b) { vatS.blobs[id] = URL.createObjectURL(b); vatS.blobs[id + '_b'] = b; return vatS.blobs[id]; });
+}
+function vatView() {
+  if (vatS.file) { window.open(URL.createObjectURL(vatS.file.blob), '_blank'); return; }
+  var d = vatS.cur; if (!d || !d.name) return;
+  _vBlob(d.id).then(function (u) { window.open(u, '_blank'); }).catch(function () { showToast('לא הצלחתי לפתוח את הקובץ'); });
+}
+function vatSave() {
+  var g = function (k) { return document.getElementById(k); };
+  var body = { supplier: g('vd-sup').value.trim(), date: g('vd-date').value, number: g('vd-num').value.trim(), total: Number(g('vd-total').value) || 0,
+    vat: g('vd-vat').value === '' ? 0 : Number(g('vd-vat').value) || 0, category: vatS.cat || _vGuessCat(g('vd-sup').value) || 'אחר', note: g('vd-note').value.trim() };
+  if (!body.supplier && !body.total) { showToast('חסר שם ספק או סכום'); return; }
+  if (body.vat > body.total && body.total) { showToast('המע״מ גדול מהסכום הכולל — בדוק את הסכומים'); return; }
+  var dm = body.date ? body.date.slice(0, 7) : '';
+  // החודש שבו המסמך נכנס לדוח: חודש המסמך, ואם הוא מתקופה שכבר עברה — התקופה המוצגת
+  body.claim = vatS.cur ? (vatS.cur.claim || vatS.start) : (dm && dm > vatS.start ? dm : vatS.start);
+  var dup = body.number && vatS.docs.find(function (x) { return x !== vatS.cur && String(x.number || '').trim() === body.number && _vNorm(x.supplier) === _vNorm(body.supplier); });
+  var go = function () {
+    var btn = g('vd-save'); btn.disabled = true; btn.textContent = 'שומר…';
+    if (body.supplier && body.category) { var m = _vSupMap(), n = _vNorm(body.supplier); if (m[n] !== body.category) { m[n] = body.category; localStorage.setItem('nep_vat_sup', JSON.stringify(m)); } }
+    var url, payload = Object.assign({}, body);
+    if (vatS.cur) url = VAT_API + '/doc/' + vatS.cur.id + '/update';
+    else { url = VAT_API + '/doc'; if (vatS.file && vatS.file.b64) { payload.data = vatS.file.b64; payload.type = vatS.file.type; payload.name = (body.supplier || 'מסמך') + (body.date ? ' ' + body.date : '') + (/pdf/.test(vatS.file.type) ? '.pdf' : '.jpg'); } }
+    fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || 'שגיאה'); return j; }); })
+      .then(function (j) {
+        if (vatS.cur) { var i = vatS.docs.indexOf(vatS.cur); if (i >= 0) vatS.docs[i] = j; }
+        else if (j.claim >= vatS.start && j.claim <= _vEnd()) vatS.docs.push(j);
+        vatS.docs.sort(function (a, b) { return String(a.date || '').localeCompare(String(b.date || '')); });
+        closeModal('modal-vatdoc'); vatRender();
+        showToast(j.claim >= vatS.start && j.claim <= _vEnd() ? '✅ המסמך נשמר' : '✅ נשמר לתקופה של ' + _vMonthName(j.claim));
+      })
+      .catch(function (e) { btn.disabled = false; btn.textContent = 'שמירה'; showToast('⚠️ ' + (e.message || 'לא נשמר')); });
+  };
+  if (dup) showConfirm('כבר יש מסמך מ"' + body.supplier + '" עם מספר ' + body.number + '. לשמור בכל זאת?', go); else go();
+}
+function vatDelete() {
+  var d = vatS.cur; if (!d) return;
+  showConfirm('למחוק את המסמך של "' + (d.supplier || 'ללא שם') + '"? אי אפשר לשחזר.', function () {
+    fetch(VAT_API + '/doc/' + d.id + '/delete', { method: 'POST' }).then(function (r) { if (!r.ok) throw new Error('x'); })
+      .then(function () { vatS.docs = vatS.docs.filter(function (x) { return x !== d; }); closeModal('modal-vatdoc'); vatRender(); showToast('המסמך נמחק'); })
+      .catch(function () { showToast('לא הצלחתי למחוק'); });
+  });
+}
+
+/* --- דוח PDF לרו״ח --- */
+function _vPage(inner, n, tot) {
+  return '<div style="width:794px;height:1123px;box-sizing:border-box;padding:46px 48px 40px;font-family:Rubik,Arial,sans-serif;color:#1d1d1f;direction:rtl;background:#fff;display:flex;flex-direction:column;position:relative">' +
+    inner + '<div style="position:absolute;bottom:22px;left:48px;right:48px;display:flex;justify-content:space-between;font-size:11px;color:#86868b"><span>נפטון · ' + (vatS.repMode === 'exp' ? 'מסמכי הוצאות ' : 'דוח מע״מ ') + _vEsc(_vLabel()) + '</span><span>עמוד ' + n + ' מתוך ' + tot + '</span></div></div>';
+}
+function _vTable(head, rows, widths) {
+  var th = 'padding:7px 8px;font-size:11.5px;color:#5f5f66;font-weight:600;border-bottom:1.5px solid #d2d2d7;text-align:right';
+  var td = 'padding:6px 8px;font-size:12px;border-bottom:1px solid #ececee;text-align:right;vertical-align:top';
+  return '<table style="width:100%;border-collapse:collapse;table-layout:fixed"><colgroup>' + widths.map(function (w) { return '<col style="width:' + w + '">'; }).join('') + '</colgroup><thead><tr>' +
+    head.map(function (h) { return '<th style="' + th + '">' + h + '</th>'; }).join('') + '</tr></thead><tbody>' +
+    rows.map(function (r) { return '<tr>' + r.map(function (c, i) { var num = typeof c === 'number'; return '<td style="' + td + (num ? ';font-variant-numeric:tabular-nums;direction:ltr;text-align:left' : '') + (r._b ? ';font-weight:700;border-top:1.5px solid #d2d2d7' : '') + '">' + (num ? _vm2(c) : _vEsc(c)) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table>';
+}
+function _vDt(s) { return s ? s.slice(8, 10) + '.' + s.slice(5, 7) + '.' + s.slice(0, 4) : '—'; }
+function _vBuildPages(mode) {
+  var expOnly = mode === 'exp';
+  var c = _vCalc(), inc = (vatS.inc && vatS.inc.items) || [], docs = vatS.docs.slice();
+  var H = function (t, s) { return '<div style="font-size:17px;font-weight:700;margin:0 0 10px">' + t + (s ? '<span style="font-size:12px;font-weight:500;color:#5f5f66;margin-right:8px">' + s + '</span>' : '') + '</div>'; };
+  var TYPES = { 305: 'חשבונית מס', 320: 'חשבונית מס/קבלה', 330: 'חשבונית זיכוי' };
+  // עמוד 1 — סיכום + פירוט לפי קטגוריה
+  var cats = {}; docs.forEach(function (d) { var k = d.category || 'אחר'; var o = cats[k] || (cats[k] = { n: 0, total: 0, vat: 0, ded: 0 }); o.n++; o.total += +d.total || 0; o.vat += +d.vat || 0; o.ded += (+d.vat || 0) * _vDed(k) / 100; });
+  var catRows = Object.keys(cats).sort(function (a, b) { return VAT_CATS.indexOf(a) - VAT_CATS.indexOf(b); }).map(function (k) { var o = cats[k]; var p = _vDed(k); return [k, String(o.n), o.total, o.vat, (Math.abs(p - 66.67) < .01 ? '2/3' : p + '%'), o.ded]; });
+  if (catRows.length) { var tr = ['סה״כ', String(docs.length), c.exp, c.innFull, '', c.inn]; tr._b = 1; catRows.push(tr); }
+  var box = function (l, v, big) { return '<div style="flex:1;border:1px solid #e5e5e7;border-radius:12px;padding:12px 14px"><div style="font-size:11.5px;color:#5f5f66">' + l + '</div><div style="font-size:' + (big ? 22 : 18) + 'px;font-weight:700;margin-top:4px;direction:ltr;text-align:right">₪' + _vm2(v) + '</div></div>'; };
+  var p1 = '<div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #1d1d1f;padding-bottom:12px;margin-bottom:20px"><div><div style="font-size:26px;font-weight:700">דוח מע״מ — ' + _vEsc(_vLabel()) + '</div><div style="font-size:13px;color:#5f5f66;margin-top:4px">נפטון · הוכן ' + new Date().toLocaleDateString('he-IL') + ' · מועד הגשה ' + _vDueDate() + '</div></div></div>' +
+    '<div style="display:flex;gap:10px;margin-bottom:10px">' + box('עסקאות לפני מע״מ', c.net) + box('מע״מ עסקאות', c.out) + '</div>' +
+    '<div style="display:flex;gap:10px;margin-bottom:10px">' + box('הוצאות (כולל מע״מ)', c.exp) + box('מע״מ תשומות לניכוי', c.inn) + '</div>' +
+    '<div style="display:flex;gap:10px;margin-bottom:26px">' + box(c.due < 0 ? 'החזר צפוי' : 'מע״מ לתשלום (צפי)', Math.abs(c.due), true) + '</div>' +
+    H('תשומות לפי קטגוריה') + (catRows.length ? _vTable(['קטגוריה', 'מסמכים', 'סכום כולל', 'מע״מ במסמכים', 'ניכוי', 'מע״מ לניכוי'], catRows, ['30%', '10%', '16%', '16%', '10%', '18%']) : '<div style="font-size:13px;color:#5f5f66">לא הוזנו מסמכי הוצאות.</div>') +
+    (vatS.incErr ? '<div style="margin-top:18px;font-size:12px;color:#a05a00">שים לב: ' + _vEsc(vatS.incErr) + '</div>' : '') +
+    '<div style="margin-top:auto;font-size:11px;color:#86868b;padding-bottom:18px">הסכומים לפי המסמכים שהוזנו וחשבוניות מורנינג (חשבוניות מס, מס/קבלה וזיכוי, לפי תאריך המסמך). שיעורי הניכוי לפי ההגדרות באפליקציה — לבדיקת רו״ח.</div>';
+  if (expOnly) p1 = '<div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #1d1d1f;padding-bottom:12px;margin-bottom:20px"><div><div style="font-size:26px;font-weight:700">מסמכי הוצאות — ' + _vEsc(_vLabel()) + '</div><div style="font-size:13px;color:#5f5f66;margin-top:4px">נפטון · הוכן ' + new Date().toLocaleDateString('he-IL') + ' · ' + docs.length + ' מסמכים</div></div></div>' +
+    '<div style="display:flex;gap:10px;margin-bottom:10px">' + box('הוצאות (כולל מע״מ)', c.exp) + box('מע״מ במסמכים', c.innFull) + '</div>' +
+    '<div style="display:flex;gap:10px;margin-bottom:26px">' + box('מע״מ לניכוי', c.inn, true) + '</div>' +
+    H('לפי קטגוריה') + (catRows.length ? _vTable(['קטגוריה', 'מסמכים', 'סכום כולל', 'מע״מ במסמכים', 'ניכוי', 'מע״מ לניכוי'], catRows, ['30%', '10%', '16%', '16%', '10%', '18%']) : '<div style="font-size:13px;color:#5f5f66">לא הוזנו מסמכי הוצאות.</div>') +
+    '<div style="margin-top:auto;font-size:11px;color:#86868b;padding-bottom:18px">צילומי המסמכים מצורפים בהמשך, ממוספרים לפי הטבלה. שיעורי הניכוי לפי ההגדרות באפליקציה — לבדיקת רו״ח.</div>';
+  var pages = [p1];
+  // הכנסות
+  var incRows = inc.map(function (d) { return [_vDt(d.date), String(d.number || ''), TYPES[d.type] || String(d.type), d.client, d.net, d.vat, d.total]; });
+  if (incRows.length) { var t2 = ['סה״כ', '', '', inc.length + ' מסמכים', c.net, c.out, c.net + c.out]; t2._b = 1; incRows.push(t2); }
+  for (var i = 0; !expOnly && i < incRows.length; i += 38) pages.push(H('הכנסות — חשבוניות ממורנינג', i ? 'המשך' : '') + _vTable(['תאריך', 'מס׳', 'סוג', 'לקוח', 'לפני מע״מ', 'מע״מ', 'כולל'], incRows.slice(i, i + 38), ['11%', '9%', '15%', '26%', '13%', '12%', '14%']));
+  // הוצאות
+  var expRows = docs.map(function (d, k) { return [String(k + 1), _vDt(d.date), d.supplier || '', String(d.number || ''), d.category || 'אחר', +d.total || 0, +d.vat || 0]; });
+  if (expRows.length) { var t3 = ['', 'סה״כ', '', '', '', c.exp, c.innFull]; t3._b = 1; expRows.push(t3); }
+  for (i = 0; i < expRows.length; i += 38) pages.push(H('הוצאות — מסמכים', (i ? 'המשך · ' : '') + 'המספר בעמודה הראשונה תואם לנספח') + _vTable(['#', 'תאריך', 'ספק', 'מס׳', 'קטגוריה', 'כולל', 'מע״מ'], expRows.slice(i, i + 38), ['5%', '12%', '27%', '11%', '19%', '13%', '13%']));
+  // נספח: צילומי המסמכים, שניים בעמוד
+  var att = docs.map(function (d, k) { return { d: d, k: k + 1 }; }).filter(function (x) { return x.d.name; });
+  var imgs = att.filter(function (x) { return /^image\//.test(x.d.type); }), pdfs = att.filter(function (x) { return !/^image\//.test(x.d.type); });
+  return Promise.all(imgs.map(function (x) { return _vBlob(x.d.id).then(function (u) { x.u = u; }).catch(function () {}); })).then(function () {
+    var ok = imgs.filter(function (x) { return x.u; });
+    ok.forEach(function (x, j) {
+      pages.push(H('נספח — מסמך #' + x.k, j ? '' : 'צילומי המסמכים לפי מספר הטבלה') +
+        '<div style="font-size:13px;font-weight:600;margin-bottom:8px">' + _vEsc(x.d.supplier || '') + ' · ' + _vDt(x.d.date) + (x.d.number ? ' · מס׳ ' + _vEsc(x.d.number) : '') + ' · ₪' + _vm2(x.d.total) + ' · מע״מ ₪' + _vm2(x.d.vat) + '</div>' +
+        '<div style="flex:1;min-height:0;border:1px solid #e5e5e7;border-radius:8px;background:#fafafa;display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:24px"><img src="' + x.u + '" style="max-width:100%;max-height:930px;object-fit:contain" alt=""></div>');
+    });
+    if (pdfs.length) pages.push(H('נספח — מסמכים בקובץ PDF', 'נשמרו באפליקציה, אפשר לשלוח בנפרד') + _vTable(['#', 'ספק', 'תאריך', 'קובץ'], pdfs.map(function (x) { return [String(x.k), x.d.supplier || '', _vDt(x.d.date), x.d.name]; }), ['8%', '35%', '17%', '40%']));
+    return pages;
+  });
+}
+
+function vatRepMode(m) { vatS.repMode = m; vatPdf(true); }
+function vatPdf(keep) {
+  if (vatS.loading) { showToast('רגע, הנתונים עוד נטענים'); return; }
+  if (!vatS.inc && !vatS.docs.length) { showToast('אין נתונים לתקופה הזו'); return; }
+  var box = document.getElementById('vr-pages');
+  if (keep !== true) vatS.repMode = 'full';
+  var md = vatS.repMode || 'full';
+  document.getElementById('vr-m-full').classList.toggle('on', md === 'full'); document.getElementById('vr-m-exp').classList.toggle('on', md === 'exp');
+  document.getElementById('vr-title').textContent = (md === 'exp' ? 'מסמכי הוצאות — ' : 'דוח מע״מ — ') + _vLabel();
+  var pb = document.getElementById('vr-pdf'); pb.textContent = 'שמירה כ-PDF'; pb.onclick = function () { vatRepPdf(pb); };
+  box.innerHTML = '<div class="vat-empty">מכין את הדוח…</div>';
+  vatS.pages = null; document.getElementById('vr-pdf').disabled = true; document.getElementById('vr-print').disabled = true;
+  openModal('modal-vatrep');
+  _vBuildPages(md).then(function (pages) {
+    if ((vatS.repMode || 'full') !== md) return;
+    vatS.pages = pages;
+    var w = Math.min((box.clientWidth || 624) - 24, 794), k = w / 794;
+    box.innerHTML = pages.map(function (h, n) { return '<div class="vr-pg" style="height:' + Math.round(1123 * k) + 'px"><div style="transform:scale(' + k + ');transform-origin:top right;width:794px">' + _vPage(h, n + 1, pages.length) + '</div></div>'; }).join('');
+    document.getElementById('vr-pdf').disabled = false; document.getElementById('vr-print').disabled = false;
+    document.getElementById('vr-n').textContent = pages.length + ' עמודים';
+  }).catch(function () { box.innerHTML = '<div class="vat-empty">לא הצלחתי להכין את הדוח — נסה שוב</div>'; });
+}
+function vatRepPrint() {
+  if (!vatS.pages) return;
+  var el = document.getElementById('vat-print');
+  if (!el) { el = document.createElement('div'); el.id = 'vat-print'; document.body.appendChild(el); }
+  el.innerHTML = vatS.pages.map(function (h, n) { return '<div class="vp-pg">' + _vPage(h, n + 1, vatS.pages.length) + '</div>'; }).join('');
+  document.body.classList.add('vat-printing');
+  var done = function () { document.body.classList.remove('vat-printing'); el.innerHTML = ''; window.removeEventListener('afterprint', done); };
+  window.addEventListener('afterprint', done);
+  var imgs = Array.prototype.slice.call(el.querySelectorAll('img'));
+  Promise.all(imgs.map(function (im) { return im.complete ? 0 : new Promise(function (r) { im.onload = im.onerror = r; }); })).then(function () {
+    setTimeout(function () { window.print(); setTimeout(function () { if (!/Mobi|iPhone|iPad|Android/i.test(navigator.userAgent)) done(); }, 500); }, 100);
+  });
+}
+function vatRepPdf(btn) {
+  if (!vatS.pages) return;
+  if (!window.jspdf) { showToast('ספריית ה-PDF לא נטענה — נסה שוב עם אינטרנט'); return; }
+  var pages = vatS.pages, old = btn.innerHTML; btn.disabled = true; btn.textContent = 'מכין…';
+  _loadH2C().then(function () {
+    var pdf = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    var host = document.createElement('div'); host.style.cssText = 'position:fixed;left:-10000px;top:0;width:794px;z-index:-1'; document.body.appendChild(host);
+    var chain = Promise.resolve();
+    pages.forEach(function (html, n) {
+      chain = chain.then(function () {
+        btn.textContent = 'עמוד ' + (n + 1) + ' מתוך ' + pages.length + '…';
+        host.innerHTML = _vPage(html, n + 1, pages.length);
+        return html2canvas(host.firstChild, { scale: 2, backgroundColor: '#ffffff', useCORS: true }).then(function (cv) {
+          if (n) pdf.addPage(); pdf.addImage(cv.toDataURL('image/jpeg', 0.88), 'JPEG', 0, 0, 210, 297);
+        });
+      });
+    });
+    return chain.then(function () { host.remove(); return pdf; }, function (e) { host.remove(); throw e; });
+  }).then(function (pdf) {
+    var blob = pdf.output('blob'), fname = (vatS.repMode === 'exp' ? 'Neptun-expenses-' : 'Neptun-VAT-') + vatS.start + (_vBi() ? '_' + _vEnd() : '') + '.pdf', file = null;
+    try { file = new File([blob], fname, { type: 'application/pdf' }); } catch (e) {}
+    var mobile = /Mobi|iPhone|iPad|Android/i.test(navigator.userAgent);
+    if (mobile && file && navigator.canShare && navigator.canShare({ files: [file] })) {
+      btn.disabled = false; btn.textContent = 'שליחה / שמירה בקבצים';
+      btn.onclick = function () { navigator.share({ files: [file], title: (vatS.repMode === 'exp' ? 'מסמכי הוצאות ' : 'דוח מע״מ ') + _vLabel() }).catch(function () {}); };
+      showToast('✅ ה-PDF מוכן — לחץ "שליחה / שמירה בקבצים"');
+      return;
+    }
+    var url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = fname; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    btn.disabled = false; btn.innerHTML = old; showToast('✅ ה-PDF נשמר');
+  }).catch(function () { btn.disabled = false; btn.innerHTML = old; showToast('לא הצלחתי ליצור PDF — נסה "הדפסה" ושם "שמור כ-PDF"'); });
+}
+</script>
+
 </body>
 </html>

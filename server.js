@@ -11,7 +11,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 app.use(cors({ origin: '*', methods: ['GET','POST','OPTIONS'], allowedHeaders: ['Content-Type','x-app-token'] }));
 const jsonSmall = express.json({ limit: '10mb' });
 // קבצים (צילומי שעות וכו') מקבלים גבול גדול יותר — שאר הנתיבים נשארים עם 10MB
-app.use((req, res, next) => (req.path.startsWith('/api/files') ? next() : jsonSmall(req, res, next)));
+app.use((req, res, next) => ((req.path.startsWith('/api/files') || req.path === '/api/vat/doc' || req.path === '/api/vat/scan') ? next() : jsonSmall(req, res, next)));
 
 // ===== MongoDB =====
 const MONGO_URI = process.env.MONGODB_URI;
@@ -48,7 +48,7 @@ function tokenOk(req) {
   return crypto.timingSafeEqual(Buffer.from(got), Buffer.from(exp));
 }
 // כשמוגדרת סיסמה — כל נתיבי הנתונים דורשים התחברות
-const PROTECTED = ['/api/files', '/api/state', '/api/data', '/api/clients', '/api/invoice', '/api/transactions', '/api/assistant', '/api/reminders/sync', '/api/green-invoice'];
+const PROTECTED = ['/api/files', '/api/state', '/api/data', '/api/clients', '/api/invoice', '/api/transactions', '/api/assistant', '/api/reminders/sync', '/api/green-invoice', '/api/vat'];
 app.use((req, res, next) => {
   if (req.method === 'OPTIONS' || !process.env.APP_PASSWORD) return next();
   if (req.path === '/api/state/status') return next();
@@ -795,6 +795,161 @@ app.post('/api/assistant', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// ===== מע״מ: חשבוניות הכנסה מהתקופה + מסמכי הוצאות (צילום/סריקה/קובץ) =====
+const VAT_RATE = Number(process.env.VAT_RATE || 0.18);
+const VAT_CATS = ['חומרי ניקיון וציוד', 'דלק', 'רכב — טיפולים וחלקים', 'תקשורת', 'ביטוח', 'שכירות', 'שירותים מקצועיים', 'פרסום', 'ציוד משרדי ומחשוב', 'כיבוד ואירוח', 'אחר'];
+const _ym = s => /^\d{4}-\d{2}$/.test(String(s || ''));
+const _incCache = new Map();
+// GET /api/vat/income?from=YYYY-MM&to=YYYY-MM — חשבוניות מס (305), מס/קבלה (320), זיכוי (330) לפי תאריך המסמך
+app.get('/api/vat/income', async (req, res) => {
+  try {
+    const from = String(req.query.from || ''), to = String(req.query.to || from);
+    if (!_ym(from) || !_ym(to) || to < from) return res.status(400).json({ error: 'תקופה לא תקינה' });
+    const key = from + '_' + to, hit = _incCache.get(key);
+    if (hit && !req.query.fresh && Date.now() - hit.t < 5 * 60 * 1000) return res.json(hit.data);
+    const token = await getGiToken();
+    if (!token) return res.status(502).json({ error: 'לא הצלחתי להתחבר למורנינג' });
+    const [ty, tm] = to.split('-').map(Number);
+    const fromDate = from + '-01', toDate = new Date(Date.UTC(ty, tm, 0)).toISOString().slice(0, 10);
+    const docs = await giSearchAll(token, { type: [305, 320, 330], fromDate, toDate, sort: 'documentDate' }, 10);
+    const r2 = n => Math.round(n * 100) / 100;
+    const items = [];
+    docs.forEach(d => {
+      if (d.status === 3 || d.status === 4) return;
+      const date = String(d.documentDate || d.creationDate || '').slice(0, 10);
+      if (date < fromDate || date > toDate) return;
+      const sign = d.type === 330 ? -1 : 1;
+      const total = Math.abs(Number(d.amount != null ? d.amount : (d.total != null ? d.total : d.amountLocal)) || 0);
+      let vat = d.vat != null ? Math.abs(Number(d.vat)) : null;
+      if (vat == null && d.amountExcludeVat != null) vat = total - Math.abs(Number(d.amountExcludeVat));
+      if (vat == null || isNaN(vat)) vat = total * VAT_RATE / (1 + VAT_RATE);
+      items.push({ id: d.id, number: d.number || null, type: d.type, date, client: (d.client && d.client.name) || '', clientId: (d.client && d.client.id) || '',
+        total: r2(sign * total), vat: r2(sign * vat), net: r2(sign * (total - vat)), url: (d.url && (d.url.he || d.url.origin)) || null });
+    });
+    const data = { from, to, items, at: new Date().toISOString() };
+    _incCache.set(key, { t: Date.now(), data });
+    res.json(data);
+  } catch (err) { console.error('vat/income', err); res.status(500).json({ error: err.message }); }
+});
+
+const VAT_FILE_MAX = 15 * 1024 * 1024;
+const _vatMeta = f => ({ id: String(f._id), claim: f.claim, supplier: f.supplier, date: f.date, number: f.number, total: f.total, vat: f.vat, category: f.category,
+  note: f.note, name: f.name, type: f.type, size: f.size, createdAt: f.createdAt });
+const _vatFields = b => {
+  const o = {};
+  if (b.supplier !== undefined) o.supplier = String(b.supplier || '').slice(0, 120);
+  if (b.date !== undefined) o.date = /^\d{4}-\d{2}-\d{2}$/.test(b.date) ? b.date : '';
+  if (b.number !== undefined) o.number = String(b.number || '').slice(0, 40);
+  if (b.total !== undefined) o.total = Math.round((Number(b.total) || 0) * 100) / 100;
+  if (b.vat !== undefined) o.vat = Math.round((Number(b.vat) || 0) * 100) / 100;
+  if (b.category !== undefined) o.category = String(b.category || 'אחר').slice(0, 60);
+  if (b.note !== undefined) o.note = String(b.note || '').slice(0, 300);
+  if (b.claim !== undefined && _ym(b.claim)) o.claim = b.claim;
+  return o;
+};
+app.post('/api/vat/doc', express.json({ limit: '25mb' }), async (req, res) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'DB לא מוכן' });
+    const b = req.body || {};
+    if (!_ym(b.claim)) return res.status(400).json({ error: 'חסר חודש' });
+    const doc = { ..._vatFields(b), createdAt: new Date() };
+    if (typeof b.data === 'string' && b.data) {
+      const buf = Buffer.from(b.data, 'base64');
+      if (!buf.length || buf.length > VAT_FILE_MAX) return res.status(413).json({ error: 'הקובץ גדול מדי (עד 15MB)' });
+      Object.assign(doc, { name: String(b.name || 'מסמך').slice(0, 120), type: String(b.type || 'application/octet-stream').slice(0, 100), size: buf.length, data: buf });
+    }
+    const r = await db.collection('vatdocs').insertOne(doc);
+    doc._id = r.insertedId;
+    res.json(_vatMeta(doc));
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+app.get('/api/vat/docs', async (req, res) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'DB לא מוכן' });
+    const from = String(req.query.from || ''), to = String(req.query.to || from);
+    if (!_ym(from) || !_ym(to)) return res.status(400).json({ error: 'תקופה לא תקינה' });
+    const list = await db.collection('vatdocs').find({ claim: { $gte: from, $lte: to } }, { projection: { data: 0 } }).sort({ date: 1, createdAt: 1 }).limit(1000).toArray();
+    res.json(list.map(_vatMeta));
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+app.get('/api/vat/doc/:id/file', async (req, res) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'DB לא מוכן' });
+    const { ObjectId } = require('mongodb');
+    const f = await db.collection('vatdocs').findOne({ _id: new ObjectId(String(req.params.id)) });
+    if (!f || !f.data) return res.status(404).json({ error: 'לא נמצא' });
+    const buf = Buffer.isBuffer(f.data) ? f.data : Buffer.from(f.data.buffer || f.data);
+    res.set('Content-Type', f.type || 'application/octet-stream');
+    res.set('Content-Disposition', "inline; filename*=UTF-8''" + encodeURIComponent(f.name || 'file'));
+    res.send(buf);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+app.post('/api/vat/doc/:id/update', async (req, res) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'DB לא מוכן' });
+    const { ObjectId } = require('mongodb');
+    const set = _vatFields(req.body || {});
+    const f = await db.collection('vatdocs').findOneAndUpdate({ _id: new ObjectId(String(req.params.id)) }, { $set: set }, { returnDocument: 'after', projection: { data: 0 } });
+    const d = f && (f.value !== undefined ? f.value : f);
+    if (!d) return res.status(404).json({ error: 'לא נמצא' });
+    res.json(_vatMeta(d));
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+app.post('/api/vat/doc/:id/delete', async (req, res) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'DB לא מוכן' });
+    const { ObjectId } = require('mongodb');
+    await db.collection('vatdocs').deleteOne({ _id: new ObjectId(String(req.params.id)) });
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST /api/vat/scan {data (base64), type} — קריאת פרטי המסמך עם AI (אם מוגדר מפתח)
+app.post('/api/vat/scan', express.json({ limit: '25mb' }), async (req, res) => {
+  try {
+    const key = process.env.ANTHROPIC_API_KEY, gKey = process.env.GEMINI_API_KEY;
+    if (!key && !gKey) return res.status(501).json({ error: 'no_ai' });
+    const ip = req.ip || 'x', now = Date.now();
+    const arr = (aiHits.get('scan_' + ip) || []).filter(t => now - t < 3600000);
+    if (arr.length >= 60) return res.status(429).json({ error: 'יותר מדי סריקות, נסה מאוחר יותר' });
+    arr.push(now); aiHits.set('scan_' + ip, arr);
+    const b = req.body || {};
+    const type = String(b.type || '');
+    if (typeof b.data !== 'string' || !b.data || !/^(image\/(jpeg|png|webp|gif)|application\/pdf)$/.test(type)) return res.status(400).json({ error: 'סוג קובץ לא נתמך' });
+    const prompt = `זה מסמך הוצאה (חשבונית/קבלה) של עסק ניקיון בישראל. חלץ את הפרטים. סכומים בשקלים כמספרים. total = הסכום הכולל לתשלום כולל מע"מ. vat = סכום המע"מ שמופיע במסמך (0 אם אין מע"מ, למשל ביטוח או עוסק פטור). date בפורמט YYYY-MM-DD. number = מספר החשבונית/הקבלה. supplier = שם העסק שהנפיק את המסמך (לא נפטון). category אחת מהרשימה. אם פרט לא מופיע – השאר ריק.`;
+    const schema = { type: 'object', properties: { supplier: { type: 'string' }, date: { type: 'string' }, number: { type: 'string' }, total: { type: 'number' }, vat: { type: 'number' },
+      category: { type: 'string', enum: VAT_CATS } }, required: ['supplier', 'total', 'category'] };
+    let out = null;
+    if (key) {
+      const block = type === 'application/pdf' ? { type: 'document', source: { type: 'base64', media_type: type, data: b.data } } : { type: 'image', source: { type: 'base64', media_type: type, data: b.data } };
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST', headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+        body: JSON.stringify({ model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-5', max_tokens: 800,
+          tools: [{ name: 'doc', description: 'פרטי המסמך', input_schema: schema }], tool_choice: { type: 'tool', name: 'doc' },
+          messages: [{ role: 'user', content: [block, { type: 'text', text: prompt }] }] })
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) return res.status(502).json({ error: (data.error && data.error.message) || 'שגיאת AI' });
+      const tb = (data.content || []).find(x => x.type === 'tool_use'); out = tb && tb.input;
+    } else {
+      const up = s => Array.isArray(s) ? s.map(up) : (s && typeof s === 'object') ? Object.fromEntries(Object.entries(s).map(([k, v]) => [k, k === 'type' && typeof v === 'string' ? v.toUpperCase() : up(v)])) : s;
+      const model = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+      const gr = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method: 'POST', headers: { 'x-goog-api-key': gKey, 'content-type': 'application/json' },
+        body: JSON.stringify({ contents: [{ role: 'user', parts: [{ inline_data: { mime_type: type, data: b.data } }, { text: prompt }] }],
+          generationConfig: { responseMimeType: 'application/json', responseSchema: up(schema) } })
+      });
+      const gd = await gr.json().catch(() => ({}));
+      if (!gr.ok) return res.status(502).json({ error: (gd.error && gd.error.message) || 'שגיאת AI' });
+      const t = (((gd.candidates || [])[0] || {}).content || {}).parts || [];
+      try { out = JSON.parse((t.find(p => p.text) || {}).text || 'null'); } catch (e) { out = null; }
+    }
+    if (!out) return res.status(502).json({ error: 'לא הצלחתי לקרוא את המסמך' });
+    if (out.category && !VAT_CATS.includes(out.category)) out.category = 'אחר';
+    res.json(out);
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ===== REMINDERS + WHATSAPP (GREEN-API) =====
