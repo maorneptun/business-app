@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#f5f5f7">
+<script>(function(){try{var t=localStorage.getItem('nep__theme')||'auto',d=t==='dark'||(t==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.documentElement.setAttribute('data-dark','');if(localStorage.getItem('nep__fs')==='big')document.documentElement.classList.add('fs-big');}catch(e){}})()</script>
 <link rel="manifest" href="manifest.webmanifest?v=2">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=2">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=2">
@@ -1282,6 +1283,64 @@ body.kb-open .ai-fab { display: none; }
 .vd-lbl { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
 #vd-cats { gap: 6px; }
 #vd-cats .rm-chip { min-height: 36px; padding: 0 12px; font-size: 13.5px; }
+/* ===== הגדרות במובייל ===== */
+#set-m { display: none; }
+@media (max-width: 700px) {
+  #page-settings > div:not(.page-header):not(#set-m) { display: none !important; }
+  #page-settings .page-subtitle { display: none; }
+  #set-m { display: flex; flex-direction: column; gap: 24px; padding-bottom: 24px; }
+}
+.sm-g { display: flex; flex-direction: column; gap: 8px; }
+.sm-gt { font-size: 13px; color: var(--text-muted); padding: 0 16px; font-weight: 500; }
+.sm-card { background: var(--surface); border-radius: 16px; overflow: hidden; }
+.sm-r { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 54px; padding: 8px 16px; border: none; border-bottom: 1px solid var(--border); background: none; width: 100%; font: inherit; color: var(--text); text-align: right; }
+.sm-r:last-child { border-bottom: none; }
+button.sm-r { cursor: pointer; }
+button.sm-r:active { background: var(--bg); }
+.sm-r .l { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.sm-r .l b { font-size: 16px; font-weight: 500; }
+.sm-r .l small { font-size: 13px; color: var(--text-muted); }
+.sm-r .v { display: flex; align-items: center; gap: 6px; font-size: 15px; color: var(--text-muted); flex: none; }
+.sm-r .chev { font-size: 20px; color: var(--border-strong); line-height: 1; }
+.sm-r.act b { color: var(--accent); }
+.sm-r.danger b { color: #C0392B; }
+.sm-ok { color: #2E8B57; }
+.sm-sw { width: 51px; height: 31px; border-radius: 16px; background: #D7DBE1; position: relative; border: none; flex: none; cursor: pointer; transition: background .2s; padding: 0; }
+.sm-sw::after { content: ""; position: absolute; top: 2px; right: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: right .2s; }
+.sm-sw[aria-checked="true"] { background: #34A853; }
+.sm-sw[aria-checked="true"]::after { right: 22px; }
+.sm-sw:disabled { opacity: .5; cursor: default; }
+.sm-seg { display: flex; background: var(--bg-chip); border-radius: 10px; padding: 3px; gap: 2px; }
+.sm-seg button { border: none; background: none; font: inherit; font-size: 14px; color: var(--text-muted); padding: 7px 11px; border-radius: 8px; cursor: pointer; min-height: 34px; }
+.sm-seg button[aria-pressed="true"] { background: var(--surface); color: var(--text); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+.sm-foot { font-size: 13px; color: var(--text-muted); text-align: center; }
+.sm-note { font-size: 13px; color: var(--text-muted); padding: 0 6px; line-height: 1.5; }
+.sm-modal .modal { background: var(--bg); }
+.sm-modal .sm-body { display: flex; flex-direction: column; gap: 22px; }
+.hl-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px; padding: 6px 12px 6px 16px; border-bottom: 1px solid var(--border); background: var(--surface); }
+.hl-row:last-child { border-bottom: none; }
+.hl-row.drag { position: relative; z-index: 2; box-shadow: 0 6px 18px rgba(0,0,0,.15); border-radius: 12px; }
+.hl-h { display: flex; align-items: center; gap: 10px; font-size: 16px; }
+.hl-row.off .hl-n { color: var(--text-muted); }
+.hl-grip { width: 44px; height: 44px; display: grid; place-items: center; border: none; background: none; color: var(--text-muted); cursor: grab; touch-action: none; }
+.hl-grip svg { width: 22px; height: 22px; }
+/* סידור דף הבית */
+#page-employees.active { display: flex; flex-direction: column; }
+#page-employees > * { flex: none; }
+.hh-off { display: none !important; }
+/* גודל טקסט */
+html.fs-big .main-content { zoom: 1.12; }
+/* מצב כהה */
+html[data-dark] { color-scheme: dark; --primary: #f2f2f4; --accent: #6E9BD1; --accent-light: #1e2936; --accent-mid: #7FA6D4; --danger-light: #3a2522; --warning-light: #3a3020; --info: #7FA6D4; --info-light: #1e2936; --success-light: #243022; --bg: #0f1012; --bg-chip: #2a2b2f; --surface: #1c1d20; --border: #2e2f34; --border-strong: #44454b; --text: #f2f2f4; --text-muted: #a5a5ac; --shabbat: #3a2a17; --holiday: #2c2338; --shadow: none; --shadow-md: 0 4px 16px rgba(0,0,0,.4); }
+html[data-dark] body { background: var(--bg); }
+html[data-dark] :is([style*="background:#fff"], [style*="background: #fff"], [style*="background:white"], [style*="background: white"], [style*="background:#FFF"], [style*="background: #FFF"]):not(.vr-pg *):not(#vat-print *):not(.vr-pg) { background: var(--surface) !important; }
+html[data-dark] :is([style*="color:#1d1d1f"], [style*="color: #1d1d1f"]):not(.vr-pg *):not(#vat-print *) { color: var(--text) !important; }
+html[data-dark] :is(input, select, textarea) { background-color: var(--surface); color: var(--text); border-color: var(--border); }
+html[data-dark] .sm-sw:not([aria-checked="true"]) { background: #3a3b41; }
+@media (max-width: 700px) { html[data-dark] .sidebar { background: rgba(28,29,32,0.94); } }
+html[data-dark] :is(.qr-done, .qr-cur, .qr-input, .qr-sum, .rem-chk, .ip-row .form-control, .mh-input) { background: var(--surface); color: var(--text); }
+html[data-dark] .am-tip { color: var(--bg); }
+html[data-dark] .modal-overlay { background: rgba(0,0,0,.55); }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -2176,6 +2235,7 @@ body.kb-open .ai-fab { display: none; }
         <div class="page-subtitle">ניהול נתונים וגיבויים</div>
       </div>
     </div>
+    <div id="set-m" aria-label="הגדרות"></div>
 
     <div style="max-width:700px;display:flex;flex-direction:column;gap:10px">
 
@@ -3416,6 +3476,7 @@ function todayISO(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMo
     else html += '<div style="font-size:13px;color:var(--text-muted)">הסנכרון עוד לא הופעל בשרת (חסר APP_PASSWORD ב-Render).</div>';
     html += '</div><div id="sync-backups"></div>';
     el.innerHTML = html;
+    if (typeof setMRender === 'function') setMRender();
   }
   function backups() {
     var box = document.getElementById('sync-backups'); if (!box) return;
@@ -3880,7 +3941,7 @@ function showPage(name) {
   if (name === 'hours') { renderHoursTable(); }
   if (name === 'inactive-employees') { renderInactiveEmployees(); }
   if (name === 'replacements-dashboard') { renderReplacementsDashboard(); }
-  if (name === 'settings') { renderSettingsStats(); }
+  if (name === 'settings') { renderSettingsStats(); if (typeof setMRender === 'function') setMRender(); }
   if (name === 'vat') { vatInit(); }
   if (name === 'emp-profile') { /* already rendered by openEmpProfile */ }
 }
@@ -12108,6 +12169,214 @@ function vatRepPdf(btn) {
     btn.disabled = false; btn.innerHTML = old; showToast('✅ ה-PDF נשמר');
   }).catch(function () { btn.disabled = false; btn.innerHTML = old; showToast('לא הצלחתי ליצור PDF — נסה "הדפסה" ושם "שמור כ-PDF"'); });
 }
+</script>
+
+<!-- ===== הגדרות: התראות ===== -->
+<div class="modal-overlay sm-modal" id="modal-snotif">
+  <div class="modal" style="width:480px">
+    <div class="modal-header">
+      <div class="modal-title">התראות לטלפון</div>
+      <button class="modal-close" onclick="closeModal('modal-snotif')" aria-label="סגור">×</button>
+    </div>
+    <div class="sm-body" id="sn-body"></div>
+  </div>
+</div>
+<!-- ===== הגדרות: סידור דף הבית ===== -->
+<div class="modal-overlay sm-modal" id="modal-shome">
+  <div class="modal" style="width:480px">
+    <div class="modal-header">
+      <div class="modal-title">סידור דף הבית</div>
+      <button class="modal-close" onclick="closeModal('modal-shome')" aria-label="סגור">×</button>
+    </div>
+    <div class="sm-body">
+      <div class="sm-note">גרור את הידית כדי לשנות סדר, כבה כדי להסתיר</div>
+      <div class="sm-card" id="hl-list"></div>
+      <button type="button" class="btn btn-secondary" onclick="homeReset()">חזרה לסידור ברירת המחדל</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== הגדרות במובייל: אבטחה, התראות, דף הבית, תצוגה, סנכרון, רענון ===== */
+var PUSH_API = 'https://business-app-hf5y.onrender.com/api/push';
+var HOME_ITEMS = [['hello', 'ברכה, תאריך ושעה', '#hello'], ['rem', 'תזכורות', '#page-employees > .rem-top'], ['act', 'כפתורי פעולה מהירה', '#page-employees > .act-grid'], ['mny', 'תשלומים מלקוחות', '#mny'],
+  ['stats', 'מספר עובדים וחיסורים', '#page-employees > .stats-grid'], ['abs', 'גרף חיסורים', '#abs-mini'], ['emp', 'גישה מהירה לעובדים', '#emp-grid-sec']];
+var PUSH_ROWS = [['inv', 'הפקת חשבוניות', 'ב-1 לחודש · 09:00'], ['vat', 'הכנת דוח מע״מ', 'ב-10 לחודש · 09:00'], ['open', 'חשבוניות פתוחות מעל 30 יום', 'בימי ראשון · 09:00'], ['rem', 'תזכורות שלי', 'בשעה שנקבעה בתזכורת']];
+function _smEsc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function _smLS(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
+function _smSw(on, fn, label, dis) { return '<button type="button" class="sm-sw" role="switch" aria-checked="' + (on ? 'true' : 'false') + '" aria-label="' + _smEsc(label) + '" onclick="' + fn + '"' + (dis ? ' disabled' : '') + '></button>'; }
+function _smRow(label, right, sub, cls, onclick) {
+  var tag = onclick ? 'button type="button"' : 'div';
+  return '<' + tag + ' class="sm-r' + (cls ? ' ' + cls : '') + '"' + (onclick ? ' onclick="' + onclick + '"' : '') + '><span class="l"><b>' + label + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</span><span class="v">' + (right || '') + '</span></' + (onclick ? 'button' : 'div') + '>';
+}
+function _smSeg(opts, cur, fn) { return '<span class="sm-seg" role="group">' + opts.map(function (o) { return '<button type="button" aria-pressed="' + (o[0] === cur) + '" onclick="' + fn + '(\'' + o[0] + '\')">' + o[1] + '</button>'; }).join('') + '</span>'; }
+function _smVer() { var d = new Date(document.lastModified); if (isNaN(d)) return ''; var p = function (n) { return String(n).padStart(2, '0'); }; return p(d.getDate()) + '.' + p(d.getMonth() + 1) + ' · ' + p(d.getHours()) + ':' + p(d.getMinutes()); }
+function _smAgo(t) { if (!t) return ''; var m = Math.round((Date.now() - t) / 60000); return m < 1 ? 'עכשיו' : m < 60 ? 'לפני ' + m + ' דק׳' : m < 1440 ? 'לפני ' + Math.round(m / 60) + ' שע׳' : 'לפני ' + Math.round(m / 1440) + ' ימים'; }
+function _pushOk() { return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window; }
+function _isIOS() { return /iPhone|iPad|iPod/.test(navigator.userAgent); }
+function _standalone() { return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; }
+
+function setMRender() {
+  var el = document.getElementById('set-m'); if (!el) return;
+  var S = (window.nepSync && nepSync.state) || {}, on = !!S.token, pkOk = !!window.PublicKeyCredential;
+  var pk = _smLS('nep__pk') === '1', lock = pk && _smLS('nep__lock') !== '0';
+  var html = '';
+  if (on && pkOk) html += '<div class="sm-g"><span class="sm-gt">אבטחה</span><div class="sm-card">' +
+    _smRow('זיהוי פנים', _smSw(pk, 'smFace()', 'זיהוי פנים')) +
+    _smRow('נעילה בכל פתיחה', _smSw(lock, 'smLock()', 'נעילה בכל פתיחה', !pk), pk ? 'אחרי 10 שניות ברקע' : 'דורש זיהוי פנים') + '</div></div>';
+  var pushOn = _smLS('nep__push') === '1', pp = _pushPrefsLocal(), cnt = PUSH_ROWS.filter(function (r) { return pp[r[0]]; }).length;
+  html += '<div class="sm-g"><span class="sm-gt">התראות ודף הבית</span><div class="sm-card">' +
+    _smRow('התראות לטלפון', (pushOn ? cnt + ' פעילות' : 'כבויות') + '<span class="chev" aria-hidden="true">‹</span>', 'חשבוניות, מע״מ, תזכורות', '', 'openNotif()') +
+    _smRow('סידור דף הבית', '<span class="chev" aria-hidden="true">‹</span>', 'אילו כרטיסים ובאיזה סדר', '', 'openHomeLayout()') + '</div></div>';
+  html += '<div class="sm-g"><span class="sm-gt">תצוגה</span><div class="sm-card">' +
+    _smRow('מראה', _smSeg([['light', 'בהיר'], ['dark', 'כהה'], ['auto', 'אוטומטי']], _smLS('nep__theme') || 'auto', 'setTheme')) +
+    _smRow('גודל טקסט', _smSeg([['', 'רגיל'], ['big', 'גדול']], _smLS('nep__fs') || '', 'setFontSize')) + '</div></div>';
+  var LBL = { ok: 'מסונכרן', saving: 'שומר…', connecting: 'מתחבר…', offline: 'אין חיבור', off: 'מקומי בלבד', login: 'נדרשת כניסה' };
+  html += '<div class="sm-g"><span class="sm-gt">חשבון וסנכרון</span><div class="sm-card">';
+  if (on) html += _smRow('מצב', '<span class="' + (S.status === 'ok' ? 'sm-ok' : '') + '">' + (LBL[S.status] || '—') + '</span>', S.lastOk ? 'סנכרון אחרון ' + _smAgo(S.lastOk) : '') +
+    _smRow('סנכרן עכשיו', '', '', 'act', 'smSyncNow()') + _smRow('התנתק במכשיר הזה', '', '', 'danger', 'nepSync.logout()');
+  else html += _smRow('כניסה לסנכרון', '', 'כדי לראות את אותם נתונים בכל המכשירים', 'act', 'nepSync.showLogin()');
+  html += '</div></div>';
+  html += '<div class="sm-g"><span class="sm-gt">אפליקציה</span><div class="sm-card">' +
+    _smRow('גרסה', _smVer()) + _smRow('רענון לגרסה האחרונה', '', '', 'act', 'smRefresh(this)') + '</div></div>';
+  html += '<div class="sm-foot">גיבוי, ייבוא עובדים, סטטיסטיקות וכלי תחזוקה זמינים במחשב</div>';
+  el.innerHTML = html;
+}
+function smFace() { if (_smLS('nep__pk') === '1') nepSync.disableFace(); else nepSync.enableFace(); setTimeout(setMRender, 300); }
+function smLock() { nepSync.setLock(_smLS('nep__lock') === '0'); setTimeout(setMRender, 300); }
+function smSyncNow() { nepSync.now(); showToast('מסנכרן…'); setTimeout(setMRender, 1500); }
+function smRefresh(btn) {
+  if (btn) btn.querySelector('b').textContent = 'מרענן…';
+  var p = Promise.resolve();
+  if ('serviceWorker' in navigator) p = navigator.serviceWorker.getRegistration().then(function (r) { return r && r.update(); }).catch(function () {});
+  p.then(function () { return window.caches ? caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); }) : 0; })
+    .catch(function () {}).then(function () { location.reload(); });
+}
+/* --- תצוגה --- */
+var _smMQ = window.matchMedia ? matchMedia('(prefers-color-scheme: dark)') : null;
+function applyTheme() {
+  var t = _smLS('nep__theme') || 'auto', d = t === 'dark' || (t === 'auto' && _smMQ && _smMQ.matches);
+  if (d) document.documentElement.setAttribute('data-dark', ''); else document.documentElement.removeAttribute('data-dark');
+  var m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', d ? '#0f1012' : '#f5f5f7');
+}
+if (_smMQ) { try { _smMQ.addEventListener('change', applyTheme); } catch (e) { _smMQ.addListener && _smMQ.addListener(applyTheme); } }
+function setTheme(t) { _smLS('nep__theme', t === 'auto' ? null : t); applyTheme(); setMRender(); }
+function setFontSize(v) { _smLS('nep__fs', v || null); document.documentElement.classList.toggle('fs-big', v === 'big'); setMRender(); }
+/* --- סידור דף הבית --- */
+function _homeCfg() { try { var c = JSON.parse(_smLS('nep_home') || '{}') || {}; } catch (e) { c = {}; } var keys = HOME_ITEMS.map(function (x) { return x[0]; });
+  var order = (Array.isArray(c.order) ? c.order : []).filter(function (k) { return keys.indexOf(k) >= 0; }); keys.forEach(function (k) { if (order.indexOf(k) < 0) order.push(k); });
+  return { order: order, off: Array.isArray(c.off) ? c.off : [] }; }
+function _homeSave(c) { _smLS('nep_home', JSON.stringify(c)); applyHome(); }
+function applyHome() {
+  var c = _homeCfg(), na = document.getElementById('notices-area');
+  if (na) na.style.order = 5;
+  Array.prototype.forEach.call(document.querySelectorAll('#page-employees > *'), function (n) { if (!n.style.order) n.style.order = 1000; });
+  c.order.forEach(function (k, i) {
+    var it = HOME_ITEMS.find(function (x) { return x[0] === k; }), n = it && document.querySelector(it[2]); if (!n) return;
+    n.style.order = 10 + i * 10; n.classList.toggle('hh-off', c.off.indexOf(k) >= 0);
+  });
+}
+function openHomeLayout() { renderHomeLayout(); openModal('modal-shome'); }
+function renderHomeLayout() {
+  var c = _homeCfg(), box = document.getElementById('hl-list');
+  box.innerHTML = c.order.map(function (k) {
+    var it = HOME_ITEMS.find(function (x) { return x[0] === k; }), off = c.off.indexOf(k) >= 0;
+    return '<div class="hl-row' + (off ? ' off' : '') + '" data-k="' + k + '"><span class="hl-h"><button type="button" class="hl-grip" aria-label="גרור כדי להזיז את ' + _smEsc(it[1]) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 9h14M5 15h14"/></svg></button><span class="hl-n">' + _smEsc(it[1]) + '</span></span>' +
+      _smSw(!off, 'homeToggle(\'' + k + '\')', 'הצג ' + it[1]) + '</div>';
+  }).join('');
+  Array.prototype.forEach.call(box.querySelectorAll('.hl-grip'), function (g) { g.addEventListener('pointerdown', _hlDown); });
+}
+function homeToggle(k) { var c = _homeCfg(), i = c.off.indexOf(k); if (i >= 0) c.off.splice(i, 1); else c.off.push(k); _homeSave(c); renderHomeLayout(); }
+function homeReset() { _smLS('nep_home', null); applyHome(); renderHomeLayout(); showToast('דף הבית חזר לסידור הרגיל'); }
+var _hl = null;
+function _hlDown(e) {
+  var row = e.currentTarget.closest('.hl-row'); if (!row) return;
+  e.preventDefault();
+  _hl = { row: row, y: e.clientY, id: e.pointerId }; row.classList.add('drag');
+  window.addEventListener('pointermove', _hlMove); window.addEventListener('pointerup', _hlUp); window.addEventListener('pointercancel', _hlUp);
+}
+function _hlMove(e) {
+  if (!_hl || e.pointerId !== _hl.id) return;
+  e.preventDefault();
+  var row = _hl.row, dy = e.clientY - _hl.y;
+  row.style.transform = 'translateY(' + dy + 'px)';
+  var prev = row.previousElementSibling, next = row.nextElementSibling;
+  if (next && dy > next.offsetHeight / 2) { row.parentNode.insertBefore(next, row); _hl.y += next.offsetHeight; row.style.transform = 'translateY(' + (e.clientY - _hl.y) + 'px)'; }
+  else if (prev && dy < -prev.offsetHeight / 2) { row.parentNode.insertBefore(row, prev); _hl.y -= prev.offsetHeight; row.style.transform = 'translateY(' + (e.clientY - _hl.y) + 'px)'; }
+}
+function _hlUp(e) {
+  if (!_hl) return;
+  window.removeEventListener('pointermove', _hlMove); window.removeEventListener('pointerup', _hlUp); window.removeEventListener('pointercancel', _hlUp);
+  _hl.row.classList.remove('drag'); _hl.row.style.transform = ''; _hl = null;
+  var c = _homeCfg(); c.order = Array.prototype.map.call(document.querySelectorAll('#hl-list .hl-row'), function (r) { return r.dataset.k; }); _homeSave(c);
+}
+/* --- התראות --- */
+function _pushPrefsLocal() { var d = { inv: true, vat: true, open: false, rem: true }; try { var p = JSON.parse(_smLS('nep__pushp') || '{}'); Object.keys(d).forEach(function (k) { if (p[k] !== undefined) d[k] = !!p[k]; }); } catch (e) {} return d; }
+function _b64u(s) { var p = '='.repeat((4 - s.length % 4) % 4), b = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')), a = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return a; }
+function _pushPost(path, body) { return fetch(PUSH_API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || r.status); return j; }); }); }
+function _pushSub() { return navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); }); }
+function openNotif() { renderNotif(); openModal('modal-snotif');
+  if (_pushOk() && _smLS('nep__push') === '1') _pushSub().then(function (s) {
+    if (!s) { _smLS('nep__push', null); renderNotif(); setMRender(); return; }
+    return _pushPost('/status', { endpoint: s.endpoint }).then(function (j) { if (!j.on) { _smLS('nep__push', null); } else _smLS('nep__pushp', JSON.stringify(j.prefs)); renderNotif(); setMRender(); });
+  }).catch(function () {});
+}
+function renderNotif(busy) {
+  var box = document.getElementById('sn-body'); if (!box) return;
+  var on = _smLS('nep__push') === '1', pp = _pushPrefsLocal(), html = '';
+  if (!_pushOk() || (_isIOS() && !_standalone())) {
+    box.innerHTML = '<div class="sm-card">' + _smRow('קבלת התראות במכשיר הזה', _smSw(false, '', '', true)) + '</div><div class="sm-note">' +
+      (_isIOS() ? 'באייפון התראות עובדות רק כשהאפליקציה מותקנת במסך הבית: ב-Safari לחץ על כפתור השיתוף ← "הוסף למסך הבית", ופתח משם.' : 'הדפדפן הזה לא תומך בהתראות. נסה ב-Chrome או מהאפליקציה המותקנת.') + '</div>';
+    return;
+  }
+  html += '<div class="sm-card">' + _smRow('קבלת התראות במכשיר הזה', _smSw(on, 'pushToggle()', 'קבלת התראות', busy), Notification.permission === 'denied' ? 'ההתראות נחסמו בהגדרות הטלפון' : '') + '</div>';
+  html += '<div class="sm-g"><span class="sm-gt">מה לשלוח</span><div class="sm-card">' + PUSH_ROWS.map(function (r) { return _smRow(r[1], _smSw(on && pp[r[0]], 'pushPref(\'' + r[0] + '\')', r[1], !on || busy), r[2]); }).join('') + '</div></div>';
+  if (on) html += '<button type="button" class="btn btn-secondary" onclick="pushTest(this)">שליחת התראת בדיקה</button>';
+  html += '<div class="sm-note">ההתראות נשלחות מהשרת. כדי שיגיעו בזמן גם כשאף אחד לא פתח את האפליקציה, השרת צריך להיות ער (שירות cron שפונה ל-/api/ping כל כמה דקות).</div>';
+  box.innerHTML = html;
+}
+function pushToggle() {
+  var on = _smLS('nep__push') === '1';
+  renderNotif(true);
+  if (on) {
+    _pushSub().then(function (s) { if (!s) return; return _pushPost('/unsubscribe', { endpoint: s.endpoint }).catch(function () {}).then(function () { return s.unsubscribe(); }); })
+      .catch(function () {}).then(function () { _smLS('nep__push', null); renderNotif(); setMRender(); showToast('ההתראות כובו במכשיר הזה'); });
+    return;
+  }
+  Notification.requestPermission().then(function (perm) {
+    if (perm !== 'granted') throw new Error(perm === 'denied' ? 'ההתראות חסומות — אפשר אותן בהגדרות הטלפון ← נפטון' : 'לא אושרו התראות');
+    return fetch(PUSH_API + '/key').then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || 'שגיאה'); return j.key; }); });
+  }).then(function (key) {
+    return navigator.serviceWorker.ready.then(function (reg) {
+      return reg.pushManager.getSubscription().then(function (old) { return old || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: _b64u(key) }); });
+    });
+  }).then(function (sub) {
+    return _pushPost('/subscribe', { sub: sub.toJSON(), prefs: _pushPrefsLocal(), device: (nepSync.state && nepSync.state.device) || '' });
+  }).then(function (j) {
+    _smLS('nep__push', '1'); _smLS('nep__pushp', JSON.stringify(j.prefs)); renderNotif(); setMRender(); showToast('✅ ההתראות הופעלו');
+  }).catch(function (e) { renderNotif(); showToast('⚠️ ' + (e.message || 'לא הצלחתי להפעיל התראות')); });
+}
+function pushPref(k) {
+  var pp = _pushPrefsLocal(); pp[k] = !pp[k]; _smLS('nep__pushp', JSON.stringify(pp)); renderNotif(); setMRender();
+  _pushSub().then(function (s) { if (s) return _pushPost('/prefs', { endpoint: s.endpoint, prefs: pp }); }).catch(function () { showToast('⚠️ השינוי לא נשמר בשרת'); });
+}
+function pushTest(btn) {
+  btn.disabled = true; btn.textContent = 'שולח…';
+  _pushSub().then(function (s) { if (!s) throw new Error('המכשיר לא רשום'); return _pushPost('/test', { endpoint: s.endpoint }); })
+    .then(function () { showToast('נשלחה התראת בדיקה'); }).catch(function (e) { showToast('⚠️ ' + e.message); })
+    .then(function () { btn.disabled = false; btn.textContent = 'שליחת התראת בדיקה'; });
+}
+/* PDF תמיד בהיר: מכבים מצב כהה בזמן הצילום */
+if (typeof _loadH2C === 'function') { var _smL = _loadH2C; _loadH2C = function () { return _smL.apply(this, arguments).then(function (x) {
+  if (window.html2canvas && !window.html2canvas.__nd) { var o = window.html2canvas; window.html2canvas = function (a, b) {
+    var root = document.documentElement, dk = root.hasAttribute('data-dark'); if (dk) root.removeAttribute('data-dark');
+    return o(a, b).then(function (c) { if (dk) applyTheme(); return c; }, function (e) { if (dk) applyTheme(); throw e; }); }; window.html2canvas.__nd = 1; }
+  return x; }); }; }
+/* ניווט מהתראה (#vat, #clients) */
+function _smNav(h) { h = String(h || '').replace(/^.*#/, ''); if (/^(vat|clients|absences|reports|settings)$/.test(h) && typeof showPage === 'function') { showPage(h); try { history.replaceState(null, '', location.pathname); } catch (e) {} } }
+if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', function (e) { if (e.data && e.data.type === 'nav') _smNav(e.data.url); });
+document.addEventListener('DOMContentLoaded', function () { applyTheme(); applyHome(); setMRender(); if (location.hash) setTimeout(function () { _smNav(location.hash); }, 300); });
+if (document.readyState !== 'loading') { applyTheme(); applyHome(); setMRender(); if (location.hash) setTimeout(function () { _smNav(location.hash); }, 300); }
 </script>
 
 </body>

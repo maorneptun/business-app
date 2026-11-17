@@ -48,7 +48,7 @@ function tokenOk(req) {
   return crypto.timingSafeEqual(Buffer.from(got), Buffer.from(exp));
 }
 // כשמוגדרת סיסמה — כל נתיבי הנתונים דורשים התחברות
-const PROTECTED = ['/api/files', '/api/state', '/api/data', '/api/clients', '/api/invoice', '/api/transactions', '/api/assistant', '/api/reminders/sync', '/api/green-invoice', '/api/vat'];
+const PROTECTED = ['/api/files', '/api/state', '/api/data', '/api/clients', '/api/invoice', '/api/transactions', '/api/assistant', '/api/reminders/sync', '/api/green-invoice', '/api/vat', '/api/push'];
 app.use((req, res, next) => {
   if (req.method === 'OPTIONS' || !process.env.APP_PASSWORD) return next();
   if (req.path === '/api/state/status') return next();
@@ -206,7 +206,7 @@ app.post('/api/auth/passkey/clear', async (req, res) => {
   try { const r = await db.collection('passkeys').deleteMany({}); res.json({ ok: true, deleted: r.deletedCount }); } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.get('/api/ping', (req, res) => res.json({ ok: true }));
+app.get('/api/ping', (req, res) => { res.json({ ok: true }); if (typeof pushSchedule === 'function') pushSchedule(); });
 
 // ===== סנכרון נתונים בין מכשירים =====
 // מסמך אחד: data = { מפתח: ערך JSON כטקסט }, kv = { מפתח: הגרסה שבה השתנה }
@@ -972,7 +972,7 @@ app.post('/api/reminders/sync', async (req, res) => {
       const set = { text: String(r.text).slice(0, 500), date: r.date, time, done: !!r.done, wa: r.wa !== false, repeat: r.repeat === 'daily' ? 'daily' : '' };
       const prev = await col.findOne({ id: String(r.id) });
       // תאריך/שעה השתנו (למשל תזכורת יומית שעברה ליום הבא) — לשלוח שוב
-      if (!prev || prev.date !== set.date || (prev.time || '') !== time) set.waSent = false;
+      if (!prev || prev.date !== set.date || (prev.time || '') !== time) { set.waSent = false; set.pushSent = false; }
       await col.updateOne({ id: String(r.id) }, { $set: set, $setOnInsert: { createdAt: new Date() } }, { upsert: true });
     }
     await col.deleteMany({ id: { $nin: ids } });
@@ -1000,6 +1000,7 @@ app.get('/api/reminders/tick', async (req, res) => {
   try {
     if (!cronAuth(req, res)) return;
     if (!db) return res.status(503).json({ error: 'DB לא מוכן' });
+    pushSchedule();
     const { date, hm } = israelNow();
     const defHour = (process.env.REMINDER_DEFAULT_TIME || '08:00');
     const due = await db.collection('reminders').find({ done: false, wa: true, date: { $lte: date }, $or: [{ waSent: { $ne: true } }, { repeat: 'daily' }] }).toArray();
@@ -1007,7 +1008,7 @@ app.get('/api/reminders/tick', async (req, res) => {
     for (const r of due) {
       // תזכורת יומית — מתגלגלת להיום גם אם האתר לא נפתח
       if (r.repeat === 'daily' && r.date < date) {
-        await db.collection('reminders').updateOne({ id: r.id }, { $set: { date, waSent: false } });
+        await db.collection('reminders').updateOne({ id: r.id }, { $set: { date, waSent: false, pushSent: false } });
         r.date = date; r.waSent = false;
       }
       if (r.waSent) continue;
@@ -1026,6 +1027,128 @@ app.get('/api/reminders/tick', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// ===== התראות לטלפון (Web Push) =====
+let webpush = null;
+try { webpush = require('web-push'); } catch (e) { console.warn('web-push לא מותקן — התראות כבויות'); }
+let _vapid = null;
+async function vapidKeys() {
+  if (_vapid) return _vapid;
+  if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) _vapid = { publicKey: process.env.VAPID_PUBLIC_KEY, privateKey: process.env.VAPID_PRIVATE_KEY };
+  else if (db && webpush) {
+    const col = db.collection('config');
+    let doc = await col.findOne({ _id: 'vapid' });
+    if (!doc) { const k = webpush.generateVAPIDKeys(); doc = { _id: 'vapid', publicKey: k.publicKey, privateKey: k.privateKey }; await col.insertOne(doc); }
+    _vapid = { publicKey: doc.publicKey, privateKey: doc.privateKey };
+  }
+  if (_vapid && webpush) webpush.setVapidDetails(process.env.VAPID_SUBJECT || 'https://neptun-employees.onrender.com', _vapid.publicKey, _vapid.privateKey);
+  return _vapid;
+}
+const PUSH_DEF = { inv: true, vat: true, open: false, rem: true };
+const _pushId = ep => require('crypto').createHash('sha256').update(String(ep)).digest('hex').slice(0, 32);
+const _pushPrefs = p => { const o = {}; Object.keys(PUSH_DEF).forEach(k => { o[k] = p && p[k] !== undefined ? !!p[k] : PUSH_DEF[k]; }); return o; };
+app.get('/api/push/key', async (req, res) => {
+  try { if (!webpush) return res.status(501).json({ error: 'השרת לא תומך בהתראות עדיין' }); const k = await vapidKeys(); if (!k) return res.status(503).json({ error: 'DB לא מוכן' }); res.json({ key: k.publicKey }); }
+  catch (err) { res.status(500).json({ error: err.message }); }
+});
+app.post('/api/push/subscribe', async (req, res) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'DB לא מוכן' });
+    const sub = req.body && req.body.sub;
+    if (!sub || typeof sub.endpoint !== 'string' || !/^https:\/\//.test(sub.endpoint) || !sub.keys || !sub.keys.p256dh || !sub.keys.auth) return res.status(400).json({ error: 'מנוי לא תקין' });
+    const id = _pushId(sub.endpoint), prefs = _pushPrefs(req.body.prefs);
+    await db.collection('pushsubs').updateOne({ _id: id }, { $set: { sub: { endpoint: sub.endpoint, keys: { p256dh: String(sub.keys.p256dh), auth: String(sub.keys.auth) } }, prefs, device: String(req.body.device || '').slice(0, 60), updatedAt: new Date() }, $setOnInsert: { createdAt: new Date() } }, { upsert: true });
+    res.json({ ok: true, id, prefs });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+app.post('/api/push/prefs', async (req, res) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'DB לא מוכן' });
+    const id = _pushId(req.body && req.body.endpoint), prefs = _pushPrefs(req.body.prefs);
+    const d = await db.collection('pushsubs').findOne({ _id: id });
+    if (!d) return res.status(404).json({ error: 'המכשיר לא רשום להתראות' });
+    await db.collection('pushsubs').updateOne({ _id: id }, { $set: { prefs, updatedAt: new Date() } });
+    res.json({ ok: true, prefs });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+app.post('/api/push/status', async (req, res) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'DB לא מוכן' });
+    const d = await db.collection('pushsubs').findOne({ _id: _pushId(req.body && req.body.endpoint) });
+    res.json(d ? { on: true, prefs: _pushPrefs(d.prefs) } : { on: false, prefs: PUSH_DEF });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+app.post('/api/push/unsubscribe', async (req, res) => {
+  try { if (db) await db.collection('pushsubs').deleteOne({ _id: _pushId(req.body && req.body.endpoint) }); res.json({ ok: true }); }
+  catch (err) { res.status(500).json({ error: err.message }); }
+});
+async function pushSend(kind, msg, onlyId) {
+  if (!webpush || !db) return 0;
+  await vapidKeys();
+  const q = onlyId ? { _id: onlyId } : {};
+  const subs = await db.collection('pushsubs').find(q).toArray();
+  let n = 0;
+  for (const s of subs) {
+    if (!onlyId && kind && !_pushPrefs(s.prefs)[kind]) continue;
+    try { await webpush.sendNotification(s.sub, JSON.stringify(msg), { TTL: 24 * 3600, urgency: 'high' }); n++; }
+    catch (e) {
+      if (e.statusCode === 404 || e.statusCode === 410) await db.collection('pushsubs').deleteOne({ _id: s._id });
+      else console.error('push failed', e.statusCode, e.body || e.message);
+    }
+  }
+  return n;
+}
+app.post('/api/push/test', async (req, res) => {
+  try {
+    const n = await pushSend(null, { title: 'נפטון', body: '✅ ההתראות עובדות במכשיר הזה', tag: 'test', url: './' }, _pushId(req.body && req.body.endpoint));
+    if (!n) return res.status(404).json({ error: 'לא נשלח — נסה לכבות ולהדליק את ההתראות' });
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+// תזמון: חשבוניות ב-1 לחודש, מע״מ ב-10, חשבוניות פתוחות בימי ראשון, ותזכורות שהגיע זמנן
+const PUSH_AT = process.env.PUSH_TIME || '09:00';
+async function _pushOnce(key, fn) {
+  const col = db.collection('pushlog');
+  if (await col.findOne({ _id: key })) return;
+  await col.insertOne({ _id: key, at: new Date() });
+  try { await fn(); } catch (e) { console.error('push job', key, e.message); }
+}
+let _pushBusy = false;
+async function pushSchedule() {
+  if (!webpush || !db || _pushBusy) return;
+  _pushBusy = true;
+  try {
+    if (!(await db.collection('pushsubs').countDocuments())) return;
+    const { date, hm } = israelNow();
+    const day = Number(date.slice(8, 10)), dow = new Date(date + 'T12:00:00Z').getUTCDay();
+    const prevName = (() => { const [y, m] = date.split('-').map(Number); return new Date(Date.UTC(y, m - 2, 1)).toLocaleDateString('he-IL', { month: 'long', timeZone: 'UTC' }); })();
+    if (hm >= PUSH_AT) {
+      if (day === 1) await _pushOnce('inv_' + date, () => pushSend('inv', { title: 'הפקת חשבוניות', body: 'היום ה-1 לחודש — זמן להפיק חשבוניות על ' + prevName, tag: 'inv', url: './#clients' }));
+      if (day === 10) await _pushOnce('vat_' + date, () => pushSend('vat', { title: 'דוח מע״מ', body: 'עד ה-15 צריך להגיש את דוח המע״מ. הדוח מוכן במסך מע״מ', tag: 'vat', url: './#vat' }));
+      if (dow === 0) await _pushOnce('open_' + date, async () => {
+        const token = await getGiToken(); if (!token) return;
+        const d30 = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10);
+        const docs = await giSearchAll(token, { type: [300, 305], status: [0], toDate: d30 }, 5);
+        const open = docs.filter(x => x.status === 0 && String(x.documentDate || '').slice(0, 10) <= d30);
+        if (!open.length) return;
+        const sum = Math.round(open.reduce((s, x) => s + (Number(x.amount) || 0), 0));
+        await pushSend('open', { title: 'חשבוניות פתוחות', body: open.length + ' חשבוניות פתוחות מעל 30 יום · ₪' + sum.toLocaleString('he-IL'), tag: 'open', url: './' });
+      });
+    }
+    // תזכורות מהאפליקציה
+    const defHour = (process.env.REMINDER_DEFAULT_TIME || '08:00');
+    const old = await db.collection('reminders').find({ done: false, repeat: 'daily', date: { $lt: date } }).toArray();
+    for (const r of old) await db.collection('reminders').updateOne({ id: r.id }, { $set: { date, waSent: false, pushSent: false } });
+    const rems = await db.collection('reminders').find({ done: false, date }).toArray();
+    for (const r of rems) {
+      if (r.pushSent || (r.time || defHour) > hm) continue;
+      await db.collection('reminders').updateOne({ id: r.id }, { $set: { pushSent: true } });
+      await pushSend('rem', { title: 'תזכורת', body: r.text, tag: 'rem_' + r.id, url: './' });
+    }
+  } catch (e) { console.error('pushSchedule', e.message); }
+  finally { _pushBusy = false; }
+}
+setInterval(pushSchedule, 60 * 1000);
 
 // עזר: רשימת קבוצות וואטסאפ כדי למצוא את ה-chatId של הקבוצה
 app.get('/api/wa/groups', async (req, res) => {
