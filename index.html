@@ -11281,9 +11281,12 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 })();
 </script>
 <script>
-/* עוזר AI: כשכותבים "חיסור" נפתחת רשימת עובדים לבחירה, כדי שהשם ייכתב נכון */
+/* עוזר AI: כשכותבים "חיסור", "מחליף" או "חילוף" נפתחת רשימת עובדים לבחירה, כדי שהשם ייכתב נכון */
 (function () {
-  var RE = /חיסור/g, done = 0, q = '', iq = { words: 0, text: '' };
+  var RE = /(חיסור|מחליפים|מחליפות|מחליפה|מחליף|החלפה|חילופים|חילוף)/g, done = 0, q = '', iq = { words: 0, text: '' };
+  function lastWord() { var t = document.getElementById('ai-input'), m, w = ''; if (!t) return ''; RE.lastIndex = 0; while ((m = RE.exec(t.value))) w = m[0]; return w; }
+  // עובדים שכבר נבחרו בהודעה (למשל החסר) לא מוצעים שוב כמחליפים
+  function named() { var t = document.getElementById('ai-input'), v = t ? t.value : ''; return act().filter(function (e) { return v.indexOf(empName(e)) >= 0; }).map(function (e) { return e.id; }); }
   function cnt(t) { return (String(t).match(RE) || []).length; }
   function act() { return employees.filter(function (e) { return e.status !== 'inactive'; }); }
   // מה שנכתב בהודעה אחרי "חיסור" משמש כחיפוש (שם, כינוי או לקוח) — מנסים מהארוך לקצר
@@ -11299,7 +11302,8 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
     if (w.length) iq = { words: -1, text: w[0] };
   }
   function tiles() {
-    var list = act().filter(function (e) { return q ? empMatchBy(e, q) : (iq.words > 0 ? empMatch(e, iq.text) : iq.words < 0 ? false : true); })
+    var skip = /חיסור/.test(lastWord()) ? [] : named();
+    var list = act().filter(function (e) { return skip.indexOf(e.id) < 0 && (q ? empMatchBy(e, q) : (iq.words > 0 ? empMatch(e, iq.text) : iq.words < 0 ? false : true)); })
       .sort(function (a, b) { return empName(a).localeCompare(empName(b), 'he'); });
     if (!list.length) return '<div class="aip-e">לא נמצא עובד</div>';
     return list.map(function (e) {
@@ -11310,7 +11314,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
   function show() {
     var box = document.getElementById('ai-pick'); if (!box) return;
     inlineQ();
-    box.innerHTML = '<div class="aip-h"><span>חיסור של מי?</span><button type="button" class="aip-x" aria-label="סגור" onclick="aiPickClose()">×</button></div>' +
+    box.innerHTML = '<div class="aip-h"><span>' + (/חיסור/.test(lastWord()) ? 'חיסור של מי?' : 'מי מחליף?') + '</span><button type="button" class="aip-x" aria-label="סגור" onclick="aiPickClose()">×</button></div>' +
       empBySeg('aiPickBy') + '<input class="aip-q" id="aip-q" placeholder="' + empByPh() + '" value="' + _empEsc(q) + '" oninput="aiPickQ(this.value)">' +
       '<div class="aip-g" id="aip-g">' + tiles() + '</div>';
     box.hidden = false;
@@ -11337,7 +11341,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
     if (n < done) done = n;
     var box = document.getElementById('ai-pick');
     if (n > done && box && box.hidden) show();
-    else if (n > done && box && !box.hidden && !q) { inlineQ(); var g = document.getElementById('aip-g'); if (g) g.innerHTML = tiles(); }
+    else if (n > done && box && !box.hidden && !q) { var h = box.querySelector('.aip-h span'), want = /חיסור/.test(lastWord()) ? 'חיסור של מי?' : 'מי מחליף?'; if (h && h.textContent !== want) show(); else { inlineQ(); var g = document.getElementById('aip-g'); if (g) g.innerHTML = tiles(); } }
     if (!n) hide();
   }
   function init() { var t = document.getElementById('ai-input'); if (t && !t._aip) { t._aip = 1; t.addEventListener('input', onInput); } }
