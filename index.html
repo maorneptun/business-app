@@ -11283,10 +11283,23 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 <script>
 /* עוזר AI: כשכותבים "חיסור" נפתחת רשימת עובדים לבחירה, כדי שהשם ייכתב נכון */
 (function () {
-  var RE = /חיסור/g, done = 0, q = '';
+  var RE = /חיסור/g, done = 0, q = '', iq = { words: 0, text: '' };
   function cnt(t) { return (String(t).match(RE) || []).length; }
+  function act() { return employees.filter(function (e) { return e.status !== 'inactive'; }); }
+  // מה שנכתב בהודעה אחרי "חיסור" משמש כחיפוש (שם, כינוי או לקוח) — מנסים מהארוך לקצר
+  function tailAfter(v) { var m, last = -1; RE.lastIndex = 0; while ((m = RE.exec(v))) last = m.index + m[0].length; return last < 0 ? null : { at: last, tail: v.slice(last) }; }
+  function inlineQ() {
+    iq = { words: 0, text: '' };
+    var t = document.getElementById('ai-input'), r = t && tailAfter(t.value); if (!r) return;
+    var w = r.tail.replace(/^\s*(של|את)\s+/, '').trim().split(/\s+/).filter(Boolean).slice(0, 3);
+    for (var n = w.length; n > 0; n--) {
+      var cand = w.slice(0, n).join(' ');
+      if (act().some(function (e) { return empMatch(e, cand); })) { iq = { words: n, text: cand }; return; }
+    }
+    if (w.length) iq = { words: -1, text: w[0] };
+  }
   function tiles() {
-    var list = employees.filter(function (e) { return e.status !== 'inactive' && empMatchBy(e, q); })
+    var list = act().filter(function (e) { return q ? empMatchBy(e, q) : (iq.words > 0 ? empMatch(e, iq.text) : iq.words < 0 ? false : true); })
       .sort(function (a, b) { return empName(a).localeCompare(empName(b), 'he'); });
     if (!list.length) return '<div class="aip-e">לא נמצא עובד</div>';
     return list.map(function (e) {
@@ -11296,6 +11309,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
   }
   function show() {
     var box = document.getElementById('ai-pick'); if (!box) return;
+    inlineQ();
     box.innerHTML = '<div class="aip-h"><span>חיסור של מי?</span><button type="button" class="aip-x" aria-label="סגור" onclick="aiPickClose()">×</button></div>' +
       empBySeg('aiPickBy') + '<input class="aip-q" id="aip-q" placeholder="' + empByPh() + '" value="' + _empEsc(q) + '" oninput="aiPickQ(this.value)">' +
       '<div class="aip-g" id="aip-g">' + tiles() + '</div>';
@@ -11307,10 +11321,10 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
   window.aiPickClose = function () { var t = document.getElementById('ai-input'); done = t ? cnt(t.value) : 0; hide(); if (t) t.focus(); };
   window.aiPickEmp = function (id) {
     var e = employees.find(function (x) { return x.id === id; }), t = document.getElementById('ai-input'); if (!e || !t) return;
-    var v = t.value, m, last = -1; RE.lastIndex = 0;
-    while ((m = RE.exec(v))) last = m.index + m[0].length;
-    var nm = empName(e), at = last >= 0 ? last : v.length;
+    var v = t.value, r = tailAfter(v), nm = empName(e), at = r ? r.at : v.length;
     var before = v.slice(0, at), after = v.slice(at).replace(/^\s+/, '');
+    // המילים שנכתבו כחיפוש מוחלפות בשם המלא
+    if (!q && iq.words > 0) { var pre = (after.match(/^(של|את)\s+/) || [''])[0]; before += pre ? ' ' + pre.trim() : ''; after = after.slice(pre.length).split(/\s+/).slice(iq.words).join(' '); }
     t.value = before + ' ' + nm + ' ' + after;
     var pos = (before + ' ' + nm + ' ').length;
     done = cnt(t.value); hide();
@@ -11323,6 +11337,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
     if (n < done) done = n;
     var box = document.getElementById('ai-pick');
     if (n > done && box && box.hidden) show();
+    else if (n > done && box && !box.hidden && !q) { inlineQ(); var g = document.getElementById('aip-g'); if (g) g.innerHTML = tiles(); }
     if (!n) hide();
   }
   function init() { var t = document.getElementById('ai-input'); if (t && !t._aip) { t._aip = 1; t.addEventListener('input', onInput); } }
