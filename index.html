@@ -800,6 +800,8 @@ html { -webkit-text-size-adjust: 100%; }
 .qr-tile.on { background: var(--qa); color: #fff; }
 .qr-tile.on small { color: rgba(255,255,255,.85); }
 .qr-tile.dash { background: transparent; border: 2px dashed #C7C7CC; color: #4A4A50; align-items: center; font-size: 15px; font-weight: 700; }
+.by-seg { margin-bottom: 8px; width: 100%; box-sizing: border-box; }
+.by-seg button { flex: 1; }
 .qr-search { width: 100%; box-sizing: border-box; min-height: 50px; border-radius: 14px; border: 0; background: #F2F2F7; padding: 0 16px; font-family: inherit; font-size: 17px; font-weight: 600; margin-bottom: 10px; }
 .qr-input { width: 100%; box-sizing: border-box; min-height: 50px; border-radius: 14px; border: 1.5px solid #D1D1D6; background: #fff; padding: 0 14px; font-family: inherit; font-size: 17px; font-weight: 600; }
 .qr-more { width: 100%; min-height: 46px; margin-top: 8px; border: 0; background: transparent; font-family: inherit; font-size: 15px; font-weight: 700; color: var(--qa); cursor: pointer; }
@@ -2723,7 +2725,8 @@ html[data-dark] .modal-overlay { background: rgba(0,0,0,.55); }
 
     <div class="form-group">
       <label class="form-label">עובד *</label>
-      <input type="text" class="form-control" id="abs-emp-search" placeholder="חיפוש לפי שם, כינוי או לקוח" oninput="renderAbsEmpButtons(this.value)" style="margin-bottom:5px">
+      <div id="abs-by"></div>
+      <input type="text" class="form-control" id="abs-emp-search" placeholder="שם או כינוי…" oninput="renderAbsEmpButtons(this.value)" style="margin-bottom:5px">
       <input type="hidden" id="abs-emp-sel" value="">
       <div id="abs-emp-buttons" style="display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:6px"></div>
     </div>
@@ -3991,6 +3994,21 @@ function empLabel(e) { return e ? empName(e) + (e.nick ? ' (' + e.nick + ')' : '
 // טקסט לחיפוש: שם, כינוי ולקוחות
 function empFind(e) { return e ? [empName(e), e.nick || '', (e.clients || []).join(' '), e.client || ''].join(' ').replace(/["'״׳]/g, '').toLowerCase() : ''; }
 function empMatch(e, q) { q = String(q || '').replace(/["'״׳]/g, '').trim().toLowerCase(); return !q || empFind(e).indexOf(q) >= 0; }
+// חיפוש לפי עובד (שם/כינוי) או לפי לקוח (התיוג בכרטיס העובד)
+function empSearchBy(v) { try { if (v) localStorage.setItem('nep__by', v); return localStorage.getItem('nep__by') === 'client' ? 'client' : 'emp'; } catch (e) { return 'emp'; } }
+function empMatchBy(e, q) {
+  q = String(q || '').replace(/["'״׳]/g, '').trim().toLowerCase(); if (!q) return true; if (!e) return false;
+  var cl = (e.clients && e.clients.length ? e.clients : (e.client ? [e.client] : [])).join(' ');
+  var t = empSearchBy() === 'client' ? cl : empName(e) + ' ' + (e.nick || '');
+  return t.replace(/["'״׳]/g, '').toLowerCase().indexOf(q) >= 0;
+}
+function empBySeg(fn) {
+  var by = empSearchBy();
+  return '<span class="sm-seg by-seg" role="group" aria-label="חיפוש לפי">' +
+    '<button type="button" aria-pressed="' + (by === 'emp') + '" onclick="' + fn + '(\'emp\')">לפי עובד</button>' +
+    '<button type="button" aria-pressed="' + (by === 'client') + '" onclick="' + fn + '(\'client\')">לפי לקוח</button></span>';
+}
+function empByPh() { return empSearchBy() === 'client' ? 'שם הלקוח…' : 'שם או כינוי…'; }
 function _empEsc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 function empInitials(e) { if (!e) return '?'; const n = empName(e); const w = n.split(' '); return (w[0]?.[0]||'') + (w[1]?.[0]||w[0]?.[1]||''); }
 
@@ -9856,10 +9874,12 @@ function fixReplacementHours() {
 function renderAbsEmpButtons(query) {
   const container = document.getElementById('abs-emp-buttons');
   if (!container) return;
+  const byEl = document.getElementById('abs-by'); if (byEl) byEl.innerHTML = empBySeg('absBy');
+  const qi = document.getElementById('abs-emp-search'); if (qi) qi.placeholder = empByPh();
   const q = (query || '').trim().toLowerCase();
   const allEmps = validEmployees();
   const filtered = q
-    ? allEmps.filter(e => empMatch(e, q) || (e.eid || '').includes(q))
+    ? allEmps.filter(e => empMatchBy(e, q))
     : allEmps;
 
   const currentId = document.getElementById('abs-emp-sel').value;
@@ -9877,6 +9897,7 @@ function renderAbsEmpButtons(query) {
   container.innerHTML = html;
 }
 
+function absBy(v) { empSearchBy(v); var i = document.getElementById('abs-emp-search'); renderAbsEmpButtons(i ? i.value : ''); if (i) i.focus(); }
 function selectAbsEmp(empId) {
   document.getElementById('abs-emp-sel').value = empId;
   renderAbsEmpButtons(document.getElementById('abs-emp-search').value);
@@ -11075,7 +11096,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
   function block(k) {
     var h = '<div class="qr-cur"><div class="qr-now">עכשיו</div><div class="qr-q">' + title(k) + '</div>';
     if (k === 'emp') {
-      h += '<input class="qr-search" id="qr-s-emp" placeholder="חיפוש לפי שם, כינוי או לקוח" value="' + E(Q.qEmp) + '" oninput="qrSearch(\'qEmp\', this.value)">';
+      h += empBySeg('qrBy') + '<input class="qr-search" id="qr-s-emp" placeholder="' + empByPh() + '" value="' + E(Q.qEmp) + '" oninput="qrSearch(\'qEmp\', this.value)">';
       h += '<div class="qr-grid" id="qr-emp-grid">' + empTiles() + '</div>';
     } else if (k === 'date') {
       var opts = [[todayISO(), 'היום'], [addDays(-1), 'אתמול'], [addDays(1), 'מחר']];
@@ -11117,12 +11138,12 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
   function empTiles() {
     var q = norm(Q.qEmp), absentToday = {};
     absences.forEach(function (a) { if (a.date === Q.date) absentToday[a.empId] = 1; });
-    var list = act().filter(function (e) { return !q || (empFind(e) + ' ' + norm(clientsOf(e).join(' '))).indexOf(q) >= 0; });
+    var list = act().filter(function (e) { return empMatchBy(e, q); });
     if (!list.length) return '<div style="grid-column:1/-1;color:#6B6B70;font-weight:700;padding:10px">לא נמצא עובד</div>';
     return list.map(function (e) {
       var c = clientsOf(e);
       return '<button class="qr-tile' + (Q.empId === e.id ? ' on' : '') + '" data-v="' + e.id + '" onclick="qrPick(\'emp\', this.dataset.v)"><b>' + E(empLabel(e)) + '</b><small>' +
-        (absentToday[e.id] ? 'כבר רשום/ה כחסר/ה' : E(c.length > 1 ? c.length + ' לקוחות' : (c[0] || ''))) + '</small></button>';
+        (absentToday[e.id] ? 'כבר רשום/ה כחסר/ה' : E((function () { if (q && empSearchBy() === 'client') { var m = c.filter(function (x) { return norm(x).indexOf(q) >= 0; }); if (m.length) return m.join(', '); } return c.length > 1 ? c.length + ' לקוחות' : (c[0] || ''); })())) + '</small></button>';
     }).join('');
   }
   function replBlock() {
@@ -11164,6 +11185,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
   // ---- פעולות
   window.qrOpen = function (k) { Q.open = k; render(); };
   window.qrSet = function (k, v, silent) { Q[k] = v; if (!silent) render(); };
+  window.qrBy = function (v) { empSearchBy(v); render(); var s = document.getElementById('qr-s-emp'); if (s) { s.focus(); var l = s.value.length; s.setSelectionRange(l, l); } };
   window.qrSearch = function (k, v) {
     Q[k] = v;
     var g = document.getElementById(k === 'qEmp' ? 'qr-emp-grid' : 'qr-repl-grid');
