@@ -324,7 +324,7 @@ app.post('/api/files', express.json({ limit: '25mb' }), async (req, res) => {
     if (!db) return res.status(503).json({ error: 'DB לא מוכן' });
     const b = req.body || {};
     const empId = String(b.empId || '').slice(0, 60), month = String(b.month || '');
-    if (!empId || !/^\d{4}-\d{2}$/.test(month)) return res.status(400).json({ error: 'חסר עובד או חודש' });
+    if (!empId || !/^(\d{4}-\d{2}|101)$/.test(month)) return res.status(400).json({ error: 'חסר עובד או חודש' });
     if (typeof b.data !== 'string' || !b.data) return res.status(400).json({ error: 'אין קובץ' });
     const buf = Buffer.from(b.data, 'base64');
     if (!buf.length || buf.length > FILE_MAX) return res.status(413).json({ error: 'הקובץ גדול מדי (עד 15MB)' });
