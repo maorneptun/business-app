@@ -1554,7 +1554,7 @@ html[data-dark] .modal-overlay { background: rgba(0,0,0,.55); }
     <div style="position:relative;margin-bottom:16px">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--text-muted);pointer-events:none"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
       <input type="text" id="emp-search" class="form-control"
-        placeholder="חיפוש עובד לפי שם..."
+        placeholder="חיפוש לפי שם, כינוי או לקוח"
         oninput="renderEmployees()"
         style="padding-right:40px;font-size:14px">
     </div>
@@ -1623,7 +1623,7 @@ html[data-dark] .modal-overlay { background: rgba(0,0,0,.55); }
           </select>
         </div>
       </div>
-      <input type="search" id="abs-q" class="form-control abs-q" placeholder="חיפוש לפי שם עובד…" oninput="renderAbsenceTable()" style="display:none">
+      <input type="search" id="abs-q" class="form-control abs-q" placeholder="חיפוש לפי שם, כינוי או לקוח" oninput="renderAbsenceTable()" style="display:none">
       <div class="table-wrap">
         <table>
           <thead>
@@ -2480,6 +2480,11 @@ html[data-dark] .modal-overlay { background: rgba(0,0,0,.55); }
         <input type="text" class="form-control" id="emp-lname" placeholder="ישראלי">
       </div>
     </div>
+    <div class="form-group">
+      <label class="form-label">כינוי <span style="font-weight:400;color:var(--text-muted)">(לא חובה, אפשר לחפש לפיו)</span></label>
+      <input type="text" class="form-control" id="emp-nick" placeholder="איך אתה קורא לו/לה">
+    </div>
+
 
     <!-- לקוחות -->
     <div class="form-group">
@@ -2718,7 +2723,7 @@ html[data-dark] .modal-overlay { background: rgba(0,0,0,.55); }
 
     <div class="form-group">
       <label class="form-label">עובד *</label>
-      <input type="text" class="form-control" id="abs-emp-search" placeholder="🔍 חיפוש עובד..." oninput="renderAbsEmpButtons(this.value)" style="margin-bottom:5px">
+      <input type="text" class="form-control" id="abs-emp-search" placeholder="חיפוש לפי שם, כינוי או לקוח" oninput="renderAbsEmpButtons(this.value)" style="margin-bottom:5px">
       <input type="hidden" id="abs-emp-sel" value="">
       <div id="abs-emp-buttons" style="display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:6px"></div>
     </div>
@@ -3981,6 +3986,12 @@ function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 // שם תצוגה של עובד
 function empName(e) { return e ? (e.fname + (e.lname ? ' ' + e.lname : '')).trim() : '—'; }
+// שם + כינוי לתצוגה בחיפוש ובחירה (בדוחות נשאר השם הרשמי)
+function empLabel(e) { return e ? empName(e) + (e.nick ? ' (' + e.nick + ')' : '') : '—'; }
+// טקסט לחיפוש: שם, כינוי ולקוחות
+function empFind(e) { return e ? [empName(e), e.nick || '', (e.clients || []).join(' '), e.client || ''].join(' ').replace(/["'״׳]/g, '').toLowerCase() : ''; }
+function empMatch(e, q) { q = String(q || '').replace(/["'״׳]/g, '').trim().toLowerCase(); return !q || empFind(e).indexOf(q) >= 0; }
+function _empEsc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 function empInitials(e) { if (!e) return '?'; const n = empName(e); const w = n.split(' '); return (w[0]?.[0]||'') + (w[1]?.[0]||w[0]?.[1]||''); }
 
 // ===== EMPLOYEES =====
@@ -3995,6 +4006,7 @@ function openEditEmpPanel(id) {
     if (!e) return;
     document.getElementById('emp-fname').value = e.fname || '';
     document.getElementById('emp-lname').value = e.lname || '';
+    document.getElementById('emp-nick').value = e.nick || '';
     // תמיכה בשני פורמטים: clients (מערך חדש) או client (מחרוזת ישנה)
     const clients = e.clients || (e.client ? [e.client] : []);
     renderEmpClientTags(clients);
@@ -4015,6 +4027,7 @@ function openEditEmpPanel(id) {
   } else {
     document.getElementById('emp-fname').value = '';
     document.getElementById('emp-lname').value = '';
+    document.getElementById('emp-nick').value = '';
     renderEmpClientTags([]);
     document.getElementById('emp-daily-hours').value = '8';
     document.getElementById('emp-hours-type').value = 'daily';
@@ -4046,6 +4059,7 @@ function saveEmployee() {
     id: editId || Date.now().toString(),
     fname,
     lname: document.getElementById('emp-lname').value.trim(),
+    nick: document.getElementById('emp-nick').value.trim(),
     eid: '',
     phone: '',
     clients,                          // מערך חדש
@@ -4105,9 +4119,7 @@ function renderEmployees() {
     const hasBin = /[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(name);
     if (!hasHeb || hasBin) return false;
     const search = q.toLowerCase();
-    return !q || name.toLowerCase().includes(search) ||
-      (e.eid||'').includes(search) ||
-      (e.client||'').toLowerCase().includes(search);
+    return !q || empMatch(e, search) || (e.eid||'').includes(search);
   });
 
   sub.textContent = `${filtered.length} עובדים`;
@@ -4318,7 +4330,7 @@ function renderEmpGrid() {
   const cl = e => (e.clients && e.clients.length ? e.clients[0] : e.client) || '';
   let list, sub;
   if (q) {
-    list = act.filter(e => empName(e).includes(q) || (e.clients || [e.client]).some(c => c && c.includes(q))).slice(0, 12);
+    list = act.filter(e => empMatch(e, q)).slice(0, 12);
     sub = list.length ? 'תוצאות חיפוש' : '';
   } else {
     const use = _egUse(), now = Date.now();
@@ -4332,7 +4344,7 @@ function renderEmpGrid() {
   if (q) grid.style.minHeight = (window._egH || 0) + 'px'; else grid.style.minHeight = '';
   grid.innerHTML = list.length ? list.map(e => {
     const tag = absT[e.id] ? 'חסר/ה היום' : repT[e.id] ? 'מחליף/ה היום' : '';
-    return '<button type="button" class="eg-tile" data-id="' + e.id + '" onclick="openEmpProfile(this.dataset.id)"><span class="eg-n">' + escHtml(empName(e)) + '</span>' +
+    return '<button type="button" class="eg-tile" data-id="' + e.id + '" onclick="openEmpProfile(this.dataset.id)"><span class="eg-n">' + escHtml(empLabel(e)) + '</span>' +
       (cl(e) ? '<span class="eg-c">' + escHtml(cl(e)) + '</span>' : '') + (tag ? '<span class="eg-t">' + tag + '</span>' : '') + '</button>';
   }).join('') : '<div class="eg-empty">' + (q ? 'לא נמצא עובד' : 'אין עובדים פעילים') + '</div>';
   if (!q && grid.offsetHeight) window._egH = grid.offsetHeight;
@@ -5625,7 +5637,7 @@ function renderAbsenceTable() {
   const _q = ((document.getElementById('abs-q') || {}).value || '').trim();
   if (_q) filtered = filtered.filter(a => {
     const e1 = employees.find(e => e.id === a.empId), e2 = a.replacementId ? employees.find(e => e.id === a.replacementId) : null;
-    return [e1 ? empName(e1) : '', e2 ? empName(e2) : '', a.replExtName || ''].join(' ').indexOf(_q) >= 0;
+    return empMatch(e1, _q) || (e2 && empMatch(e2, _q)) || (a.replExtName || '').indexOf(_q) >= 0 || (a.client || '').indexOf(_q) >= 0;
   });
 
   const cardsEl = document.getElementById('abs-cards');
@@ -5785,7 +5797,7 @@ function renderEditReplButtons(query) {
   const q = (query || '').trim().toLowerCase();
   const allEmps = validEmployees();
   const filtered = q
-    ? allEmps.filter(e => (e.fname + ' ' + e.lname).toLowerCase().includes(q) || (e.eid || '').includes(q))
+    ? allEmps.filter(e => empMatch(e, q) || (e.eid || '').includes(q))
     : allEmps;
   const currentId = document.getElementById('edit-abs-repl-sel').value;
   if (!filtered.length) {
@@ -5795,7 +5807,7 @@ function renderEditReplButtons(query) {
   var html = '';
   filtered.forEach(function(e) {
     const sel = currentId === e.id;
-    html += '<button type="button" data-empid="' + e.id + '" onclick="selectEditRepl(this.dataset.empid)" style="text-align:right;padding:6px 10px;border-radius:6px;border:2px solid ' + (sel ? 'var(--accent)' : 'var(--border)') + ';background:' + (sel ? 'var(--accent-light)' : 'var(--surface)') + ';color:' + (sel ? 'var(--accent)' : 'var(--text)') + ';cursor:pointer;font-family:inherit;font-size:13px;font-weight:' + (sel ? '700' : '400') + '">' + e.fname + ' ' + e.lname + '</button>';
+    html += '<button type="button" data-empid="' + e.id + '" onclick="selectEditRepl(this.dataset.empid)" style="text-align:right;padding:6px 10px;border-radius:6px;border:2px solid ' + (sel ? 'var(--accent)' : 'var(--border)') + ';background:' + (sel ? 'var(--accent-light)' : 'var(--surface)') + ';color:' + (sel ? 'var(--accent)' : 'var(--text)') + ';cursor:pointer;font-family:inherit;font-size:13px;font-weight:' + (sel ? '700' : '400') + '">' + _empEsc(empLabel(e)) + ((e.clients && e.clients[0]) || e.client ? '<span style="color:var(--text-muted);font-size:11.5px"> · ' + _empEsc((e.clients && e.clients[0]) || e.client) + '</span>' : '') + '</button>';
   });
   container.innerHTML = html;
 }
@@ -9847,7 +9859,7 @@ function renderAbsEmpButtons(query) {
   const q = (query || '').trim().toLowerCase();
   const allEmps = validEmployees();
   const filtered = q
-    ? allEmps.filter(e => (e.fname + ' ' + e.lname).toLowerCase().includes(q) || (e.eid || '').includes(q))
+    ? allEmps.filter(e => empMatch(e, q) || (e.eid || '').includes(q))
     : allEmps;
 
   const currentId = document.getElementById('abs-emp-sel').value;
@@ -9860,7 +9872,7 @@ function renderAbsEmpButtons(query) {
   var html = '';
   filtered.forEach(function(e) {
     const sel = currentId === e.id;
-    html += '<button type="button" data-empid="' + e.id + '" onclick="selectAbsEmp(this.dataset.empid)" style="text-align:right;padding:6px 10px;border-radius:6px;border:2px solid ' + (sel ? 'var(--accent)' : 'var(--border)') + ';background:' + (sel ? 'var(--accent-light)' : 'var(--surface)') + ';color:' + (sel ? 'var(--accent)' : 'var(--text)') + ';cursor:pointer;font-family:inherit;font-size:13px;font-weight:' + (sel ? '700' : '400') + '">' + e.fname + ' ' + e.lname + '</button>';
+    html += '<button type="button" data-empid="' + e.id + '" onclick="selectAbsEmp(this.dataset.empid)" style="text-align:right;padding:6px 10px;border-radius:6px;border:2px solid ' + (sel ? 'var(--accent)' : 'var(--border)') + ';background:' + (sel ? 'var(--accent-light)' : 'var(--surface)') + ';color:' + (sel ? 'var(--accent)' : 'var(--text)') + ';cursor:pointer;font-family:inherit;font-size:13px;font-weight:' + (sel ? '700' : '400') + '">' + _empEsc(empLabel(e)) + ((e.clients && e.clients[0]) || e.client ? '<span style="color:var(--text-muted);font-size:11.5px"> · ' + _empEsc((e.clients && e.clients[0]) || e.client) + '</span>' : '') + '</button>';
   });
   container.innerHTML = html;
 }
@@ -9876,7 +9888,7 @@ function renderReplButtons(query) {
   if (!container) return;
   const q = (query || '').trim().toLowerCase();
   const allEmps = validEmployees();
-  const filtered = q ? allEmps.filter(e => (e.fname+' '+e.lname).toLowerCase().includes(q)) : allEmps;
+  const filtered = q ? allEmps.filter(e => empMatch(e, q)) : allEmps;
   
   const currentId = document.getElementById('abs-replacement').value;
   
@@ -9885,7 +9897,7 @@ function renderReplButtons(query) {
   
   filtered.forEach(function(e) {
     const sel = currentId === e.id;
-    html += '<button type="button" data-empid="' + e.id + '" onclick="selectRepl(this.dataset.empid)" style="text-align:right;padding:6px 10px;border-radius:6px;border:2px solid ' + (sel ? 'var(--accent)' : 'var(--border)') + ';background:' + (sel ? 'var(--accent-light)' : 'var(--surface)') + ';color:' + (sel ? 'var(--accent)' : 'var(--text)') + ';cursor:pointer;font-family:inherit;font-size:13px;font-weight:' + (sel ? '700' : '400') + '">' + e.fname + ' ' + e.lname + '</button>';
+    html += '<button type="button" data-empid="' + e.id + '" onclick="selectRepl(this.dataset.empid)" style="text-align:right;padding:6px 10px;border-radius:6px;border:2px solid ' + (sel ? 'var(--accent)' : 'var(--border)') + ';background:' + (sel ? 'var(--accent-light)' : 'var(--surface)') + ';color:' + (sel ? 'var(--accent)' : 'var(--text)') + ';cursor:pointer;font-family:inherit;font-size:13px;font-weight:' + (sel ? '700' : '400') + '">' + _empEsc(empLabel(e)) + ((e.clients && e.clients[0]) || e.client ? '<span style="color:var(--text-muted);font-size:11.5px"> · ' + _empEsc((e.clients && e.clients[0]) || e.client) + '</span>' : '') + '</button>';
   });
   
   container.innerHTML = html;
@@ -11063,7 +11075,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
   function block(k) {
     var h = '<div class="qr-cur"><div class="qr-now">עכשיו</div><div class="qr-q">' + title(k) + '</div>';
     if (k === 'emp') {
-      h += '<input class="qr-search" id="qr-s-emp" placeholder="🔍 חיפוש עובד…" value="' + E(Q.qEmp) + '" oninput="qrSearch(\'qEmp\', this.value)">';
+      h += '<input class="qr-search" id="qr-s-emp" placeholder="חיפוש לפי שם, כינוי או לקוח" value="' + E(Q.qEmp) + '" oninput="qrSearch(\'qEmp\', this.value)">';
       h += '<div class="qr-grid" id="qr-emp-grid">' + empTiles() + '</div>';
     } else if (k === 'date') {
       var opts = [[todayISO(), 'היום'], [addDays(-1), 'אתמול'], [addDays(1), 'מחר']];
@@ -11105,11 +11117,11 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
   function empTiles() {
     var q = norm(Q.qEmp), absentToday = {};
     absences.forEach(function (a) { if (a.date === Q.date) absentToday[a.empId] = 1; });
-    var list = act().filter(function (e) { return !q || norm(empName(e) + ' ' + clientsOf(e).join(' ')).indexOf(q) >= 0; });
+    var list = act().filter(function (e) { return !q || (empFind(e) + ' ' + norm(clientsOf(e).join(' '))).indexOf(q) >= 0; });
     if (!list.length) return '<div style="grid-column:1/-1;color:#6B6B70;font-weight:700;padding:10px">לא נמצא עובד</div>';
     return list.map(function (e) {
       var c = clientsOf(e);
-      return '<button class="qr-tile' + (Q.empId === e.id ? ' on' : '') + '" data-v="' + e.id + '" onclick="qrPick(\'emp\', this.dataset.v)"><b>' + E(empName(e)) + '</b><small>' +
+      return '<button class="qr-tile' + (Q.empId === e.id ? ' on' : '') + '" data-v="' + e.id + '" onclick="qrPick(\'emp\', this.dataset.v)"><b>' + E(empLabel(e)) + '</b><small>' +
         (absentToday[e.id] ? 'כבר רשום/ה כחסר/ה' : E(c.length > 1 ? c.length + ' לקוחות' : (c[0] || ''))) + '</small></button>';
     }).join('');
   }
@@ -11132,7 +11144,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
       if (clientsOf(e).indexOf(client) >= 0) return '<small class="ok">עובד/ת אצל הלקוח</small>';
       return '<small class="ok">פנוי/ה</small>';
     }
-    function tile(e) { return '<button class="qr-tile' + (Q.replId === e.id ? ' on' : '') + '" data-v="' + e.id + '" onclick="qrPick(\'repl\', this.dataset.v)"><b>' + E(empName(e)) + '</b>' + tag(e) + '</button>'; }
+    function tile(e) { return '<button class="qr-tile' + (Q.replId === e.id ? ' on' : '') + '" data-v="' + e.id + '" onclick="qrPick(\'repl\', this.dataset.v)"><b>' + E(empLabel(e)) + '</b>' + tag(e) + '</button>'; }
     if (!q && !Q.allRepl) {
       var top = pool.filter(function (e) { return !busy[e.id]; }).sort(function (a, b) {
         var sa = (cnt[a.id] || 0) * 10 + (clientsOf(a).indexOf(client) >= 0 ? 5 : 0), sb = (cnt[b.id] || 0) * 10 + (clientsOf(b).indexOf(client) >= 0 ? 5 : 0);
@@ -11141,8 +11153,8 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
       h += '<div class="qr-sub" style="color:#0F6B4F;margin-top:0">מומלצים</div><div class="qr-grid">' + top.map(tile).join('') + '</div>' +
         '<button class="qr-more" onclick="qrSet(\'allRepl\', true)">כל העובדים (' + pool.length + ')</button>';
     } else {
-      h += '<input class="qr-search" id="qr-s-repl" placeholder="🔍 חיפוש עובד…" value="' + E(Q.qRepl) + '" oninput="qrSearch(\'qRepl\', this.value)">' +
-        '<div class="qr-grid" id="qr-repl-grid">' + pool.filter(function (e) { return !q || norm(empName(e)).indexOf(q) >= 0; }).map(tile).join('') + '</div>';
+      h += '<input class="qr-search" id="qr-s-repl" placeholder="חיפוש לפי שם, כינוי או לקוח" value="' + E(Q.qRepl) + '" oninput="qrSearch(\'qRepl\', this.value)">' +
+        '<div class="qr-grid" id="qr-repl-grid">' + pool.filter(function (e) { return !q || (empFind(e) + ' ' + norm(clientsOf(e).join(' '))).indexOf(q) >= 0; }).map(tile).join('') + '</div>';
     }
     h += '<div class="qr-grid" style="margin-top:10px"><button class="qr-tile mid" onclick="qrSet(\'extMode\', true)"><b>עובד חיצוני</b></button>' +
       '<button class="qr-tile dash" onclick="qrPick(\'none\')">בלי מחליף</button></div>';
