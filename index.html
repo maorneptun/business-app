@@ -576,6 +576,16 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
 .ai-box textarea:focus{outline:none;border-color:var(--accent);background:#fff}
 .ai-send{background:var(--accent);color:#fff;border:0;border-radius:12px;padding:0 20px;height:46px;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer}
 .ai-send:disabled{opacity:.5;cursor:default}
+.ai-pick{margin-top:10px;background:var(--bg);border-radius:14px;padding:10px}
+.ai-pick[hidden]{display:none}
+.aip-h{display:flex;justify-content:space-between;align-items:center;font-size:14px;font-weight:700;margin:0 4px 8px}
+.aip-x{border:0;background:none;font-size:20px;color:var(--text-muted);cursor:pointer;width:36px;height:36px}
+.aip-q{width:100%;box-sizing:border-box;min-height:44px;border-radius:12px;border:1px solid var(--border);background:var(--surface);padding:0 12px;font-family:inherit;font-size:16px;margin-bottom:8px}
+.aip-g{display:grid;grid-template-columns:1fr 1fr;gap:6px;max-height:240px;overflow-y:auto}
+.aip-t{border:1px solid var(--border);background:var(--surface);border-radius:12px;padding:8px 10px;text-align:right;font-family:inherit;color:var(--text);cursor:pointer;min-height:50px;display:flex;flex-direction:column;justify-content:center;gap:2px}
+.aip-t b{font-size:14px;font-weight:600}
+.aip-t small{font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.aip-e{grid-column:1/-1;color:var(--text-muted);font-size:13px;padding:8px}
 .ai-result{margin-top:12px;background:var(--bg);border-radius:12px;padding:14px;font-size:14px}
 .ai-result .ai-act{padding:9px 0;border-bottom:1px solid var(--border);line-height:1.5}
 .ai-result .ai-act:last-of-type{border-bottom:0}
@@ -1511,6 +1521,7 @@ html[data-dark] .modal-overlay { background: rgba(0,0,0,.55); }
         <textarea id="ai-input" rows="1" placeholder="כתוב מה שבא… למשל: &quot;מחר דנה לא באה, רונית מחליפה אותה&quot; או &quot;תזכיר לי להעביר שכר ביום חמישי&quot;"></textarea>
         <button class="ai-send" id="ai-send" onclick="aiSend()">שלח</button>
       </div>
+      <div class="ai-pick" id="ai-pick" hidden></div>
       <div id="ai-result"></div>
       </div>
     </div>
@@ -4514,7 +4525,7 @@ async function aiSend() {
     clients: supClientNames(),
     history: _aiHistory.slice(-6),
     context: aiContext(),
-    employees: employees.filter(e => e.status === 'active').map(e => ({ id: e.id, name: empName(e), clients: e.clients || (e.client ? [e.client] : []), dailyHours: e.dailyHours || 8 }))
+    employees: employees.filter(e => e.status === 'active').map(e => ({ id: e.id, name: empName(e), nick: e.nick || undefined, clients: e.clients || (e.client ? [e.client] : []), dailyHours: e.dailyHours || 8 }))
   };
   try {
     const res = await fetch(AI_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -11270,6 +11281,53 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 })();
 </script>
 <script>
+/* עוזר AI: כשכותבים "חיסור" נפתחת רשימת עובדים לבחירה, כדי שהשם ייכתב נכון */
+(function () {
+  var RE = /חיסור/g, done = 0, q = '';
+  function cnt(t) { return (String(t).match(RE) || []).length; }
+  function tiles() {
+    var list = employees.filter(function (e) { return e.status !== 'inactive' && empMatchBy(e, q); })
+      .sort(function (a, b) { return empName(a).localeCompare(empName(b), 'he'); });
+    if (!list.length) return '<div class="aip-e">לא נמצא עובד</div>';
+    return list.map(function (e) {
+      var c = (e.clients && e.clients.length ? e.clients : (e.client ? [e.client] : []));
+      return '<button type="button" class="aip-t" data-id="' + _empEsc(e.id) + '" onclick="aiPickEmp(this.dataset.id)"><b>' + _empEsc(empLabel(e)) + '</b>' + (c.length ? '<small>' + _empEsc(c.join(', ')) + '</small>' : '') + '</button>';
+    }).join('');
+  }
+  function show() {
+    var box = document.getElementById('ai-pick'); if (!box) return;
+    box.innerHTML = '<div class="aip-h"><span>חיסור של מי?</span><button type="button" class="aip-x" aria-label="סגור" onclick="aiPickClose()">×</button></div>' +
+      empBySeg('aiPickBy') + '<input class="aip-q" id="aip-q" placeholder="' + empByPh() + '" value="' + _empEsc(q) + '" oninput="aiPickQ(this.value)">' +
+      '<div class="aip-g" id="aip-g">' + tiles() + '</div>';
+    box.hidden = false;
+  }
+  function hide() { var box = document.getElementById('ai-pick'); if (box) { box.hidden = true; box.innerHTML = ''; } q = ''; }
+  window.aiPickQ = function (v) { q = v; var g = document.getElementById('aip-g'); if (g) g.innerHTML = tiles(); };
+  window.aiPickBy = function (v) { empSearchBy(v); show(); var i = document.getElementById('aip-q'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } };
+  window.aiPickClose = function () { var t = document.getElementById('ai-input'); done = t ? cnt(t.value) : 0; hide(); if (t) t.focus(); };
+  window.aiPickEmp = function (id) {
+    var e = employees.find(function (x) { return x.id === id; }), t = document.getElementById('ai-input'); if (!e || !t) return;
+    var v = t.value, m, last = -1; RE.lastIndex = 0;
+    while ((m = RE.exec(v))) last = m.index + m[0].length;
+    var nm = empName(e), at = last >= 0 ? last : v.length;
+    var before = v.slice(0, at), after = v.slice(at).replace(/^\s+/, '');
+    t.value = before + ' ' + nm + ' ' + after;
+    var pos = (before + ' ' + nm + ' ').length;
+    done = cnt(t.value); hide();
+    t.focus(); t.setSelectionRange(pos, pos);
+    try { t.dispatchEvent(new Event('input')); } catch (x) {}
+  };
+  function onInput() {
+    var t = document.getElementById('ai-input'); if (!t) return;
+    var n = cnt(t.value);
+    if (n < done) done = n;
+    var box = document.getElementById('ai-pick');
+    if (n > done && box && box.hidden) show();
+    if (!n) hide();
+  }
+  function init() { var t = document.getElementById('ai-input'); if (t && !t._aip) { t._aip = 1; t.addEventListener('input', onInput); } }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
 /* עוזר AI נפתח מהבועה המרחפת */
 (function () {
   function init() {
