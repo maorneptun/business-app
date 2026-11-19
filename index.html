@@ -576,6 +576,15 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
 .ai-box textarea:focus{outline:none;border-color:var(--accent);background:#fff}
 .ai-send{background:var(--accent);color:#fff;border:0;border-radius:12px;padding:0 20px;height:46px;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer}
 .ai-send:disabled{opacity:.5;cursor:default}
+/* עוזר AI במובייל: מסך מלא ואטום — הרקע לא נראה ולא זז */
+@media (max-width:700px){
+  #modal-ai{background:var(--bg) !important;backdrop-filter:none !important;align-items:stretch !important;}
+  #modal-ai .modal{height:100vh !important;height:100dvh !important;max-height:none !important;border-radius:0 !important;animation:none;
+    padding-top:calc(8px + env(safe-area-inset-top)) !important;overflow-y:auto;box-shadow:none !important}
+  #modal-ai .modal::before{display:none}
+  #modal-ai .modal-header{top:calc(-8px - env(safe-area-inset-top))}
+}
+html.modal-lock,html.modal-lock body{overscroll-behavior:none}
 .ai-pick{margin-top:10px;background:var(--bg);border-radius:14px;padding:10px}
 .ai-pick[hidden]{display:none}
 .aip-h{display:flex;justify-content:space-between;align-items:center;font-size:14px;font-weight:700;margin:0 4px 8px}
@@ -4004,6 +4013,26 @@ function showPage(name) {
 }
 
 function openModal(id) { document.getElementById(id).classList.add('open'); }
+/* כשחלון פתוח — הדף מאחוריו נעול ולא זז (גם כשהמקלדת נפתחת באייפון) */
+(function () {
+  var y = 0, locked = false, pend = false;
+  function upd() {
+    pend = false;
+    var any = !!document.querySelector('.modal-overlay.open'), b = document.body.style;
+    if (any && !locked) {
+      y = window.scrollY || 0; b.position = 'fixed'; b.top = -y + 'px'; b.left = '0'; b.right = '0'; b.width = '100%';
+      document.documentElement.classList.add('modal-lock'); locked = true;
+    } else if (!any && locked) {
+      b.position = b.top = b.left = b.right = b.width = '';
+      document.documentElement.classList.remove('modal-lock'); window.scrollTo(0, y); locked = false;
+    }
+  }
+  function start() {
+    new MutationObserver(function () { if (!pend) { pend = true; requestAnimationFrame(upd); } })
+      .observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
+  }
+  if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
+})();
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 // שם תצוגה של עובד
 function empName(e) { return e ? (e.fname + (e.lname ? ' ' + e.lname : '')).trim() : '—'; }
@@ -4521,6 +4550,9 @@ async function aiSend() {
   if (!text) return;
   const btn = document.getElementById('ai-send');
   const out = document.getElementById('ai-result');
+  // חיסור שנבנה מהרשימות (שמות מלאים) — מזוהה ישר באפליקציה, בלי לחכות לשרת
+  const loc = typeof aiLocalAbsence === 'function' ? aiLocalAbsence(text) : null;
+  if (loc) { out.innerHTML = ''; aiShowPlan({ reply: '', actions: [loc] }, text); return; }
   btn.disabled = true; btn.textContent = 'חושב…';
   out.innerHTML = '';
   const now = new Date();
@@ -11382,6 +11414,39 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
   function init() { var t = document.getElementById('ai-input'); if (t && !t._aip) { t._aip = 1; t.addEventListener('input', onInput); } }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
+/* זיהוי מקומי של "חיסור <שם מלא> [תאריך] חילוף/מחליף <שם מלא> <N> שעות" */
+function aiLocalAbsence(text) {
+  if (/תזכ|מפרע|חומר|הודע|בטל|מחק/.test(text)) return null;
+  var act = employees.filter(function (e) { return e.status !== 'inactive'; })
+    .sort(function (a, b) { return empName(b).length - empName(a).length; });
+  function nameAt(str) { str = str.replace(/^\s*(של|את)?\s*/, ''); for (var i = 0; i < act.length; i++) if (str.indexOf(empName(act[i])) === 0) return act[i]; return null; }
+  var mA = /חיסור/.exec(text); if (!mA) return null;
+  var ab = nameAt(text.slice(mA.index + mA[0].length)); if (!ab) return null;
+  var mR = /(מחליפים|מחליפות|מחליפה|מחליף|החלפה|חילופים|חילוף)/.exec(text), rp = null, hrs = 0;
+  if (mR) {
+    var rest = text.slice(mR.index + mR[0].length); rp = nameAt(rest);
+    if (!rp || rp.id === ab.id) return null;
+    var after = rest.replace(/^\s*(של|את)?\s*/, '').slice(empName(rp).length);
+    var mh = /(\d+(?:[.,]\d+)?)\s*(שעות|שעה|ש')/.exec(after) || /(\d+(?:[.,]\d+)?)\s*(שעות|שעה|ש')/.exec(text);
+    if (mh) hrs = parseFloat(mh[1].replace(',', '.'));
+  }
+  // תאריך: היום / מחר / אתמול / שלשום / מחרתיים / יום ראשון..שבת / 12.11 או 12/11
+  var d = new Date(); d.setHours(12, 0, 0, 0);
+  var DN = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+  var md = /(\d{1,2})[./](\d{1,2})(?:[./](\d{2,4}))?/.exec(text.replace(/\d+(?:[.,]\d+)?\s*(שעות|שעה|ש')/g, ''));
+  if (/מחרתיים/.test(text)) d.setDate(d.getDate() + 2);
+  else if (/מחר/.test(text)) d.setDate(d.getDate() + 1);
+  else if (/שלשום/.test(text)) d.setDate(d.getDate() - 2);
+  else if (/אתמול/.test(text)) d.setDate(d.getDate() - 1);
+  else if (md) { var y = md[3] ? (+md[3] < 100 ? 2000 + +md[3] : +md[3]) : d.getFullYear(); d = new Date(y, +md[2] - 1, +md[1], 12); }
+  else {
+    var wd = -1; DN.forEach(function (n, i) { if (new RegExp('(ב?יום\\s+)' + n + '(?![א-ת])').test(text)) wd = i; });
+    if (wd >= 0) { var diff = wd - d.getDay(); if (diff < 0) diff += 7; d.setDate(d.getDate() + diff); }
+  }
+  var iso = _isoLocal(d);
+  var cl = (ab.clients && ab.clients[0]) || ab.client || '';
+  return { type: 'add_absence', empId: ab.id, date: iso, replacementId: rp ? rp.id : null, hours: rp ? (hrs || ab.dailyHours || 8) : 0, client: cl };
+}
 /* עוזר AI נפתח מהבועה המרחפת */
 (function () {
   function init() {
