@@ -11,7 +11,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 app.use(cors({ origin: '*', methods: ['GET','POST','OPTIONS'], allowedHeaders: ['Content-Type','x-app-token'] }));
 const jsonSmall = express.json({ limit: '10mb' });
 // קבצים (צילומי שעות וכו') מקבלים גבול גדול יותר — שאר הנתיבים נשארים עם 10MB
-app.use((req, res, next) => ((req.path.startsWith('/api/files') || req.path === '/api/vat/doc' || req.path === '/api/vat/scan') ? next() : jsonSmall(req, res, next)));
+app.use((req, res, next) => ((req.path.startsWith('/api/files') || req.path === '/api/vat/doc' || req.path === '/api/vat/scan' || req.path === '/api/sick/scan') ? next() : jsonSmall(req, res, next)));
 
 // ===== MongoDB =====
 const MONGO_URI = process.env.MONGODB_URI;
@@ -48,7 +48,7 @@ function tokenOk(req) {
   return crypto.timingSafeEqual(Buffer.from(got), Buffer.from(exp));
 }
 // כשמוגדרת סיסמה — כל נתיבי הנתונים דורשים התחברות
-const PROTECTED = ['/api/files', '/api/state', '/api/data', '/api/clients', '/api/invoice', '/api/transactions', '/api/assistant', '/api/reminders/sync', '/api/green-invoice', '/api/vat', '/api/push'];
+const PROTECTED = ['/api/files', '/api/state', '/api/data', '/api/clients', '/api/invoice', '/api/transactions', '/api/assistant', '/api/reminders/sync', '/api/green-invoice', '/api/vat', '/api/push', '/api/sick'];
 app.use((req, res, next) => {
   if (req.method === 'OPTIONS' || !process.env.APP_PASSWORD) return next();
   if (req.path === '/api/state/status') return next();
@@ -324,7 +324,7 @@ app.post('/api/files', express.json({ limit: '25mb' }), async (req, res) => {
     if (!db) return res.status(503).json({ error: 'DB לא מוכן' });
     const b = req.body || {};
     const empId = String(b.empId || '').slice(0, 60), month = String(b.month || '');
-    if (!empId || !/^(\d{4}-\d{2}|101)$/.test(month)) return res.status(400).json({ error: 'חסר עובד או חודש' });
+    if (!empId || !/^(\d{4}-\d{2}|101|sick)$/.test(month)) return res.status(400).json({ error: 'חסר עובד או חודש' });
     if (typeof b.data !== 'string' || !b.data) return res.status(400).json({ error: 'אין קובץ' });
     const buf = Buffer.from(b.data, 'base64');
     if (!buf.length || buf.length > FILE_MAX) return res.status(413).json({ error: 'הקובץ גדול מדי (עד 15MB)' });
@@ -949,6 +949,52 @@ app.post('/api/vat/scan', express.json({ limit: '25mb' }), async (req, res) => {
     if (!out) return res.status(502).json({ error: 'לא הצלחתי לקרוא את המסמך' });
     if (out.category && !VAT_CATS.includes(out.category)) out.category = 'אחר';
     res.json(out);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ===== קריאת אישור מחלה (תאריכים) — אותו מנגנון AI כמו קריאת מסמכי מע"מ =====
+app.post('/api/sick/scan', express.json({ limit: '25mb' }), async (req, res) => {
+  try {
+    const key = process.env.ANTHROPIC_API_KEY, gKey = process.env.GEMINI_API_KEY;
+    if (!key && !gKey) return res.status(501).json({ error: 'no_ai' });
+    const ip = req.ip || 'x', now = Date.now();
+    const arr = (aiHits.get('scan_' + ip) || []).filter(t => now - t < 3600000);
+    if (arr.length >= 60) return res.status(429).json({ error: 'יותר מדי סריקות, נסה מאוחר יותר' });
+    arr.push(now); aiHits.set('scan_' + ip, arr);
+    const b = req.body || {};
+    const type = String(b.type || '');
+    if (typeof b.data !== 'string' || !b.data || !/^(image\/(jpeg|png|webp|gif)|application\/pdf)$/.test(type)) return res.status(400).json({ error: 'סוג קובץ לא נתמך' });
+    const prompt = `זה אישור מחלה (תעודת מחלה) של עובד בישראל. חלץ את תקופת אי-הכשירות לעבודה: from = התאריך הראשון, to = התאריך האחרון (כולל), בפורמט YYYY-MM-DD. אם כתוב מספר ימים בלבד, חשב את to מ-from. name = שם המטופל כפי שכתוב. אם לא ניתן לזהות תאריך — השאר ריק.`;
+    const schema = { type: 'object', properties: { from: { type: 'string' }, to: { type: 'string' }, name: { type: 'string' } }, required: ['from', 'to'] };
+    let out = null;
+    if (key) {
+      const block = type === 'application/pdf' ? { type: 'document', source: { type: 'base64', media_type: type, data: b.data } } : { type: 'image', source: { type: 'base64', media_type: type, data: b.data } };
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST', headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+        body: JSON.stringify({ model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-5', max_tokens: 400,
+          tools: [{ name: 'sick', description: 'תקופת המחלה', input_schema: schema }], tool_choice: { type: 'tool', name: 'sick' },
+          messages: [{ role: 'user', content: [block, { type: 'text', text: prompt }] }] })
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) return res.status(502).json({ error: (data.error && data.error.message) || 'שגיאת AI' });
+      const tb = (data.content || []).find(x => x.type === 'tool_use'); out = tb && tb.input;
+    } else {
+      const up = s => Array.isArray(s) ? s.map(up) : (s && typeof s === 'object') ? Object.fromEntries(Object.entries(s).map(([k, v]) => [k, k === 'type' && typeof v === 'string' ? v.toUpperCase() : up(v)])) : s;
+      const model = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+      const gr = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method: 'POST', headers: { 'x-goog-api-key': gKey, 'content-type': 'application/json' },
+        body: JSON.stringify({ contents: [{ role: 'user', parts: [{ inline_data: { mime_type: type, data: b.data } }, { text: prompt }] }],
+          generationConfig: { responseMimeType: 'application/json', responseSchema: up(schema) } })
+      });
+      const gd = await gr.json().catch(() => ({}));
+      if (!gr.ok) return res.status(502).json({ error: (gd.error && gd.error.message) || 'שגיאת AI' });
+      const t = (((gd.candidates || [])[0] || {}).content || {}).parts || [];
+      try { out = JSON.parse((t.find(p => p.text) || {}).text || 'null'); } catch (e) { out = null; }
+    }
+    const ok = d => /^\d{4}-\d{2}-\d{2}$/.test(String(d || ''));
+    if (!out || !ok(out.from)) return res.status(422).json({ error: 'לא זוהו תאריכים באישור' });
+    if (!ok(out.to) || out.to < out.from) out.to = out.from;
+    res.json({ from: out.from, to: out.to, name: out.name || '' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
