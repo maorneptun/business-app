@@ -588,6 +588,14 @@ html.modal-lock,html.modal-lock body{overscroll-behavior:none}
 .sick-miss{background:#FFF4E5;color:#8A4B00;border-radius:12px;padding:10px 12px;font-size:13.5px;margin:4px 0 10px;line-height:1.5}
 html[data-dark] .sick-miss{background:#3a2a12;color:#f5c67a}
 .sk-days{font-size:13.5px;color:var(--text-muted);margin:6px 2px 0;line-height:1.6}
+.sk-repl{margin-top:14px;border-top:1px solid var(--border);padding-top:12px}
+.sk-rh{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.sk-rh select{max-width:62%}
+.sk-row{display:grid;grid-template-columns:78px 1fr 74px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)}
+.sk-row:last-child{border-bottom:none}
+.sk-row .d{font-size:14px;font-weight:600}
+.sk-row input{text-align:center}
+.sk-row input:disabled{opacity:.35}
 .sk-st{font-size:13.5px;border-radius:12px;padding:10px 12px;margin-bottom:12px;background:var(--bg)}
 .ai-pick{margin-top:10px;background:var(--bg);border-radius:14px;padding:10px}
 .ai-pick[hidden]{display:none}
@@ -11911,18 +11919,46 @@ function sickLoad() {
   }).catch(function () { box.innerHTML = '<div class="rc-empty">אין חיבור לשרת כרגע.</div>'; });
 }
 var _sk = null;
+var _SK_DN = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
+function _skOpts(sel) {
+  return '<option value="">בלי מחליף</option>' + employees.filter(function (e) { return e.status !== 'inactive' && e.id !== (_sk && _sk.empId); })
+    .sort(function (a, b) { return empName(a).localeCompare(empName(b), 'he'); })
+    .map(function (e) { return '<option value="' + _empEsc(e.id) + '"' + (e.id === sel ? ' selected' : '') + '>' + _empEsc(empLabel(e)) + '</option>'; }).join('');
+}
+function _skRows(ds) {
+  var wrap = document.getElementById('sk-repl'), rows = document.getElementById('sk-rows'); if (!wrap || !_sk) return;
+  wrap.hidden = !ds.length; if (!ds.length) { rows.innerHTML = ''; return; }
+  var emp = employees.find(function (e) { return e.id === _sk.empId; }), defH = emp ? (parseFloat(emp.dailyHours) || 8) : 8;
+  ds.forEach(function (d) {
+    if (_sk.repl[d]) return;
+    var a = absences.find(function (x) { return x.empId === _sk.empId && x.date === d; });
+    _sk.repl[d] = { id: (a && a.replacementId) || '', h: (a && a.replHours) || defH };
+  });
+  var ids = ds.map(function (d) { return _sk.repl[d].id; }), same = ids.every(function (x) { return x === ids[0]; });
+  document.getElementById('sk-all').innerHTML = (same ? '' : '<option value="__" selected>שונה בכל יום</option>') + _skOpts(same ? ids[0] : '__');
+  rows.innerHTML = ds.map(function (d) {
+    var r = _sk.repl[d], dt = new Date(d + 'T12:00:00');
+    return '<div class="sk-row"><span class="d">' + _SK_DN[dt.getDay()] + ' ' + _skFmt(d) + '</span>' +
+      '<select class="form-control" onchange="sickReplSet(\'' + d + '\', this.value)" aria-label="מחליף ב-' + _skFmt(d) + '">' + _skOpts(r.id) + '</select>' +
+      '<input class="form-control" type="number" inputmode="decimal" step="0.5" min="0" max="24" value="' + r.h + '"' + (r.id ? '' : ' disabled') + ' oninput="sickReplH(\'' + d + '\', this.value)" aria-label="שעות"></div>';
+  }).join('');
+}
+function sickReplSet(d, id) { if (_sk && _sk.repl[d]) { _sk.repl[d].id = id; sickDays(); } }
+function sickReplH(d, h) { if (_sk && _sk.repl[d]) _sk.repl[d].h = parseFloat(h) || 0; }
+function sickReplAll(id) { if (!_sk || id === '__') return; Object.keys(_sk.repl).forEach(function (d) { _sk.repl[d].id = id; }); sickDays(); }
 function sickDays() {
   var f = document.getElementById('sk-from').value, t = document.getElementById('sk-to').value, el = document.getElementById('sk-days');
   if (f && (!t || t < f)) { t = f; document.getElementById('sk-to').value = f; }
   if (!f) { el.textContent = ''; return; }
   var ds = _skDates(f, t), have = ds.filter(function (d) { return absences.some(function (a) { return a.empId === currentProfileEmpId && a.date === d; }); }).length;
+  _skRows(ds);
   el.textContent = ds.length ? ds.length + ' ימי עבודה יסומנו כמחלה' + (have ? ' (' + have + ' מהם כבר רשומים כחיסור, הם יעודכנו)' : '') + '. שישי, שבת וחגים לא נספרים, אלא אם כבר נרשם בהם חיסור.' : 'אין ימי עבודה בטווח הזה.';
 }
 function sickPick(input) {
   var file = (input.files || [])[0]; input.value = ''; if (!file) return;
   if (!_rcOnline()) { showToast('כדי לשמור קבצים צריך להיות מחובר לסנכרון'); return; }
   var today = _isoLocal(new Date());
-  _sk = { empId: currentProfileEmpId, b64: '', type: '' };
+  _sk = { empId: currentProfileEmpId, b64: '', type: '', repl: {} };
   document.getElementById('sk-from').value = today; document.getElementById('sk-to').value = today;
   var st = document.getElementById('sk-st'); st.textContent = 'קורא את התאריכים מהאישור…';
   var go = document.getElementById('sk-go'); go.disabled = true;
@@ -11960,8 +11996,18 @@ function sickSave() {
       ds.forEach(function (d) {
         var a = absences.find(function (x) { return x.empId === _sk.empId && x.date === d; });
         if (a) { a.reason = 'sick'; a.sickFile = fid; if (!/מחלה/.test(a.note || '')) a.note = a.note ? a.note + ' · מחלה' : 'מחלה'; }
-        else absences.push({ id: Date.now().toString() + Math.floor(Math.random() * 100000), empId: _sk.empId, date: d, client: cl, replacementId: null,
-          replPaid: null, replAmount: 0, replPayNote: '', replHours: 0, replClient: '', note: 'מחלה', reason: 'sick', sickFile: fid, createdAt: new Date().toISOString() });
+        else { a = { id: Date.now().toString() + Math.floor(Math.random() * 100000), empId: _sk.empId, date: d, client: cl, replacementId: null,
+          replPaid: null, replAmount: 0, replPayNote: '', replHours: 0, replClient: '', note: 'מחלה', reason: 'sick', sickFile: fid, createdAt: new Date().toISOString() };
+          absences.push(a); }
+        // מחליף לאותו יום (כמו ברישום חיסור רגיל: שעות נרשמות למחליף כחילוף)
+        var r = _sk.repl[d] || { id: '' }, h = parseFloat(r.h) || 0;
+        if (a.replacementId && a.replacementId !== r.id) hoursLog = hoursLog.filter(function (x) { return !(x.absenceId === a.id || (x.empId === a.replacementId && x.date === d && x.type === 'replacement')); });
+        if (r.id) {
+          a.replacementId = r.id; a.replHours = h; a.replClient = a.client || cl; if (!a.replPaid) a.replPaid = 'unpaid';
+          hoursLog = hoursLog.filter(function (x) { return !(x.empId === r.id && x.date === d && x.type === 'replacement'); });
+          if (h > 0) hoursLog.push({ id: Date.now().toString() + '_repl' + Math.floor(Math.random() * 100000), empId: r.id, date: d, hours: h, client: a.client || cl,
+            note: 'חילוף: ' + (emp ? empName(emp) : ''), type: 'replacement', absenceId: a.id, createdAt: new Date().toISOString() });
+        } else { a.replacementId = null; a.replHours = 0; a.replClient = ''; a.replPaid = null; }
       });
       save();
       try { renderAbsenceTable(); updateStats(); } catch (e) {}
@@ -12591,6 +12637,11 @@ function vatRepPdf(btn) {
       <div class="form-group"><label class="form-label">עד תאריך</label><input type="date" class="form-control" id="sk-to" oninput="sickDays()"></div>
     </div>
     <div class="sk-days" id="sk-days"></div>
+    <div id="sk-repl" class="sk-repl" hidden>
+      <div class="sk-rh"><b>היה מחליף?</b>
+        <select class="form-control" id="sk-all" onchange="sickReplAll(this.value)" aria-label="אותו מחליף לכל הימים"></select></div>
+      <div id="sk-rows"></div>
+    </div>
     <div class="modal-footer"><div>
       <button class="btn btn-secondary" onclick="closeModal('modal-sick')">ביטול</button>
       <button class="btn btn-primary" id="sk-go" onclick="sickSave()">שמור וסמן ימי מחלה</button>
