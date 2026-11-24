@@ -48,7 +48,7 @@ function tokenOk(req) {
   return crypto.timingSafeEqual(Buffer.from(got), Buffer.from(exp));
 }
 // כשמוגדרת סיסמה — כל נתיבי הנתונים דורשים התחברות
-const PROTECTED = ['/api/files', '/api/state', '/api/data', '/api/clients', '/api/invoice', '/api/transactions', '/api/assistant', '/api/reminders/sync', '/api/green-invoice', '/api/vat', '/api/push', '/api/sick'];
+const PROTECTED = ['/api/files', '/api/state', '/api/data', '/api/clients', '/api/invoice', '/api/transactions', '/api/assistant', '/api/reminders/sync', '/api/green-invoice', '/api/vat', '/api/push', '/api/sick', '/api/agent'];
 app.use((req, res, next) => {
   if (req.method === 'OPTIONS' || !process.env.APP_PASSWORD) return next();
   if (req.path === '/api/state/status') return next();
@@ -996,6 +996,119 @@ app.post('/api/sick/scan', express.json({ limit: '25mb' }), async (req, res) => 
     if (!ok(out.to) || out.to < out.from) out.to = out.from;
     res.json({ from: out.from, to: out.to, name: out.name || '' });
   } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ===== צוות וירטואלי (עובדי AI) =====
+// כל "עובד" מקבל הוראות תפקיד + תדריך מבעל העסק + נתונים רלוונטיים, ומחזיר תשובה והצעות לפעולה.
+// שום פעולה לא מתבצעת בשרת: האפליקציה מציגה כל הצעה, ובעל העסק מאשר.
+const AGENTS = {
+  mk: {
+    name: 'שיווק ופרסום',
+    role: `אתה איש השיווק והפרסום של העסק. אתה כותב פוסטים לפייסבוק/אינסטגרם/לינקדאין, מודעות ממומנות, טקסטים לאתר, תגובות לביקורות בגוגל, ומציע רעיונות לקמפיינים ולוח תוכן.
+כתוב בעברית טבעית, קצרה ומשכנעת, מותאמת לקהל של עסקים ומוסדות שצריכים ניקיון. אל תמציא מחירים, הנחות או הבטחות שלא מופיעים בתדריך.
+כל טקסט מוכן לשימוש — שמור אותו כטיוטה (save_draft), טיוטה אחת לכל פוסט/מודעה.`,
+    actions: ['save_draft', 'add_reminder']
+  },
+  hr: {
+    name: 'גיוס וכוח אדם',
+    role: `אתה אחראי הגיוס וכוח האדם. אתה מנסח מודעות דרושים, שאלות סינון למועמדים, הודעות למועמדים ולעובדים, ובודק מה חסר לעובדים (למשל טופס 101 או אישורי מחלה).
+כשבעל העסק מבקש לקלוט עובד חדש — הצע add_employee עם השם (fname, lname), כינוי אם נאמר, לקוחות מהרשימה בלבד ושעות יומיות אם נאמרו.
+מודעות והודעות — שמור כטיוטה (save_draft).`,
+    actions: ['save_draft', 'add_reminder', 'add_employee']
+  },
+  cl: {
+    name: 'מנהל תיקי לקוחות',
+    role: `אתה מנהל תיקי הלקוחות. אתה עונה על שאלות על לקוחות (שעות החודש, תעריף, האם הופקה חשבונית), מנסח מיילים והודעות ללקוחות (עדכונים, תזכורת תשלום, תשובה לתלונה, הצעת מחיר), ומכין חשבוניות.
+כשמבקשים להפיק חשבונית ללקוח — הצע invoice עם clientId מהרשימה ו-month (YYYY-MM). החשבונית תיפתח לבדיקה לפני הפקה, אל תכתוב סכומים מהראש.
+מיילים והודעות ללקוחות — שמור כטיוטה (save_draft) עם כותרת שמציינת את הלקוח.`,
+    actions: ['save_draft', 'add_reminder', 'invoice']
+  }
+};
+
+async function aiTool(system, tool, messages, maxTokens) {
+  const key = process.env.ANTHROPIC_API_KEY, gKey = process.env.GEMINI_API_KEY;
+  if (key) {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST', headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+      body: JSON.stringify({ model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-5', max_tokens: maxTokens || 3000, system,
+        tools: [tool], tool_choice: { type: 'tool', name: tool.name }, messages })
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error((data.error && data.error.message) || 'שגיאת AI');
+    const b = (data.content || []).find(x => x.type === 'tool_use');
+    return b && b.input;
+  }
+  const up = s => Array.isArray(s) ? s.map(up) : (s && typeof s === 'object') ? Object.fromEntries(Object.entries(s).map(([k, v]) => [k, k === 'type' && typeof v === 'string' ? v.toUpperCase() : up(v)])) : s;
+  const model = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+  const gr = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+    method: 'POST', headers: { 'x-goog-api-key': gKey, 'content-type': 'application/json' },
+    body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] },
+      contents: messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })),
+      generationConfig: { responseMimeType: 'application/json', responseSchema: up(tool.input_schema) } })
+  });
+  const gd = await gr.json().catch(() => ({}));
+  if (!gr.ok) throw new Error((gd.error && gd.error.message) || 'שגיאת AI');
+  const t = (((gd.candidates || [])[0] || {}).content || {}).parts || [];
+  try { return JSON.parse((t.find(p => p.text) || {}).text || 'null'); } catch (e) { return null; }
+}
+
+app.post('/api/agent', async (req, res) => {
+  try {
+    if (!process.env.ANTHROPIC_API_KEY && !process.env.GEMINI_API_KEY) return res.status(501).json({ error: 'חסר מפתח AI בשרת (ANTHROPIC_API_KEY ב-Render)' });
+    const ip = req.ip || 'x', now = Date.now();
+    const arr = (aiHits.get('agent_' + ip) || []).filter(t => now - t < 3600000);
+    if (arr.length >= 60) return res.status(429).json({ error: 'יותר מדי בקשות, נסה מאוחר יותר' });
+    arr.push(now); aiHits.set('agent_' + ip, arr);
+    const b = req.body || {};
+    const ag = AGENTS[b.agent];
+    if (!ag) return res.status(400).json({ error: 'עובד לא מוכר' });
+    const text = String(b.text || '').trim();
+    if (!text || text.length > 4000) return res.status(400).json({ error: 'טקסט לא תקין' });
+    const cut = (v, n) => { const s = JSON.stringify(v == null ? '' : v); return s.length > n ? s.slice(0, n) + '…' : s; };
+    const system = `${ag.role}
+
+אתה עובד בצוות של "נפטון" — עסק ניקיון והשמת עובדי ניקיון בישראל. אתה מדבר עם בעל העסק, מאור. ענה בעברית, קצר וברור, בלי הקדמות.
+התאריך היום: ${String(b.today || '').slice(0, 10)} (${String(b.weekday || '').slice(0, 10)}). החודש הפעיל באפליקציה: ${String(b.month || '').slice(0, 7)}.
+
+על העסק (מבעל העסק): ${String(b.business || '—').slice(0, 3000)}
+הנחיות אישיות לתפקיד שלך: ${String(b.brief || '—').slice(0, 3000)}
+
+נתונים מהאפליקציה (JSON): ${cut(b.ctx, 24000)}
+
+אתה עונה תמיד דרך הכלי respond:
+- reply: התשובה שלך לבעל העסק. אם הכנת טקסטים — כתוב בקצרה מה הכנת (הטקסט המלא נמצא בטיוטות).
+- actions: הצעות לפעולה (ריק אם אין). מותר לך רק: ${ag.actions.join(', ')}.
+  save_draft: title (כותרת קצרה), text (הטקסט המלא, מוכן להעתקה), kind (post / ad / email / message / job / other).
+  add_reminder: text, date YYYY-MM-DD, time HH:MM אם צוינה שעה.
+  add_employee: fname, lname, nick, clients (שמות לקוחות מהרשימה בדיוק), dailyHours, note.
+  invoice: clientId (מהרשימה), month YYYY-MM.
+כללים: אל תמציא נתונים שלא מופיעים למעלה. אם חסר מידע חשוב — שאל ב-reply ואל תציע פעולה. שום דבר לא נשלח ללקוחות או מתפרסם — בעל העסק מאשר כל פעולה.`;
+    const tool = {
+      name: 'respond', description: 'תשובה והצעות לפעולה',
+      input_schema: { type: 'object', required: ['reply', 'actions'], properties: {
+        reply: { type: 'string' },
+        actions: { type: 'array', items: { type: 'object', required: ['type'], properties: {
+          type: { type: 'string', enum: ag.actions },
+          title: { type: 'string' }, text: { type: 'string' }, kind: { type: 'string' },
+          date: { type: 'string' }, time: { type: 'string' },
+          fname: { type: 'string' }, lname: { type: 'string' }, nick: { type: 'string' },
+          clients: { type: 'array', items: { type: 'string' } }, dailyHours: { type: 'number' }, note: { type: 'string' },
+          clientId: { type: 'string' }, month: { type: 'string' } } } } } }
+    };
+    const hist = (Array.isArray(b.history) ? b.history.slice(-12) : [])
+      .filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content)
+      .map(m => ({ role: m.role, content: m.content.slice(0, 3000) }));
+    // ההיסטוריה חייבת להתחיל ב-user ולהתחלף
+    while (hist.length && hist[0].role !== 'user') hist.shift();
+    const msgs = [];
+    hist.forEach(m => { if (msgs.length && msgs[msgs.length - 1].role === m.role) msgs[msgs.length - 1].content += '\n' + m.content; else msgs.push(m); });
+    if (msgs.length && msgs[msgs.length - 1].role === 'user') msgs.pop();
+    msgs.push({ role: 'user', content: text });
+    const out = await aiTool(system, tool, msgs, 4000);
+    if (!out) return res.status(502).json({ error: 'לא התקבלה תשובה' });
+    const actions = (Array.isArray(out.actions) ? out.actions : []).filter(a => a && ag.actions.includes(a.type)).slice(0, 12);
+    res.json({ reply: String(out.reply || ''), actions });
+  } catch (err) { res.status(502).json({ error: err.message || 'שגיאת AI' }); }
 });
 
 // ===== REMINDERS + WHATSAPP (GREEN-API) =====

@@ -585,6 +585,49 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
   #modal-ai .modal-header{top:calc(-8px - env(safe-area-inset-top))}
 }
 html.modal-lock,html.modal-lock body{overscroll-behavior:none}
+.tm-seg{margin-bottom:14px;max-width:360px}
+.tm-seg button{flex:1}
+.tm-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin-bottom:12px}
+.tm-card{display:flex;flex-direction:column;gap:4px;text-align:right;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;font-family:inherit;color:var(--text);cursor:pointer;min-height:110px}
+.tm-card:hover{border-color:var(--accent)}
+.tm-card b{font-size:17px}
+.tm-card span{font-size:13.5px;color:var(--text-muted)}
+.tm-card small{margin-top:auto;font-size:12.5px;color:var(--text-muted);opacity:.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tm-biz{display:flex;flex-direction:column;gap:4px;width:100%;text-align:right;background:var(--bg);border:1px dashed var(--border);border-radius:16px;padding:14px 16px;font-family:inherit;color:var(--text);cursor:pointer}
+.tm-biz span{font-size:13.5px;color:var(--text-muted)}
+.tm-empty{color:var(--text-muted);font-size:14px;padding:20px 4px}
+.tm-draft{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:10px}
+.tm-dh{display:flex;justify-content:space-between;gap:10px;align-items:baseline;margin-bottom:6px}
+.tm-dh small{color:var(--text-muted);font-size:12px;white-space:nowrap}
+.tm-dt{white-space:pre-wrap;font-size:14.5px;line-height:1.6;background:var(--bg);border-radius:10px;padding:10px 12px;max-height:260px;overflow-y:auto}
+.tm-da{display:flex;gap:8px;justify-content:flex-start;margin-top:8px;flex-wrap:wrap}
+.tm-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
+.tm-tb{display:flex;gap:6px}
+.tm-back{border:0;background:none;color:var(--accent);font-family:inherit;font-size:16px;font-weight:600;cursor:pointer;padding:8px 0;min-height:40px}
+.tm-msgs{display:flex;flex-direction:column;gap:8px;min-height:40vh;max-height:calc(100vh - 330px);overflow-y:auto;padding:4px 2px 10px}
+.tm-m{max-width:86%;padding:10px 13px;border-radius:16px;font-size:15px;line-height:1.55;white-space:pre-wrap;word-break:break-word}
+.tm-m.u{align-self:flex-start;background:var(--accent);color:#fff;border-bottom-right-radius:6px}
+.tm-m.a{align-self:flex-end;background:var(--surface);border:1px solid var(--border);border-bottom-left-radius:6px}
+.tm-m.x{align-self:flex-end;background:#FDECEC;color:#9B1C1C}
+html[data-dark] .tm-m.x{background:#3b1d1d;color:#f3b4b4}
+.tm-wait{color:var(--text-muted)}
+.tm-act{align-self:flex-end;width:min(560px,92%);background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:10px 12px}
+.tm-al{font-weight:700;font-size:14px;margin-bottom:6px}
+.tm-ast{font-size:13px;color:var(--text-muted);margin-top:6px}
+.tm-hi{display:flex;flex-direction:column;gap:6px;padding:12px 4px}
+.tm-hi b{font-size:18px}
+.tm-hi span{color:var(--text-muted);font-size:14px}
+.tm-chips{display:flex;flex-direction:column;gap:6px;margin-top:6px;align-items:flex-start}
+.tm-chips button{border:1px solid var(--border);background:var(--surface);border-radius:12px;padding:10px 14px;font-family:inherit;font-size:14.5px;color:var(--text);cursor:pointer;text-align:right}
+.tm-in{display:flex;gap:8px;align-items:flex-end;position:sticky;bottom:0;background:var(--bg);padding:8px 0}
+.tm-in textarea{flex:1;min-width:0;border:1px solid var(--border);border-radius:14px;padding:10px 12px;font-family:inherit;font-size:16px;resize:none;background:var(--surface);color:var(--text)}
+.app:has(#page-team.active) ~ #ai-fab, body:has(#page-team.active) #ai-fab, body:has(#page-team.active) .ai-fab{display:none !important}
+.tc-help{font-size:13.5px;color:var(--text-muted);margin:0 0 10px;line-height:1.5}
+@media (max-width:700px){
+  .tm-msgs{max-height:none;min-height:0}
+  .tm-in{bottom:78px;padding-bottom:10px}
+  .nav-item{font-size:10.5px}
+}
 .sick-miss{background:#FFF4E5;color:#8A4B00;border-radius:12px;padding:10px 12px;font-size:13.5px;margin:4px 0 10px;line-height:1.5}
 html[data-dark] .sick-miss{background:#3a2a12;color:#f5c67a}
 .sk-days{font-size:13.5px;color:var(--text-muted);margin:6px 2px 0;line-height:1.6}
@@ -1447,6 +1490,9 @@ html[data-dark] .modal-overlay { background: rgba(0,0,0,.55); }
     <div class="nav-item" onclick="showPage('vat')">
       <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></span> מע״מ
     </div>
+    <div class="nav-item" onclick="showPage('team')">
+      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 4.5a3 3 0 0 1 0 6"/><path d="M18 14.5c1.8.7 3 2.6 3 4.8"/></svg></span> צוות
+    </div>
     <div class="nav-item" onclick="showPage('settings')">
       <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span> הגדרות
     </div>
@@ -2240,6 +2286,16 @@ html[data-dark] .modal-overlay { background: rgba(0,0,0,.55); }
   </div>
 
   <!-- ===== PAGE: VAT ===== -->
+  <div id="page-team" class="page">
+    <div class="page-header">
+      <div>
+        <div class="page-title">הצוות שלי</div>
+        <div class="page-subtitle" id="team-sub">עובדים וירטואליים שמבצעים משימות בשבילך</div>
+      </div>
+    </div>
+    <div id="team-body"></div>
+  </div>
+
   <div id="page-vat" class="page">
     <div class="page-header">
       <div>
@@ -4005,7 +4061,7 @@ function showPage(name) {
   const pageEl = document.getElementById('page-' + name);
   if (pageEl) pageEl.classList.add('active');
   const items = document.querySelectorAll('.nav-item');
-  const map = {employees:0, absences:1, reports:2, clients:3, 'client-profile':3, vat:4, settings:5};
+  const map = {employees:0, absences:1, reports:2, clients:3, 'client-profile':3, vat:4, team:5, settings:6};
   if (map[name] !== undefined && items[map[name]]) items[map[name]].classList.add('active');
 
   // Show/hide add-emp button based on page
@@ -4027,6 +4083,7 @@ function showPage(name) {
   if (name === 'replacements-dashboard') { renderReplacementsDashboard(); }
   if (name === 'settings') { renderSettingsStats(); if (typeof setMRender === 'function') setMRender(); }
   if (name === 'vat') { vatInit(); }
+  if (name === 'team') { renderTeam(); }
   if (name === 'emp-profile') { /* already rendered by openEmpProfile */ }
 }
 
@@ -11886,6 +11943,177 @@ function rcUpload(input) {
     if (ok && wasCamera && empId === currentProfileEmpId) setTimeout(openManualHours, 400);
   });
 }
+/* ===== צוות וירטואלי (עובדי AI) ===== */
+var TEAM = [
+  { id: 'mk', name: 'שיווק ופרסום', sub: 'פוסטים, מודעות, ביקורות בגוגל',
+    chips: ['תכין 3 פוסטים לאינסטגרם לשבוע הבא', 'תכתוב מודעה ממומנת לניקיון משרדים', 'תנסח תגובה לביקורת טובה בגוגל'] },
+  { id: 'hr', name: 'גיוס וכוח אדם', sub: 'מודעות דרושים, קליטת עובדים',
+    chips: ['תכתוב מודעת דרושים לעובדת ניקיון', 'למי יש ימי מחלה בלי אישור החודש?', 'תקלוט עובדת חדשה'] },
+  { id: 'cl', name: 'מנהל תיקי לקוחות', sub: 'מיילים, חשבוניות, מעקב לקוחות',
+    chips: ['לאילו לקוחות עוד לא הופקה חשבונית החודש?', 'תנסח מייל תזכורת תשלום מנומס', 'תכין חשבונית ללקוח'] }
+];
+var teamCur = null, teamBusy = false, teamTab = 'team';
+function _tmGet(k, d) { try { var v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? d : v; } catch (e) { return d; } }
+function _tmSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { showToast('אין מספיק מקום בזיכרון המכשיר'); } try { if (window.nepSync && nepSync.now) nepSync.now(); } catch (e) {} }
+function tmChats() { return _tmGet('nep_agent_chat', {}); }
+function tmDrafts() { return _tmGet('nep_agent_drafts', []); }
+function tmCfg() { return _tmGet('nep_agent_cfg', {}); }
+function _tmE(t) { return _empEsc(t); }
+function _tmAg(id) { return TEAM.find(function (a) { return a.id === id; }); }
+
+function tmCtx(id) {
+  var act = employees.filter(function (e) { return e.status !== 'inactive'; });
+  var cls = (typeof clientsData !== 'undefined' ? clientsData : []);
+  if (id === 'cl') return {
+    clients: cls.slice(0, 150).map(function (c) {
+      var r = null; try { r = cpxCalc(c, activeMonth); } catch (e) {}
+      var inv = c.invoices && c.invoices[activeMonth];
+      return { id: c.id, name: c.name, contact: c.contactName || '', billing: c.billingType === 'fixed' ? 'קבוע חודשי' : 'לפי שעות',
+        rate: c.rate || 0, monthlyFee: c.monthlyFee || 0, hoursThisMonth: r ? Math.round((r.hours || 0) * 10) / 10 : null,
+        invoiceThisMonth: inv ? { number: inv.number || '', total: inv.total || 0 } : null, linkedToMorning: !!c.giId };
+    })
+  };
+  if (id === 'hr') {
+    var m = activeMonth;
+    return {
+      clients: cls.map(function (c) { return c.name; }),
+      employees: employees.slice(0, 200).map(function (e) {
+        var ab = absences.filter(function (a) { return a.empId === e.id && a.date && a.date.indexOf(m) === 0; });
+        return { name: empName(e), nick: e.nick || '', active: e.status !== 'inactive', clients: e.clients || (e.client ? [e.client] : []),
+          dailyHours: e.dailyHours || null, absencesThisMonth: ab.length,
+          sickDaysWithoutNote: absences.filter(function (a) { return a.empId === e.id && _isSickAbs(a) && !a.sickFile; }).length };
+      })
+    };
+  }
+  return { activeEmployees: act.length, clients: cls.length, clientNames: cls.slice(0, 40).map(function (c) { return c.name; }) };
+}
+
+function renderTeam() {
+  var body = document.getElementById('team-body'); if (!body) return;
+  var sub = document.getElementById('team-sub');
+  if (teamCur) { if (sub) sub.textContent = _tmAg(teamCur).name; body.innerHTML = _tmChatHtml(); _tmScroll(); return; }
+  if (sub) sub.textContent = 'עובדים וירטואליים שמבצעים משימות בשבילך';
+  var chats = tmChats(), dr = tmDrafts();
+  var h = '<div class="tm-seg sm-seg" role="tablist">' +
+    '<button type="button" aria-pressed="' + (teamTab === 'team') + '" onclick="teamTab=\'team\';renderTeam()">הצוות</button>' +
+    '<button type="button" aria-pressed="' + (teamTab === 'drafts') + '" onclick="teamTab=\'drafts\';renderTeam()">תוצרים' + (dr.length ? ' (' + dr.length + ')' : '') + '</button></div>';
+  if (teamTab === 'team') {
+    h += '<div class="tm-cards">' + TEAM.map(function (a) {
+      var c = chats[a.id] || [], last = c.length ? c[c.length - 1] : null;
+      return '<button type="button" class="tm-card" onclick="teamOpen(\'' + a.id + '\')"><b>' + a.name + '</b><span>' + a.sub + '</span>' +
+        (last ? '<small>' + _tmE(String(last.content || '').slice(0, 70)) + '</small>' : '<small>עוד לא דיברתם</small>') + '</button>';
+    }).join('') + '</div>';
+    var cfg = tmCfg();
+    h += '<button type="button" class="tm-biz" onclick="teamCfgOpen(\'\')"><b>על העסק</b><span>' + (cfg.business ? _tmE(cfg.business.slice(0, 90)) + '…' : 'ספר לצוות מה העסק עושה, אזורים, מחירים וסגנון. הם ישתמשו בזה בכל משימה.') + '</span></button>';
+  } else {
+    if (!dr.length) h += '<div class="tm-empty">טקסטים שהצוות מכין (פוסטים, מודעות, מיילים) יישמרו כאן.</div>';
+    h += dr.slice().reverse().map(function (d) {
+      var a = _tmAg(d.agent);
+      return '<div class="tm-draft"><div class="tm-dh"><b>' + _tmE(d.title || 'טיוטה') + '</b><small>' + (a ? a.name : '') + ' · ' + new Date(d.at).toLocaleDateString('he-IL') + '</small></div>' +
+        '<div class="tm-dt">' + _tmE(d.text) + '</div><div class="tm-da"><button type="button" class="btn btn-secondary btn-sm" onclick="teamCopy(\'' + d.id + '\')">העתק</button>' +
+        '<button type="button" class="btn btn-secondary btn-sm" style="color:var(--danger)" onclick="teamDelDraft(\'' + d.id + '\')">מחק</button></div></div>';
+    }).join('');
+  }
+  body.innerHTML = h;
+}
+function _tmActLabel(a) {
+  if (a.type === 'save_draft') return 'טיוטה: ' + (a.title || '');
+  if (a.type === 'add_reminder') return 'תזכורת: ' + (a.text || '') + ' · ' + (a.date ? _skFmt(a.date) : '') + (a.time ? ' ' + a.time : '');
+  if (a.type === 'add_employee') return 'עובד/ת חדש/ה: ' + [a.fname, a.lname].join(' ').trim() + (a.clients && a.clients.length ? ' · ' + a.clients.join(', ') : '');
+  if (a.type === 'invoice') { var c = (clientsData || []).find(function (x) { return x.id === a.clientId; }); var mm = String(a.month || activeMonth).split('-'); return 'חשבונית: ' + (c ? c.name : 'לקוח לא נמצא') + ' · ' + (_HEB_MN[+mm[1] - 1] || '') + ' ' + mm[0]; }
+  return a.type;
+}
+function _tmActBtn(a) { return { save_draft: 'שמור בתוצרים', add_reminder: 'הוסף תזכורת', add_employee: 'פתח טופס עובד', invoice: 'פתח טיוטת חשבונית' }[a.type] || 'אשר'; }
+function _tmChatHtml() {
+  var ag = _tmAg(teamCur), msgs = tmChats()[teamCur] || [];
+  var h = '<div class="tm-top"><button type="button" class="tm-back" onclick="teamOpen(null)">‹ הצוות</button>' +
+    '<span class="tm-tb"><button type="button" class="btn btn-secondary btn-sm" onclick="teamCfgOpen(\'' + ag.id + '\')">הנחיות</button>' +
+    (msgs.length ? '<button type="button" class="btn btn-secondary btn-sm" onclick="teamClear()">שיחה חדשה</button>' : '') + '</span></div>';
+  h += '<div class="tm-msgs" id="tm-msgs">';
+  if (!msgs.length) h += '<div class="tm-hi"><b>' + ag.name + '</b><span>' + ag.sub + '. כתוב משימה, או בחר אחת:</span>' +
+    '<div class="tm-chips">' + ag.chips.map(function (c) { return '<button type="button" onclick="teamChip(this.textContent)">' + _tmE(c) + '</button>'; }).join('') + '</div></div>';
+  msgs.forEach(function (m, mi) {
+    h += '<div class="tm-m ' + (m.role === 'user' ? 'u' : m.err ? 'x' : 'a') + '">' + _tmE(m.content) + '</div>';
+    (m.actions || []).forEach(function (a, ai) {
+      h += '<div class="tm-act"><div class="tm-al">' + _tmE(_tmActLabel(a)) + '</div>' +
+        (a.type === 'save_draft' && a.text ? '<div class="tm-dt">' + _tmE(a.text) + '</div>' : '') +
+        (a.st ? '<div class="tm-ast">' + (a.st === 'ok' ? 'בוצע' : 'דולג') + '</div>' :
+          '<div class="tm-da">' + (a.type === 'save_draft' ? '<button type="button" class="btn btn-secondary btn-sm" onclick="teamCopyAct(' + mi + ',' + ai + ')">העתק</button>' : '') +
+          '<button type="button" class="btn btn-secondary btn-sm" onclick="teamAct(' + mi + ',' + ai + ',0)">דלג</button>' +
+          '<button type="button" class="btn btn-primary btn-sm" onclick="teamAct(' + mi + ',' + ai + ',1)">' + _tmActBtn(a) + '</button></div>') + '</div>';
+    });
+  });
+  if (teamBusy) h += '<div class="tm-m a tm-wait">עובד על זה…</div>';
+  h += '</div><div class="tm-in"><textarea id="tm-q" rows="2" placeholder="משימה ל' + ag.name + '…" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey&&!(\'ontouchstart\' in window)){event.preventDefault();teamSend()}"></textarea>' +
+    '<button type="button" class="ai-send" onclick="teamSend()"' + (teamBusy ? ' disabled' : '') + '>שלח</button></div>';
+  return h;
+}
+function _tmScroll() { var m = document.getElementById('tm-msgs'); if (m) m.scrollTop = m.scrollHeight; }
+function teamOpen(id) { teamCur = id; renderTeam(); if (id) { var q = document.getElementById('tm-q'); if (q && !('ontouchstart' in window)) q.focus(); } window.scrollTo(0, 0); }
+function teamChip(t) { var q = document.getElementById('tm-q'); if (q) { q.value = t; q.focus(); } }
+function teamClear() { if (!confirm('להתחיל שיחה חדשה? ההיסטוריה עם העובד הזה תימחק (התוצרים נשארים).')) return; var c = tmChats(); c[teamCur] = []; _tmSet('nep_agent_chat', c); renderTeam(); }
+function _tmPush(id, msg) { var c = tmChats(); c[id] = (c[id] || []).concat([msg]).slice(-40); _tmSet('nep_agent_chat', c); }
+function teamSend() {
+  if (teamBusy || !teamCur) return;
+  var q = document.getElementById('tm-q'), text = (q && q.value || '').trim(); if (!text) return;
+  var id = teamCur, hist = (tmChats()[id] || []).filter(function (m) { return !m.err; }).map(function (m) {
+    var extra = (m.actions || []).filter(function (a) { return a.type === 'save_draft'; }).map(function (a) { return '\n[טיוטה: ' + (a.title || '') + ']\n' + (a.text || ''); }).join('');
+    return { role: m.role, content: String(m.content || '') + extra };
+  });
+  _tmPush(id, { role: 'user', content: text, ts: Date.now() });
+  teamBusy = true; renderTeam();
+  var cfg = tmCfg(), now = new Date(), days = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+  fetch(RC_API + '/agent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+    agent: id, text: text, history: hist, today: todayISO(), weekday: 'יום ' + days[now.getDay()], month: activeMonth,
+    business: cfg.business || '', brief: cfg[id] || '', ctx: tmCtx(id) }) })
+    .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { r: r, j: j }; }); })
+    .then(function (x) {
+      if (x.r.status === 401) throw new Error('צריך להתחבר לסנכרון (הגדרות › סנכרון בין מכשירים)');
+      if (!x.r.ok) throw new Error(x.j.error || ('שגיאה ' + x.r.status));
+      _tmPush(id, { role: 'assistant', content: x.j.reply || 'בוצע.', actions: x.j.actions || [], ts: Date.now() });
+    })
+    .catch(function (e) { _tmPush(id, { role: 'assistant', err: 1, content: (e && e.message) || 'השרת לא זמין כרגע, נסה שוב בעוד דקה', ts: Date.now() }); })
+    .then(function () { teamBusy = false; if (teamCur === id) renderTeam(); });
+}
+function teamAct(mi, ai, ok) {
+  var c = tmChats(), msgs = c[teamCur] || [], m = msgs[mi], a = m && m.actions && m.actions[ai]; if (!a || a.st) return;
+  if (ok) {
+    if (a.type === 'save_draft') { var d = tmDrafts(); d.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), agent: teamCur, title: a.title || 'טיוטה', text: a.text || '', kind: a.kind || '', at: Date.now() }); _tmSet('nep_agent_drafts', d.slice(-200)); showToast('נשמר בתוצרים'); }
+    else if (a.type === 'add_reminder') { if (!/^\d{4}-\d{2}-\d{2}$/.test(a.date || '')) { showToast('חסר תאריך לתזכורת'); return; } remPush(a.text || '', a.date, a.time || ''); try { save(); } catch (e) {} showToast('התזכורת נוספה'); }
+    else if (a.type === 'add_employee') {
+      openEditEmpPanel();
+      setTimeout(function () {
+        document.getElementById('emp-fname').value = a.fname || ''; document.getElementById('emp-lname').value = a.lname || '';
+        document.getElementById('emp-nick').value = a.nick || '';
+        var dh = document.getElementById('emp-daily-hours'); if (dh && a.dailyHours) dh.value = a.dailyHours;
+        var known = (clientsData || []).map(function (x) { return x.name; });
+        renderEmpClientTags((a.clients || []).filter(function (n) { return known.indexOf(n) >= 0; }));
+      }, 50);
+      showToast('בדוק את הפרטים ולחץ שמירה');
+    }
+    else if (a.type === 'invoice') {
+      var cl = (clientsData || []).find(function (x) { return x.id === a.clientId; });
+      if (!cl) { showToast('הלקוח לא נמצא'); return; }
+      if (a.month && /^\d{4}-\d{2}$/.test(a.month) && a.month !== activeMonth) selectPickerMonth(a.month);
+      currentClientId = cl.id; openInvoicePreview();
+    }
+  }
+  a.st = ok ? 'ok' : 'skip'; _tmSet('nep_agent_chat', c); renderTeam();
+}
+function _tmCopy(t) { (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { showToast('הועתק'); }).catch(function () { showToast('לא הצלחתי להעתיק'); }); }
+function teamCopyAct(mi, ai) { var m = (tmChats()[teamCur] || [])[mi], a = m && m.actions && m.actions[ai]; if (a) _tmCopy(a.text || ''); }
+function teamCopy(id) { var d = tmDrafts().find(function (x) { return x.id === id; }); if (d) _tmCopy(d.text); }
+function teamDelDraft(id) { if (!confirm('למחוק את הטיוטה?')) return; _tmSet('nep_agent_drafts', tmDrafts().filter(function (x) { return x.id !== id; })); renderTeam(); }
+var _tmCfgFor = '';
+function teamCfgOpen(id) {
+  _tmCfgFor = id; var cfg = tmCfg(), ag = id ? _tmAg(id) : null;
+  document.getElementById('tc-title').textContent = ag ? 'הנחיות ל' + ag.name : 'על העסק';
+  document.getElementById('tc-help').textContent = ag ? 'מה חשוב שהוא יידע? סגנון, דגשים, מה מותר ומה לא. למשל: "פונים בגוף שני, בלי אימוג׳ים, תמיד לציין שאנחנו פועלים במרכז".'
+    : 'מה העסק עושה, באילו אזורים, סוגי לקוחות, מחירים או טווחים, מה מייחד אתכם, טלפון ומייל ליצירת קשר. כל הצוות משתמש בזה.';
+  document.getElementById('tc-text').value = (id ? cfg[id] : cfg.business) || '';
+  openModal('modal-teamcfg');
+}
+function teamCfgSave() { var cfg = tmCfg(); cfg[_tmCfgFor || 'business'] = document.getElementById('tc-text').value.trim(); _tmSet('nep_agent_cfg', cfg); closeModal('modal-teamcfg'); showToast('נשמר'); renderTeam(); }
 /* --- אישורי מחלה: הקובץ נשמר בשרת (month='sick'), הימים מסומנים כחיסור מחלה --- */
 function _isSickAbs(a) { return a.reason === 'sick' || /מחלה/.test(a.note || ''); }
 function _skDates(from, to) {
@@ -12623,6 +12851,20 @@ function vatRepPdf(btn) {
       <div class="sm-card" id="hl-list"></div>
       <button type="button" class="btn btn-secondary" onclick="homeReset()">חזרה לסידור ברירת המחדל</button>
     </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-teamcfg">
+  <div class="modal" style="width:520px">
+    <div class="modal-header">
+      <div class="modal-title" id="tc-title">על העסק</div>
+      <button class="modal-close" onclick="closeModal('modal-teamcfg')" aria-label="סגור">×</button>
+    </div>
+    <p class="tc-help" id="tc-help"></p>
+    <textarea class="form-control" id="tc-text" rows="9" style="resize:vertical;font-size:15px;line-height:1.6"></textarea>
+    <div class="modal-footer"><div>
+      <button class="btn btn-secondary" onclick="closeModal('modal-teamcfg')">ביטול</button>
+      <button class="btn btn-primary" onclick="teamCfgSave()">שמירה</button>
+    </div></div>
   </div>
 </div>
 <div class="modal-overlay" id="modal-sick">
