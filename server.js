@@ -6,6 +6,17 @@ const path = require('path');
 const { MongoClient } = require('mongodb');
 
 const app = express();
+// המודלים החדשים לא מקבלים tool_choice מאולץ — מבקשים "auto" ומוציאים את תשובת הכלי, ואם אין — מנסים JSON מהטקסט
+function claudeToolOut(data) {
+  const c = (data && data.content) || [];
+  const tb = c.find(x => x.type === 'tool_use');
+  if (tb) return tb.input;
+  const txt = c.filter(x => x.type === 'text').map(x => x.text).join('\n');
+  const m = txt.match(/\{[\s\S]*\}/);
+  if (m) { try { return JSON.parse(m[0]); } catch (e) {} }
+  return txt ? { __text: txt } : null;
+}
+const MUST_TOOL = '\n\nחשוב: ענה רק באמצעות קריאה לכלי, ולא בטקסט חופשי.';
 const upload = multer({ storage: multer.memoryStorage() });
 
 app.use(cors({ origin: '*', methods: ['GET','POST','OPTIONS'], allowedHeaders: ['Content-Type','x-app-token'] }));
@@ -750,17 +761,18 @@ app.post('/api/assistant', async (req, res) => {
         body: JSON.stringify({
           model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-5-5',
           max_tokens: 2048,
-          system,
+          system: system + MUST_TOOL,
           tools: [tool],
-          tool_choice: { type: 'tool', name: 'submit_actions' },
+          tool_choice: { type: 'auto' },
           messages: hist.concat([{ role: 'user', content: text }])
         })
       });
       const data = await r.json();
       if (!r.ok) return res.status(502).json({ error: (data.error && data.error.message) || 'שגיאת AI' });
-      const block = (data.content || []).find(b => b.type === 'tool_use');
-      if (!block) return res.status(502).json({ error: 'תשובה לא צפויה' });
-      return res.json(block.input);
+      const out = claudeToolOut(data);
+      if (!out) return res.status(502).json({ error: 'תשובה לא צפויה' });
+      if (out.__text) return res.json({ reply: out.__text, actions: [] });
+      return res.json(out);
     }
 
     // ===== Gemini (חינמי) =====
@@ -927,12 +939,12 @@ app.post('/api/vat/scan', express.json({ limit: '25mb' }), async (req, res) => {
       const r = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST', headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
         body: JSON.stringify({ model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-5-5', max_tokens: 800,
-          tools: [{ name: 'doc', description: 'פרטי המסמך', input_schema: schema }], tool_choice: { type: 'tool', name: 'doc' },
-          messages: [{ role: 'user', content: [block, { type: 'text', text: prompt }] }] })
+          tools: [{ name: 'doc', description: 'פרטי המסמך', input_schema: schema }], tool_choice: { type: 'auto' },
+          messages: [{ role: 'user', content: [block, { type: 'text', text: prompt + MUST_TOOL }] }] })
       });
       const data = await r.json().catch(() => ({}));
       if (!r.ok) return res.status(502).json({ error: (data.error && data.error.message) || 'שגיאת AI' });
-      const tb = (data.content || []).find(x => x.type === 'tool_use'); out = tb && tb.input;
+      out = claudeToolOut(data); if (out && out.__text) out = null;
     } else {
       const up = s => Array.isArray(s) ? s.map(up) : (s && typeof s === 'object') ? Object.fromEntries(Object.entries(s).map(([k, v]) => [k, k === 'type' && typeof v === 'string' ? v.toUpperCase() : up(v)])) : s;
       const model = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
@@ -972,12 +984,12 @@ app.post('/api/sick/scan', express.json({ limit: '25mb' }), async (req, res) => 
       const r = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST', headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
         body: JSON.stringify({ model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-5-5', max_tokens: 400,
-          tools: [{ name: 'sick', description: 'תקופת המחלה', input_schema: schema }], tool_choice: { type: 'tool', name: 'sick' },
-          messages: [{ role: 'user', content: [block, { type: 'text', text: prompt }] }] })
+          tools: [{ name: 'sick', description: 'תקופת המחלה', input_schema: schema }], tool_choice: { type: 'auto' },
+          messages: [{ role: 'user', content: [block, { type: 'text', text: prompt + MUST_TOOL }] }] })
       });
       const data = await r.json().catch(() => ({}));
       if (!r.ok) return res.status(502).json({ error: (data.error && data.error.message) || 'שגיאת AI' });
-      const tb = (data.content || []).find(x => x.type === 'tool_use'); out = tb && tb.input;
+      out = claudeToolOut(data); if (out && out.__text) out = null;
     } else {
       const up = s => Array.isArray(s) ? s.map(up) : (s && typeof s === 'object') ? Object.fromEntries(Object.entries(s).map(([k, v]) => [k, k === 'type' && typeof v === 'string' ? v.toUpperCase() : up(v)])) : s;
       const model = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
@@ -1083,13 +1095,13 @@ async function aiTool(system, tool, messages, maxTokens) {
   if (key) {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST', headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-      body: JSON.stringify({ model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-5-5', max_tokens: maxTokens || 3000, system,
-        tools: [tool], tool_choice: { type: 'tool', name: tool.name }, messages })
+      body: JSON.stringify({ model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-5-5', max_tokens: maxTokens || 3000, system: system + MUST_TOOL,
+        tools: [tool], tool_choice: { type: 'auto' }, messages })
     });
     const data = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error((data.error && data.error.message) || 'שגיאת AI');
-    const b = (data.content || []).find(x => x.type === 'tool_use');
-    return b && b.input;
+    const o = claudeToolOut(data);
+    return o && o.__text ? { reply: o.__text, actions: [] } : o;
   }
   const up = s => Array.isArray(s) ? s.map(up) : (s && typeof s === 'object') ? Object.fromEntries(Object.entries(s).map(([k, v]) => [k, k === 'type' && typeof v === 'string' ? v.toUpperCase() : up(v)])) : s;
   const model = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
