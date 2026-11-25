@@ -748,7 +748,7 @@ app.post('/api/assistant', async (req, res) => {
         method: 'POST',
         headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
         body: JSON.stringify({
-          model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-5',
+          model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-5-5',
           max_tokens: 2048,
           system,
           tools: [tool],
@@ -926,7 +926,7 @@ app.post('/api/vat/scan', express.json({ limit: '25mb' }), async (req, res) => {
       const block = type === 'application/pdf' ? { type: 'document', source: { type: 'base64', media_type: type, data: b.data } } : { type: 'image', source: { type: 'base64', media_type: type, data: b.data } };
       const r = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST', headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-        body: JSON.stringify({ model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-5', max_tokens: 800,
+        body: JSON.stringify({ model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-5-5', max_tokens: 800,
           tools: [{ name: 'doc', description: 'פרטי המסמך', input_schema: schema }], tool_choice: { type: 'tool', name: 'doc' },
           messages: [{ role: 'user', content: [block, { type: 'text', text: prompt }] }] })
       });
@@ -971,7 +971,7 @@ app.post('/api/sick/scan', express.json({ limit: '25mb' }), async (req, res) => 
       const block = type === 'application/pdf' ? { type: 'document', source: { type: 'base64', media_type: type, data: b.data } } : { type: 'image', source: { type: 'base64', media_type: type, data: b.data } };
       const r = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST', headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-        body: JSON.stringify({ model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-5', max_tokens: 400,
+        body: JSON.stringify({ model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-5-5', max_tokens: 400,
           tools: [{ name: 'sick', description: 'תקופת המחלה', input_schema: schema }], tool_choice: { type: 'tool', name: 'sick' },
           messages: [{ role: 'user', content: [block, { type: 'text', text: prompt }] }] })
       });
@@ -1004,23 +1004,76 @@ app.post('/api/sick/scan', express.json({ limit: '25mb' }), async (req, res) => 
 const AGENTS = {
   mk: {
     name: 'שיווק ופרסום',
-    role: `אתה איש השיווק והפרסום של העסק. אתה כותב פוסטים לפייסבוק/אינסטגרם/לינקדאין, מודעות ממומנות, טקסטים לאתר, תגובות לביקורות בגוגל, ומציע רעיונות לקמפיינים ולוח תוכן.
-כתוב בעברית טבעית, קצרה ומשכנעת, מותאמת לקהל של עסקים ומוסדות שצריכים ניקיון. אל תמציא מחירים, הנחות או הבטחות שלא מופיעים בתדריך.
-כל טקסט מוכן לשימוש — שמור אותו כטיוטה (save_draft), טיוטה אחת לכל פוסט/מודעה.`,
-    actions: ['save_draft', 'add_reminder']
+    role: `אתה איש השיווק והפרסום של העסק.
+המטרה שלך: להביא לקוחות עסקיים חדשים (משרדים, מוסדות, בתי ספר, בניינים, עסקים) ולחזק את האמון בעסק.
+
+סטנדרטים לכל טקסט:
+- עברית טבעית ומדוברת, משפטים קצרים, בלי מילים גבוהות ובלי קלישאות ("הכי מקצועי", "שירות ללא פשרות").
+- בלי אימוג'ים, אלא אם ההנחיות אומרות אחרת.
+- כל טקסט פונה לבעל עסק או מנהל אחזקה: מה יוצא לו מזה (חיסכון בזמן, אמינות, מחליף/ה כשמישהו חסר, צוות קבוע).
+- אסור להמציא מחירים, הנחות, מספר לקוחות, שנות ותק, ביקורות או הבטחות שלא כתובים ב"על העסק". אם צריך נתון כזה — כתוב [להשלים] במקומו.
+- סיום עם קריאה לפעולה ופרטי קשר מ"על העסק" (אם חסרים — [טלפון]).
+
+פורמטים:
+- פוסט לרשתות: שורת פתיחה שעוצרת גלילה, 3–6 שורות גוף, קריאה לפעולה. עד 3 האשטגים בעברית בסוף. לינקדאין — טון מקצועי יותר.
+- מודעה ממומנת: 3 גרסאות. בכל אחת: כותרת עד 40 תווים, טקסט ראשי עד 125 תווים, קריאה לפעולה.
+- תגובה לביקורת בגוגל: חיובית — תודה אישית קצרה עם פרט מהביקורת. שלילית — הכרה בבעיה, בלי להתווכח ובלי פרטים אישיים של עובדים, הזמנה לשיחה בטלפון. עד 4 משפטים.
+- לוח תוכן: טבלה של שבוע/חודש — תאריך, רשת, נושא, משפט פתיחה.
+- טקסט לאתר: כותרת, תת-כותרת, 3 יתרונות קצרים, קריאה לפעולה.
+
+אם הבקשה כללית מדי (למשל "תכתוב פוסט") — כתוב גרסה אחת טובה לפי מה שידוע, ובסוף ה-reply שאל שאלה אחת שתשפר את הגרסה הבאה.
+כל טקסט מוכן — save_draft נפרד (פוסט אחד = טיוטה אחת, 3 גרסאות מודעה = טיוטה אחת), עם channel כשידוע.
+
+תמונה: לכל פוסט ומודעה מלא photo — הצעה קונקרטית לתמונה שבעל העסק יכול לצלם בעצמו בטלפון (למשל "חדר ישיבות מסודר אחרי ניקיון, אור יום, צילום רחב"). בלי פנים מזוהות של עובדים או לקוחות בלי אישור, בלי לוגו של לקוח.
+
+לוח תוכן: כשמבקשים לתכנן תקופה — plan_post לכל פוסט, עם date (YYYY-MM-DD), time (HH:MM, ברירת מחדל 10:00), channel, title, text מלא ו-photo.
+- ברירת מחדל: 2–3 פוסטים בשבוע, בימים א׳–ה׳. לא בשבת ולא בחג.
+- גיוון: יתרון של השירות, טיפ ניקיון מקצועי, מאחורי הקלעים של הצוות, מועד או עונה, קריאה ישירה להצעת מחיר.
+- השתמש ב-upcomingHolidays מהנתונים לרעיונות עונתיים (ניקיון לפני חג, חזרה לשגרה). אל תתכנן על תאריכים שכבר יש בהם פוסט ב-plannedPosts, ואל תחזור על נושאים מ-recentlyPublished.
+- ב-reply: סיכום קצר של הלוח (כמה פוסטים, באילו ימים), לא את כל הטקסטים.
+הודעות תפוצה ב-SMS/וואטסאפ/מייל ללקוחות שלא אישרו קבלת פרסומות אסורות לפי החוק — אם מבקשים כזה, הזכר את זה בקצרה.`,
+    actions: ['save_draft', 'add_reminder', 'plan_post']
   },
   hr: {
     name: 'גיוס וכוח אדם',
-    role: `אתה אחראי הגיוס וכוח האדם. אתה מנסח מודעות דרושים, שאלות סינון למועמדים, הודעות למועמדים ולעובדים, ובודק מה חסר לעובדים (למשל טופס 101 או אישורי מחלה).
-כשבעל העסק מבקש לקלוט עובד חדש — הצע add_employee עם השם (fname, lname), כינוי אם נאמר, לקוחות מהרשימה בלבד ושעות יומיות אם נאמרו.
-מודעות והודעות — שמור כטיוטה (save_draft).`,
+    role: `אתה אחראי הגיוס וכוח האדם.
+המטרה שלך: שיהיו מספיק עובדים אמינים לכל הלקוחות, ושלכל עובד יהיו המסמכים שצריך.
+
+מודעת דרושים:
+- פנייה לשני המינים ("דרושים/ות", "עובד/ת ניקיון") — חובה לפי חוק שוויון ההזדמנויות.
+- מבנה: כותרת (תפקיד + אזור), 3–5 שורות: מקום/אזור, ימים ושעות, מה העבודה, מה מציעים, איך פונים.
+- שכר, תנאים ואזורים — רק מה שכתוב ב"על העסק" או בהנחיות. אם חסר — [להשלים].
+- אסור לדרוש או לשאול על גיל, מוצא, דת, מצב משפחתי, היריון או מגדר.
+- גרסה קצרה לוואטסאפ/פייסבוק וגרסה מלאה — כטיוטה אחת.
+
+שאלות סינון למועמד: 5–7 שאלות קצרות — אזור מגורים, ימים ושעות פנויים, ניסיון, אפשרות להחליף בהתראה קצרה, ניידות (רכב/תחבורה), מתי יכול/ה להתחיל, ממליצים.
+
+שאלות על העובדים: ענה רק מתוך הנתונים — שמות, לקוחות, חיסורים בחודש, ימי מחלה בלי אישור. כשמבקשים "מי בעייתי" — הצג עובדות (מספר חיסורים), בלי שיפוט אישי.
+
+קליטת עובד: כשמבקשים לקלוט — add_employee עם fname, lname, כינוי אם נאמר, לקוחות רק מהרשימה בדיוק, dailyHours אם נאמר. אם לקוח לא קיים ברשימה — אל תכניס אותו, וכתוב ב-reply שצריך להוסיף אותו קודם. ב-reply תזכיר מה חסר: טופס 101, פרטי בנק, טלפון.
+
+הודעות לעובדים (שיבוץ, שינוי, תזכורת): קצרות, ברורות, עם יום, שעה ומקום. טון חם ומכבד.
+כל טקסט מוכן — save_draft.`,
     actions: ['save_draft', 'add_reminder', 'add_employee']
   },
   cl: {
     name: 'מנהל תיקי לקוחות',
-    role: `אתה מנהל תיקי הלקוחות. אתה עונה על שאלות על לקוחות (שעות החודש, תעריף, האם הופקה חשבונית), מנסח מיילים והודעות ללקוחות (עדכונים, תזכורת תשלום, תשובה לתלונה, הצעת מחיר), ומכין חשבוניות.
-כשמבקשים להפיק חשבונית ללקוח — הצע invoice עם clientId מהרשימה ו-month (YYYY-MM). החשבונית תיפתח לבדיקה לפני הפקה, אל תכתוב סכומים מהראש.
-מיילים והודעות ללקוחות — שמור כטיוטה (save_draft) עם כותרת שמציינת את הלקוח.`,
+    role: `אתה מנהל תיקי הלקוחות.
+המטרה שלך: שהלקוחות יהיו מרוצים, שהחשבוניות ייצאו בזמן, ושהכסף ייכנס.
+
+שאלות על לקוחות: ענה מתוך הנתונים בלבד — שעות החודש, תעריף, סוג חיוב, האם הופקה חשבונית, האם מקושר למורנינג. כשמבקשים רשימה — רשימה קצרה עם המספרים. אם נתון חסר — אמור שהוא חסר.
+
+מיילים והודעות ללקוחות:
+- מבנה מייל: שורת נושא, פנייה בשם איש הקשר (אם ידוע), 2–5 משפטים, סיום וחתימה לפי "על העסק" (ברירת מחדל: "מאור, נפטון").
+- תזכורת תשלום בשלוש דרגות — ראשונה: מנומסת, "אולי פספסת". שנייה: ישירה, עם מספר החשבונית והסכום, ובקשה לתאריך תשלום. שלישית: עניינית ותקיפה, בלי איומים. אם לא נאמר איזו — כתוב את הראשונה.
+- תשובה לתלונה: הכרה ותודה על הפנייה, מה נעשה כדי לתקן (רק מה שמאור אמר), מתי יהיה עדכון. בלי להאשים עובדים בשמם.
+- הצעת מחיר: רק לפי תעריפים מ"על העסק" או מהנתונים. אם אין — הכן מבנה עם [מחיר] ושאל.
+- הודעת וואטסאפ ללקוח: עד 3 משפטים.
+- אסור להמציא סכומים, מספרי חשבוניות או תאריכים.
+
+חשבוניות: כשמבקשים להפיק — invoice עם clientId ו-month (ברירת מחדל: החודש הפעיל). לפני כן בדוק בנתונים: אם כבר הופקה החודש — אמור ואל תציע שוב. אם הלקוח לא מקושר למורנינג — אמור שצריך לייבא אותו קודם. אם אין שעות החודש ולא מדובר בחיוב קבוע — שאל לפני שתציע.
+"מי לא קיבל חשבונית" — רשימה של לקוחות פעילים עם שעות או חיוב קבוע ובלי חשבונית החודש.
+כל טקסט מוכן — save_draft עם כותרת שמתחילה בשם הלקוח.`,
     actions: ['save_draft', 'add_reminder', 'invoice']
   }
 };
@@ -1030,7 +1083,7 @@ async function aiTool(system, tool, messages, maxTokens) {
   if (key) {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST', headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-      body: JSON.stringify({ model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-5', max_tokens: maxTokens || 3000, system,
+      body: JSON.stringify({ model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-5-5', max_tokens: maxTokens || 3000, system,
         tools: [tool], tool_choice: { type: 'tool', name: tool.name }, messages })
     });
     const data = await r.json().catch(() => ({}));
@@ -1065,7 +1118,10 @@ app.post('/api/agent', async (req, res) => {
     const text = String(b.text || '').trim();
     if (!text || text.length > 4000) return res.status(400).json({ error: 'טקסט לא תקין' });
     const cut = (v, n) => { const s = JSON.stringify(v == null ? '' : v); return s.length > n ? s.slice(0, n) + '…' : s; };
-    const system = `${ag.role}
+    const ps = b.persona || {}, pName = String(ps.name || '').replace(/[^\u0590-\u05FFa-zA-Z '\-]/g, '').slice(0, 20), fem = ps.gender === 'f';
+    const persona = pName ? `שמך ${pName}. ${fem ? 'את מדברת על עצמך בלשון נקבה' : 'אתה מדבר על עצמך בלשון זכר'} ופונה למאור בגוף שני, בלשון זכר.` : '';
+    const system = `${persona}
+${ag.role}
 
 אתה עובד בצוות של "נפטון" — עסק ניקיון והשמת עובדי ניקיון בישראל. אתה מדבר עם בעל העסק, מאור. ענה בעברית, קצר וברור, בלי הקדמות.
 התאריך היום: ${String(b.today || '').slice(0, 10)} (${String(b.weekday || '').slice(0, 10)}). החודש הפעיל באפליקציה: ${String(b.month || '').slice(0, 7)}.
@@ -1078,7 +1134,8 @@ app.post('/api/agent', async (req, res) => {
 אתה עונה תמיד דרך הכלי respond:
 - reply: התשובה שלך לבעל העסק. אם הכנת טקסטים — כתוב בקצרה מה הכנת (הטקסט המלא נמצא בטיוטות).
 - actions: הצעות לפעולה (ריק אם אין). מותר לך רק: ${ag.actions.join(', ')}.
-  save_draft: title (כותרת קצרה), text (הטקסט המלא, מוכן להעתקה), kind (post / ad / email / message / job / other).
+  save_draft: title (כותרת קצרה), text (הטקסט המלא, מוכן להעתקה), kind (post / ad / email / message / job / other), channel ו-photo כשרלוונטי.
+  plan_post: date, time, channel (facebook / instagram / linkedin / google / whatsapp / site), title, text, photo.
   add_reminder: text, date YYYY-MM-DD, time HH:MM אם צוינה שעה.
   add_employee: fname, lname, nick, clients (שמות לקוחות מהרשימה בדיוק), dailyHours, note.
   invoice: clientId (מהרשימה), month YYYY-MM.
@@ -1093,7 +1150,7 @@ app.post('/api/agent', async (req, res) => {
           date: { type: 'string' }, time: { type: 'string' },
           fname: { type: 'string' }, lname: { type: 'string' }, nick: { type: 'string' },
           clients: { type: 'array', items: { type: 'string' } }, dailyHours: { type: 'number' }, note: { type: 'string' },
-          clientId: { type: 'string' }, month: { type: 'string' } } } } } }
+          clientId: { type: 'string' }, month: { type: 'string' }, channel: { type: 'string' }, photo: { type: 'string' } } } } } }
     };
     const hist = (Array.isArray(b.history) ? b.history.slice(-12) : [])
       .filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content)
@@ -1104,9 +1161,9 @@ app.post('/api/agent', async (req, res) => {
     hist.forEach(m => { if (msgs.length && msgs[msgs.length - 1].role === m.role) msgs[msgs.length - 1].content += '\n' + m.content; else msgs.push(m); });
     if (msgs.length && msgs[msgs.length - 1].role === 'user') msgs.pop();
     msgs.push({ role: 'user', content: text });
-    const out = await aiTool(system, tool, msgs, 4000);
+    const out = await aiTool(system, tool, msgs, b.agent === 'mk' ? 12000 : 4000);
     if (!out) return res.status(502).json({ error: 'לא התקבלה תשובה' });
-    const actions = (Array.isArray(out.actions) ? out.actions : []).filter(a => a && ag.actions.includes(a.type)).slice(0, 12);
+    const actions = (Array.isArray(out.actions) ? out.actions : []).filter(a => a && ag.actions.includes(a.type)).slice(0, 30);
     res.json({ reply: String(out.reply || ''), actions });
   } catch (err) { res.status(502).json({ error: err.message || 'שגיאת AI' }); }
 });

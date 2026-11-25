@@ -622,6 +622,27 @@ html[data-dark] .tm-m.x{background:#3b1d1d;color:#f3b4b4}
 .tm-in{display:flex;gap:8px;align-items:flex-end;position:sticky;bottom:0;background:var(--bg);padding:8px 0}
 .tm-in textarea{flex:1;min-width:0;border:1px solid var(--border);border-radius:14px;padding:10px 12px;font-family:inherit;font-size:16px;resize:none;background:var(--surface);color:var(--text)}
 .app:has(#page-team.active) ~ #ai-fab, body:has(#page-team.active) #ai-fab, body:has(#page-team.active) .ai-fab{display:none !important}
+.tm-av{width:44px;height:44px;border-radius:14px;background:var(--bg);color:var(--text-muted);display:inline-flex;align-items:center;justify-content:center;overflow:hidden;flex:none;border:1px solid var(--border)}
+.tm-av img{width:100%;height:100%;object-fit:cover;display:block}
+.tm-av svg{width:60%;height:60%}
+.tm-av.lg{width:56px;height:56px;border-radius:16px}
+.tm-av.xl{width:88px;height:88px;border-radius:22px}
+.tm-ch{display:flex;align-items:center;gap:10px;margin-bottom:2px}
+.tm-ch b{display:block}
+.tm-ch em,.tm-who em{display:block;font-style:normal;font-size:13px;color:var(--text-muted)}
+.tm-who{display:flex;align-items:center;gap:12px;margin:2px 0 10px}
+.tm-who b{font-size:19px}
+.tm-ph{font-size:13.5px;color:var(--text-muted);margin-top:8px;line-height:1.5}
+.tm-ph b{color:var(--text)}
+.tm-all{align-self:flex-end}
+.tm-flt{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.tm-flt button{border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:7px 14px;font-family:inherit;font-size:13.5px;color:var(--text);cursor:pointer;min-height:36px}
+.tm-flt button[aria-pressed="true"]{background:var(--text);color:var(--surface);border-color:var(--text)}
+.tm-gh{font-size:13px;font-weight:700;color:var(--text-muted);margin:14px 2px 8px}
+.tm-draft.st-scheduled{border-right:3px solid var(--accent)}
+.tm-draft.st-published{opacity:.7}
+.tc-row{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+.tc-pb{display:flex;gap:8px;flex-wrap:wrap}
 .tc-help{font-size:13.5px;color:var(--text-muted);margin:0 0 10px;line-height:1.5}
 @media (max-width:700px){
   .tm-msgs{max-height:none;min-height:0}
@@ -11945,14 +11966,16 @@ function rcUpload(input) {
 }
 /* ===== צוות וירטואלי (עובדי AI) ===== */
 var TEAM = [
-  { id: 'mk', name: 'שיווק ופרסום', sub: 'פוסטים, מודעות, ביקורות בגוגל',
-    chips: ['תכין 3 פוסטים לאינסטגרם לשבוע הבא', 'תכתוב מודעה ממומנת לניקיון משרדים', 'תנסח תגובה לביקורת טובה בגוגל'] },
-  { id: 'hr', name: 'גיוס וכוח אדם', sub: 'מודעות דרושים, קליטת עובדים',
-    chips: ['תכתוב מודעת דרושים לעובדת ניקיון', 'למי יש ימי מחלה בלי אישור החודש?', 'תקלוט עובדת חדשה'] },
-  { id: 'cl', name: 'מנהל תיקי לקוחות', sub: 'מיילים, חשבוניות, מעקב לקוחות',
-    chips: ['לאילו לקוחות עוד לא הופקה חשבונית החודש?', 'תנסח מייל תזכורת תשלום מנומס', 'תכין חשבונית ללקוח'] }
+  { id: 'mk', role: 'שיווק ופרסום', sub: 'פוסטים, מודעות, לוח תוכן, ביקורות בגוגל', defName: 'מיכל', defG: 'f',
+    chips: ['תכיני לוח תוכן לחודש הבא', 'תכיני פוסט לפייסבוק על ניקיון משרדים', 'תכתבי 3 גרסאות למודעה ממומנת', 'תנסחי תגובה לביקורת בגוגל'] },
+  { id: 'hr', role: 'גיוס וכוח אדם', sub: 'מודעות דרושים, קליטת עובדים', defName: '', defG: 'm',
+    chips: ['תכתוב מודעת דרושים לעובד/ת ניקיון', 'תכין שאלות סינון למועמדים', 'למי יש ימי מחלה בלי אישור?', 'תקלוט עובד/ת חדש/ה'] },
+  { id: 'cl', role: 'מנהל תיקי לקוחות', sub: 'מיילים, חשבוניות, מעקב לקוחות', defName: '', defG: 'm',
+    chips: ['מי עוד לא קיבל חשבונית החודש?', 'תנסח תזכורת תשלום ראשונה', 'תנסח תשובה לתלונה של לקוח', 'תכין חשבונית ללקוח'] }
 ];
-var teamCur = null, teamBusy = false, teamTab = 'team';
+var TM_CH = { facebook: 'פייסבוק', instagram: 'אינסטגרם', linkedin: 'לינקדאין', google: 'גוגל', whatsapp: 'וואטסאפ', site: 'אתר' };
+var TM_ST = { draft: 'טיוטה', scheduled: 'מתוכנן', published: 'פורסם' };
+var teamCur = null, teamBusy = false, teamTab = 'team', teamDf = 'all';
 function _tmGet(k, d) { try { var v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? d : v; } catch (e) { return d; } }
 function _tmSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { showToast('אין מספיק מקום בזיכרון המכשיר'); } try { if (window.nepSync && nepSync.now) nepSync.now(); } catch (e) {} }
 function tmChats() { return _tmGet('nep_agent_chat', {}); }
@@ -11960,7 +11983,24 @@ function tmDrafts() { return _tmGet('nep_agent_drafts', []); }
 function tmCfg() { return _tmGet('nep_agent_cfg', {}); }
 function _tmE(t) { return _empEsc(t); }
 function _tmAg(id) { return TEAM.find(function (a) { return a.id === id; }); }
-
+function tmProf(id) {
+  var ag = _tmAg(id), p = (tmCfg().prof || {})[id] || {};
+  var nm = p.name != null ? p.name : ag.defName;
+  return { name: nm, gender: p.gender || ag.defG, photo: p.photo || '', label: nm || ag.role, role: ag.role };
+}
+function _tmAv(id, cls) {
+  var p = tmProf(id);
+  return '<span class="tm-av' + (cls ? ' ' + cls : '') + '">' + (p.photo ? '<img src="' + p.photo + '" alt="">' :
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="9" r="3.6"/><path d="M5 20c.8-3.6 3.6-5.6 7-5.6s6.2 2 7 5.6"/></svg>') + '</span>';
+}
+function _tmUpcoming() {
+  var out = [], seen = {}, d = new Date(); d.setHours(12, 0, 0, 0);
+  for (var i = 0; i < 75; i++, d.setDate(d.getDate() + 1)) {
+    var iso = _isoLocal(d), h = typeof HOLIDAYS !== 'undefined' && HOLIDAYS[iso];
+    if (h && !seen[h]) { seen[h] = 1; out.push({ date: iso, name: h }); }
+  }
+  return out;
+}
 function tmCtx(id) {
   var act = employees.filter(function (e) { return e.status !== 'inactive'; });
   var cls = (typeof clientsData !== 'undefined' ? clientsData : []);
@@ -11985,13 +12025,31 @@ function tmCtx(id) {
       })
     };
   }
-  return { activeEmployees: act.length, clients: cls.length, clientNames: cls.slice(0, 40).map(function (c) { return c.name; }) };
+  var dr = tmDrafts();
+  return { activeEmployees: act.length, clients: cls.length, clientNames: cls.slice(0, 40).map(function (c) { return c.name; }),
+    upcomingHolidays: _tmUpcoming(),
+    plannedPosts: dr.filter(function (d) { return d.status === 'scheduled' && d.date >= todayISO(); }).map(function (d) { return { date: d.date, channel: d.channel, title: d.title }; }).slice(0, 40),
+    recentlyPublished: dr.filter(function (d) { return d.status === 'published'; }).slice(-10).map(function (d) { return d.title; }) };
 }
 
+function _tmDraftHtml(d, showAg) {
+  var meta = [TM_ST[d.status || 'draft']];
+  if (d.channel) meta.push(TM_CH[d.channel] || d.channel);
+  if (d.date) meta.push(_skFmt(d.date) + (d.time ? ' ' + d.time : ''));
+  if (showAg) meta.push(tmProf(d.agent).label);
+  var st = d.status || 'draft';
+  return '<div class="tm-draft st-' + st + '"><div class="tm-dh"><b>' + _tmE(d.title || 'טיוטה') + '</b><small>' + _tmE(meta.join(' · ')) + '</small></div>' +
+    '<div class="tm-dt">' + _tmE(d.text) + '</div>' +
+    (d.photo ? '<div class="tm-ph"><b>תמונה מומלצת:</b> ' + _tmE(d.photo) + '</div>' : '') +
+    '<div class="tm-da"><button type="button" class="btn btn-secondary btn-sm" onclick="teamCopy(\'' + d.id + '\')">העתק</button>' +
+    (st !== 'published' ? '<button type="button" class="btn btn-secondary btn-sm" onclick="teamSetSt(\'' + d.id + '\',\'published\')">סמן כפורסם</button>'
+      : '<button type="button" class="btn btn-secondary btn-sm" onclick="teamSetSt(\'' + d.id + '\',\'draft\')">החזר לטיוטה</button>') +
+    '<button type="button" class="btn btn-secondary btn-sm" style="color:var(--danger)" onclick="teamDelDraft(\'' + d.id + '\')">מחק</button></div></div>';
+}
 function renderTeam() {
   var body = document.getElementById('team-body'); if (!body) return;
   var sub = document.getElementById('team-sub');
-  if (teamCur) { if (sub) sub.textContent = _tmAg(teamCur).name; body.innerHTML = _tmChatHtml(); _tmScroll(); return; }
+  if (teamCur) { if (sub) sub.textContent = ''; body.innerHTML = _tmChatHtml(); _tmScroll(); return; }
   if (sub) sub.textContent = 'עובדים וירטואליים שמבצעים משימות בשבילך';
   var chats = tmChats(), dr = tmDrafts();
   var h = '<div class="tm-seg sm-seg" role="tablist">' +
@@ -11999,65 +12057,76 @@ function renderTeam() {
     '<button type="button" aria-pressed="' + (teamTab === 'drafts') + '" onclick="teamTab=\'drafts\';renderTeam()">תוצרים' + (dr.length ? ' (' + dr.length + ')' : '') + '</button></div>';
   if (teamTab === 'team') {
     h += '<div class="tm-cards">' + TEAM.map(function (a) {
-      var c = chats[a.id] || [], last = c.length ? c[c.length - 1] : null;
-      return '<button type="button" class="tm-card" onclick="teamOpen(\'' + a.id + '\')"><b>' + a.name + '</b><span>' + a.sub + '</span>' +
-        (last ? '<small>' + _tmE(String(last.content || '').slice(0, 70)) + '</small>' : '<small>עוד לא דיברתם</small>') + '</button>';
+      var p = tmProf(a.id), c = chats[a.id] || [], last = c.length ? c[c.length - 1] : null;
+      var nxt = a.id === 'mk' ? dr.filter(function (d) { return d.status === 'scheduled' && d.date >= todayISO(); }).sort(function (x, y) { return x.date < y.date ? -1 : 1; })[0] : null;
+      return '<button type="button" class="tm-card" onclick="teamOpen(\'' + a.id + '\')"><span class="tm-ch">' + _tmAv(a.id) + '<span><b>' + _tmE(p.label) + '</b>' +
+        (p.name ? '<em>' + a.role + '</em>' : '') + '</span></span><span>' + a.sub + '</span>' +
+        (nxt ? '<small>הפוסט הבא: ' + _skFmt(nxt.date) + ' · ' + _tmE(nxt.title) + '</small>' :
+          last ? '<small>' + _tmE(String(last.content || '').slice(0, 70)) + '</small>' : '<small>עוד לא דיברתם</small>') + '</button>';
     }).join('') + '</div>';
     var cfg = tmCfg();
     h += '<button type="button" class="tm-biz" onclick="teamCfgOpen(\'\')"><b>על העסק</b><span>' + (cfg.business ? _tmE(cfg.business.slice(0, 90)) + '…' : 'ספר לצוות מה העסק עושה, אזורים, מחירים וסגנון. הם ישתמשו בזה בכל משימה.') + '</span></button>';
   } else {
-    if (!dr.length) h += '<div class="tm-empty">טקסטים שהצוות מכין (פוסטים, מודעות, מיילים) יישמרו כאן.</div>';
-    h += dr.slice().reverse().map(function (d) {
-      var a = _tmAg(d.agent);
-      return '<div class="tm-draft"><div class="tm-dh"><b>' + _tmE(d.title || 'טיוטה') + '</b><small>' + (a ? a.name : '') + ' · ' + new Date(d.at).toLocaleDateString('he-IL') + '</small></div>' +
-        '<div class="tm-dt">' + _tmE(d.text) + '</div><div class="tm-da"><button type="button" class="btn btn-secondary btn-sm" onclick="teamCopy(\'' + d.id + '\')">העתק</button>' +
-        '<button type="button" class="btn btn-secondary btn-sm" style="color:var(--danger)" onclick="teamDelDraft(\'' + d.id + '\')">מחק</button></div></div>';
-    }).join('');
+    var cnt = function (s) { return dr.filter(function (d) { return s === 'all' || (d.status || 'draft') === s; }).length; };
+    h += '<div class="tm-flt">' + [['all', 'הכל'], ['scheduled', 'מתוכנן'], ['draft', 'טיוטה'], ['published', 'פורסם']].map(function (f) {
+      return '<button type="button" aria-pressed="' + (teamDf === f[0]) + '" onclick="teamDf=\'' + f[0] + '\';renderTeam()">' + f[1] + ' (' + cnt(f[0]) + ')</button>';
+    }).join('') + '</div>';
+    var list = dr.filter(function (d) { return teamDf === 'all' || (d.status || 'draft') === teamDf; });
+    var sch = list.filter(function (d) { return d.status === 'scheduled'; }).sort(function (a, b) { return (a.date + (a.time || '')) < (b.date + (b.time || '')) ? -1 : 1; });
+    var rest = list.filter(function (d) { return d.status !== 'scheduled'; }).sort(function (a, b) { return b.at - a.at; });
+    if (!list.length) h += '<div class="tm-empty">' + (dr.length ? 'אין כאן כלום.' : 'טקסטים שהצוות מכין (פוסטים, מודעות, מיילים) יישמרו כאן.') + '</div>';
+    if (sch.length) h += '<div class="tm-gh">לוח תוכן</div>' + sch.map(function (d) { return _tmDraftHtml(d, true); }).join('');
+    if (rest.length) h += (sch.length ? '<div class="tm-gh">שאר התוצרים</div>' : '') + rest.map(function (d) { return _tmDraftHtml(d, true); }).join('');
   }
   body.innerHTML = h;
 }
 function _tmActLabel(a) {
-  if (a.type === 'save_draft') return 'טיוטה: ' + (a.title || '');
+  if (a.type === 'save_draft') return 'טיוטה: ' + (a.title || '') + (a.channel ? ' · ' + (TM_CH[a.channel] || a.channel) : '');
+  if (a.type === 'plan_post') return (a.date ? _skFmt(a.date) + (a.time ? ' ' + a.time : '') : '') + ' · ' + (TM_CH[a.channel] || a.channel || '') + ': ' + (a.title || '');
   if (a.type === 'add_reminder') return 'תזכורת: ' + (a.text || '') + ' · ' + (a.date ? _skFmt(a.date) : '') + (a.time ? ' ' + a.time : '');
   if (a.type === 'add_employee') return 'עובד/ת חדש/ה: ' + [a.fname, a.lname].join(' ').trim() + (a.clients && a.clients.length ? ' · ' + a.clients.join(', ') : '');
   if (a.type === 'invoice') { var c = (clientsData || []).find(function (x) { return x.id === a.clientId; }); var mm = String(a.month || activeMonth).split('-'); return 'חשבונית: ' + (c ? c.name : 'לקוח לא נמצא') + ' · ' + (_HEB_MN[+mm[1] - 1] || '') + ' ' + mm[0]; }
   return a.type;
 }
-function _tmActBtn(a) { return { save_draft: 'שמור בתוצרים', add_reminder: 'הוסף תזכורת', add_employee: 'פתח טופס עובד', invoice: 'פתח טיוטת חשבונית' }[a.type] || 'אשר'; }
+function _tmActBtn(a) { return { save_draft: 'שמור בתוצרים', plan_post: 'הוסף ללוח', add_reminder: 'הוסף תזכורת', add_employee: 'פתח טופס עובד', invoice: 'פתח טיוטת חשבונית' }[a.type] || 'אשר'; }
 function _tmChatHtml() {
-  var ag = _tmAg(teamCur), msgs = tmChats()[teamCur] || [];
+  var ag = _tmAg(teamCur), p = tmProf(teamCur), msgs = tmChats()[teamCur] || [];
   var h = '<div class="tm-top"><button type="button" class="tm-back" onclick="teamOpen(null)">‹ הצוות</button>' +
-    '<span class="tm-tb"><button type="button" class="btn btn-secondary btn-sm" onclick="teamCfgOpen(\'' + ag.id + '\')">הנחיות</button>' +
+    '<span class="tm-tb"><button type="button" class="btn btn-secondary btn-sm" onclick="teamCfgOpen(\'' + ag.id + '\')">פרופיל והנחיות</button>' +
     (msgs.length ? '<button type="button" class="btn btn-secondary btn-sm" onclick="teamClear()">שיחה חדשה</button>' : '') + '</span></div>';
+  h += '<div class="tm-who">' + _tmAv(ag.id, 'lg') + '<span><b>' + _tmE(p.label) + '</b><em>' + (p.name ? ag.role + ' · ' : '') + ag.sub + '</em></span></div>';
   h += '<div class="tm-msgs" id="tm-msgs">';
-  if (!msgs.length) h += '<div class="tm-hi"><b>' + ag.name + '</b><span>' + ag.sub + '. כתוב משימה, או בחר אחת:</span>' +
+  if (!msgs.length) h += '<div class="tm-hi"><span>' + (p.gender === 'f' ? 'כתוב לה' : 'כתוב לו') + ' משימה, או בחר אחת:</span>' +
     '<div class="tm-chips">' + ag.chips.map(function (c) { return '<button type="button" onclick="teamChip(this.textContent)">' + _tmE(c) + '</button>'; }).join('') + '</div></div>';
   msgs.forEach(function (m, mi) {
     h += '<div class="tm-m ' + (m.role === 'user' ? 'u' : m.err ? 'x' : 'a') + '">' + _tmE(m.content) + '</div>';
+    var pend = (m.actions || []).filter(function (a) { return !a.st && a.type !== 'invoice' && a.type !== 'add_employee'; }).length;
+    if (pend >= 2) h += '<div class="tm-all"><button type="button" class="btn btn-primary btn-sm" onclick="teamActAll(' + mi + ')">אשר את כל ה-' + pend + '</button></div>';
     (m.actions || []).forEach(function (a, ai) {
       h += '<div class="tm-act"><div class="tm-al">' + _tmE(_tmActLabel(a)) + '</div>' +
-        (a.type === 'save_draft' && a.text ? '<div class="tm-dt">' + _tmE(a.text) + '</div>' : '') +
+        ((a.type === 'save_draft' || a.type === 'plan_post') && a.text ? '<div class="tm-dt">' + _tmE(a.text) + '</div>' : '') +
+        (a.photo ? '<div class="tm-ph"><b>תמונה מומלצת:</b> ' + _tmE(a.photo) + '</div>' : '') +
         (a.st ? '<div class="tm-ast">' + (a.st === 'ok' ? 'בוצע' : 'דולג') + '</div>' :
-          '<div class="tm-da">' + (a.type === 'save_draft' ? '<button type="button" class="btn btn-secondary btn-sm" onclick="teamCopyAct(' + mi + ',' + ai + ')">העתק</button>' : '') +
+          '<div class="tm-da">' + (a.text ? '<button type="button" class="btn btn-secondary btn-sm" onclick="teamCopyAct(' + mi + ',' + ai + ')">העתק</button>' : '') +
           '<button type="button" class="btn btn-secondary btn-sm" onclick="teamAct(' + mi + ',' + ai + ',0)">דלג</button>' +
           '<button type="button" class="btn btn-primary btn-sm" onclick="teamAct(' + mi + ',' + ai + ',1)">' + _tmActBtn(a) + '</button></div>') + '</div>';
     });
   });
-  if (teamBusy) h += '<div class="tm-m a tm-wait">עובד על זה…</div>';
-  h += '</div><div class="tm-in"><textarea id="tm-q" rows="2" placeholder="משימה ל' + ag.name + '…" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey&&!(\'ontouchstart\' in window)){event.preventDefault();teamSend()}"></textarea>' +
+  if (teamBusy) h += '<div class="tm-m a tm-wait">' + _tmE(p.label) + (p.gender === 'f' ? ' עובדת' : ' עובד') + ' על זה…</div>';
+  h += '</div><div class="tm-in"><textarea id="tm-q" rows="2" placeholder="משימה ל' + _tmE(p.label) + '…" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey&&!(\'ontouchstart\' in window)){event.preventDefault();teamSend()}"></textarea>' +
     '<button type="button" class="ai-send" onclick="teamSend()"' + (teamBusy ? ' disabled' : '') + '>שלח</button></div>';
   return h;
 }
 function _tmScroll() { var m = document.getElementById('tm-msgs'); if (m) m.scrollTop = m.scrollHeight; }
 function teamOpen(id) { teamCur = id; renderTeam(); if (id) { var q = document.getElementById('tm-q'); if (q && !('ontouchstart' in window)) q.focus(); } window.scrollTo(0, 0); }
 function teamChip(t) { var q = document.getElementById('tm-q'); if (q) { q.value = t; q.focus(); } }
-function teamClear() { if (!confirm('להתחיל שיחה חדשה? ההיסטוריה עם העובד הזה תימחק (התוצרים נשארים).')) return; var c = tmChats(); c[teamCur] = []; _tmSet('nep_agent_chat', c); renderTeam(); }
+function teamClear() { if (!confirm('להתחיל שיחה חדשה? ההיסטוריה של השיחה תימחק (התוצרים נשארים).')) return; var c = tmChats(); c[teamCur] = []; _tmSet('nep_agent_chat', c); renderTeam(); }
 function _tmPush(id, msg) { var c = tmChats(); c[id] = (c[id] || []).concat([msg]).slice(-40); _tmSet('nep_agent_chat', c); }
 function teamSend() {
   if (teamBusy || !teamCur) return;
   var q = document.getElementById('tm-q'), text = (q && q.value || '').trim(); if (!text) return;
-  var id = teamCur, hist = (tmChats()[id] || []).filter(function (m) { return !m.err; }).map(function (m) {
-    var extra = (m.actions || []).filter(function (a) { return a.type === 'save_draft'; }).map(function (a) { return '\n[טיוטה: ' + (a.title || '') + ']\n' + (a.text || ''); }).join('');
+  var id = teamCur, p = tmProf(id), hist = (tmChats()[id] || []).filter(function (m) { return !m.err; }).map(function (m) {
+    var extra = (m.actions || []).filter(function (a) { return a.text; }).map(function (a) { return '\n[' + _tmActLabel(a) + ']\n' + a.text; }).join('');
     return { role: m.role, content: String(m.content || '') + extra };
   });
   _tmPush(id, { role: 'user', content: text, ts: Date.now() });
@@ -12065,7 +12134,7 @@ function teamSend() {
   var cfg = tmCfg(), now = new Date(), days = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
   fetch(RC_API + '/agent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
     agent: id, text: text, history: hist, today: todayISO(), weekday: 'יום ' + days[now.getDay()], month: activeMonth,
-    business: cfg.business || '', brief: cfg[id] || '', ctx: tmCtx(id) }) })
+    persona: { name: p.name, gender: p.gender }, business: cfg.business || '', brief: cfg[id] || '', ctx: tmCtx(id) }) })
     .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { r: r, j: j }; }); })
     .then(function (x) {
       if (x.r.status === 401) throw new Error('צריך להתחבר לסנכרון (הגדרות › סנכרון בין מכשירים)');
@@ -12075,45 +12144,112 @@ function teamSend() {
     .catch(function (e) { _tmPush(id, { role: 'assistant', err: 1, content: (e && e.message) || 'השרת לא זמין כרגע, נסה שוב בעוד דקה', ts: Date.now() }); })
     .then(function () { teamBusy = false; if (teamCur === id) renderTeam(); });
 }
-function teamAct(mi, ai, ok) {
-  var c = tmChats(), msgs = c[teamCur] || [], m = msgs[mi], a = m && m.actions && m.actions[ai]; if (!a || a.st) return;
-  if (ok) {
-    if (a.type === 'save_draft') { var d = tmDrafts(); d.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), agent: teamCur, title: a.title || 'טיוטה', text: a.text || '', kind: a.kind || '', at: Date.now() }); _tmSet('nep_agent_drafts', d.slice(-200)); showToast('נשמר בתוצרים'); }
-    else if (a.type === 'add_reminder') { if (!/^\d{4}-\d{2}-\d{2}$/.test(a.date || '')) { showToast('חסר תאריך לתזכורת'); return; } remPush(a.text || '', a.date, a.time || ''); try { save(); } catch (e) {} showToast('התזכורת נוספה'); }
-    else if (a.type === 'add_employee') {
-      openEditEmpPanel();
-      setTimeout(function () {
-        document.getElementById('emp-fname').value = a.fname || ''; document.getElementById('emp-lname').value = a.lname || '';
-        document.getElementById('emp-nick').value = a.nick || '';
-        var dh = document.getElementById('emp-daily-hours'); if (dh && a.dailyHours) dh.value = a.dailyHours;
-        var known = (clientsData || []).map(function (x) { return x.name; });
-        renderEmpClientTags((a.clients || []).filter(function (n) { return known.indexOf(n) >= 0; }));
-      }, 50);
-      showToast('בדוק את הפרטים ולחץ שמירה');
-    }
-    else if (a.type === 'invoice') {
-      var cl = (clientsData || []).find(function (x) { return x.id === a.clientId; });
-      if (!cl) { showToast('הלקוח לא נמצא'); return; }
-      if (a.month && /^\d{4}-\d{2}$/.test(a.month) && a.month !== activeMonth) selectPickerMonth(a.month);
-      currentClientId = cl.id; openInvoicePreview();
-    }
+function _tmNewId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+// מבצע פעולה אחת. מחזיר true אם בוצעה
+function _tmDo(a, quiet) {
+  if (a.type === 'save_draft') {
+    var d = tmDrafts(); d.push({ id: _tmNewId(), agent: teamCur, title: a.title || 'טיוטה', text: a.text || '', kind: a.kind || '', channel: a.channel || '', photo: a.photo || '', status: 'draft', at: Date.now() });
+    _tmSet('nep_agent_drafts', d.slice(-300)); if (!quiet) showToast('נשמר בתוצרים'); return true;
   }
-  a.st = ok ? 'ok' : 'skip'; _tmSet('nep_agent_chat', c); renderTeam();
+  if (a.type === 'plan_post') {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(a.date || '')) { showToast('חסר תאריך לפוסט'); return false; }
+    var d2 = tmDrafts(), tm = /^\d{1,2}:\d{2}$/.test(a.time || '') ? a.time : '10:00';
+    d2.push({ id: _tmNewId(), agent: teamCur, title: a.title || 'פוסט', text: a.text || '', kind: 'post', channel: a.channel || '', photo: a.photo || '', status: 'scheduled', date: a.date, time: tm, at: Date.now() });
+    _tmSet('nep_agent_drafts', d2.slice(-300));
+    remPush('לפרסם ב' + (TM_CH[a.channel] || 'רשתות') + ': ' + (a.title || 'פוסט') + ' (הטקסט בצוות › תוצרים)', a.date, tm);
+    if (!quiet) showToast('נוסף ללוח התוכן + תזכורת'); return true;
+  }
+  if (a.type === 'add_reminder') {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(a.date || '')) { showToast('חסר תאריך לתזכורת'); return false; }
+    remPush(a.text || '', a.date, a.time || ''); if (!quiet) showToast('התזכורת נוספה'); return true;
+  }
+  if (a.type === 'add_employee') {
+    openEditEmpPanel();
+    setTimeout(function () {
+      document.getElementById('emp-fname').value = a.fname || ''; document.getElementById('emp-lname').value = a.lname || '';
+      document.getElementById('emp-nick').value = a.nick || '';
+      var dh = document.getElementById('emp-daily-hours'); if (dh && a.dailyHours) dh.value = a.dailyHours;
+      var known = (clientsData || []).map(function (x) { return x.name; });
+      renderEmpClientTags((a.clients || []).filter(function (n) { return known.indexOf(n) >= 0; }));
+    }, 50);
+    showToast('בדוק את הפרטים ולחץ שמירה'); return true;
+  }
+  if (a.type === 'invoice') {
+    var cl = (clientsData || []).find(function (x) { return x.id === a.clientId; });
+    if (!cl) { showToast('הלקוח לא נמצא'); return false; }
+    if (a.month && /^\d{4}-\d{2}$/.test(a.month) && a.month !== activeMonth) selectPickerMonth(a.month);
+    currentClientId = cl.id; openInvoicePreview(); return true;
+  }
+  return false;
+}
+function teamAct(mi, ai, ok) {
+  var c = tmChats(), m = (c[teamCur] || [])[mi], a = m && m.actions && m.actions[ai]; if (!a || a.st) return;
+  if (ok && !_tmDo(a)) return;
+  c = tmChats(); m = c[teamCur][mi]; m.actions[ai].st = ok ? 'ok' : 'skip';
+  try { save(); } catch (e) {}
+  _tmSet('nep_agent_chat', c); renderTeam();
+}
+function teamActAll(mi) {
+  var c = tmChats(), m = (c[teamCur] || [])[mi]; if (!m) return; var n = 0;
+  (m.actions || []).forEach(function (a) { if (!a.st && a.type !== 'invoice' && a.type !== 'add_employee' && _tmDo(a, true)) { a.st = 'ok'; n++; } });
+  // _tmDo כותב טיוטות — לשמור את הצ'אט אחרי זה בלי לדרוס אותן
+  var c2 = tmChats(); c2[teamCur][mi].actions = m.actions; _tmSet('nep_agent_chat', c2);
+  try { save(); } catch (e) {}
+  showToast(n + ' פעולות בוצעו'); renderTeam();
 }
 function _tmCopy(t) { (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { showToast('הועתק'); }).catch(function () { showToast('לא הצלחתי להעתיק'); }); }
 function teamCopyAct(mi, ai) { var m = (tmChats()[teamCur] || [])[mi], a = m && m.actions && m.actions[ai]; if (a) _tmCopy(a.text || ''); }
 function teamCopy(id) { var d = tmDrafts().find(function (x) { return x.id === id; }); if (d) _tmCopy(d.text); }
-function teamDelDraft(id) { if (!confirm('למחוק את הטיוטה?')) return; _tmSet('nep_agent_drafts', tmDrafts().filter(function (x) { return x.id !== id; })); renderTeam(); }
-var _tmCfgFor = '';
+function teamSetSt(id, st) { var dr = tmDrafts(), d = dr.find(function (x) { return x.id === id; }); if (!d) return; d.status = st; if (st === 'published') d.pubAt = Date.now(); _tmSet('nep_agent_drafts', dr); renderTeam(); }
+function teamDelDraft(id) { if (!confirm('למחוק?')) return; _tmSet('nep_agent_drafts', tmDrafts().filter(function (x) { return x.id !== id; })); renderTeam(); }
+var _tmCfgFor = '', _tmPhoto = null;
 function teamCfgOpen(id) {
-  _tmCfgFor = id; var cfg = tmCfg(), ag = id ? _tmAg(id) : null;
-  document.getElementById('tc-title').textContent = ag ? 'הנחיות ל' + ag.name : 'על העסק';
-  document.getElementById('tc-help').textContent = ag ? 'מה חשוב שהוא יידע? סגנון, דגשים, מה מותר ומה לא. למשל: "פונים בגוף שני, בלי אימוג׳ים, תמיד לציין שאנחנו פועלים במרכז".'
-    : 'מה העסק עושה, באילו אזורים, סוגי לקוחות, מחירים או טווחים, מה מייחד אתכם, טלפון ומייל ליצירת קשר. כל הצוות משתמש בזה.';
-  document.getElementById('tc-text').value = (id ? cfg[id] : cfg.business) || '';
+  _tmCfgFor = id; _tmPhoto = null;
+  var cfg = tmCfg(), ag = id ? _tmAg(id) : null, prof = document.getElementById('tc-prof');
+  prof.hidden = !id;
+  if (id) {
+    var p = tmProf(id);
+    document.getElementById('tc-name').value = p.name || '';
+    document.getElementById('tc-name').placeholder = ag.role;
+    document.getElementById('tc-g').value = p.gender;
+    document.getElementById('tc-av').innerHTML = _tmAv(id, 'xl');
+    document.getElementById('tc-rm').hidden = !p.photo;
+  }
+  document.getElementById('tc-title').textContent = ag ? 'פרופיל והנחיות' : 'על העסק';
+  document.getElementById('tc-lbl').textContent = ag ? 'הנחיות אישיות' : '';
+  document.getElementById('tc-help').textContent = ag ? 'מה חשוב שיידעו? סגנון, דגשים, מה מותר ומה לא. למשל: "בלי אימוג׳ים, תמיד לציין שאנחנו פועלים במרכז".'
+    : 'כל הצוות משתמש בזה. כדאי לכתוב: מה העסק עושה ולמי (משרדים, מוסדות…), אזורים, מחירים או טווחים, מה מייחד אתכם, תנאים לעובדים (שכר, שעות), טלפון ומייל ליצירת קשר, וחתימה למיילים.';
+  var tx = document.getElementById('tc-text'); tx.value = (id ? cfg[id] : cfg.business) || '';
+  tx.placeholder = id ? '' : 'נפטון — ניקיון והשמת עובדי ניקיון למשרדים ומוסדות.\nאזורים: …\nמחירים: …\nלעובדים: …\nטלפון: … · מייל: …\nחתימה: מאור, נפטון';
   openModal('modal-teamcfg');
 }
-function teamCfgSave() { var cfg = tmCfg(); cfg[_tmCfgFor || 'business'] = document.getElementById('tc-text').value.trim(); _tmSet('nep_agent_cfg', cfg); closeModal('modal-teamcfg'); showToast('נשמר'); renderTeam(); }
+function teamPhoto(input) {
+  var f = (input.files || [])[0]; input.value = ''; if (!f) return;
+  var img = new Image(), url = URL.createObjectURL(f);
+  img.onload = function () {
+    var S = 256, c = document.createElement('canvas'); c.width = c.height = S;
+    var s = Math.min(img.width, img.height), x = (img.width - s) / 2, y = (img.height - s) / 2;
+    c.getContext('2d').drawImage(img, x, y, s, s, 0, 0, S, S);
+    _tmPhoto = c.toDataURL('image/jpeg', 0.85); URL.revokeObjectURL(url);
+    document.getElementById('tc-av').innerHTML = '<span class="tm-av xl"><img src="' + _tmPhoto + '" alt=""></span>';
+    document.getElementById('tc-rm').hidden = false;
+  };
+  img.onerror = function () { showToast('לא הצלחתי לקרוא את התמונה'); };
+  img.src = url;
+}
+function teamPhotoRm() { _tmPhoto = ''; document.getElementById('tc-av').innerHTML = '<span class="tm-av xl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="9" r="3.6"/><path d="M5 20c.8-3.6 3.6-5.6 7-5.6s6.2 2 7 5.6"/></svg></span>'; document.getElementById('tc-rm').hidden = true; }
+function teamCfgSave() {
+  var cfg = tmCfg(), id = _tmCfgFor;
+  cfg[id || 'business'] = document.getElementById('tc-text').value.trim();
+  if (id) {
+    cfg.prof = cfg.prof || {}; var p = cfg.prof[id] || {};
+    p.name = document.getElementById('tc-name').value.trim();
+    p.gender = document.getElementById('tc-g').value;
+    if (_tmPhoto !== null) p.photo = _tmPhoto;
+    cfg.prof[id] = p;
+  }
+  _tmSet('nep_agent_cfg', cfg); closeModal('modal-teamcfg'); showToast('נשמר'); renderTeam();
+}
 /* --- אישורי מחלה: הקובץ נשמר בשרת (month='sick'), הימים מסומנים כחיסור מחלה --- */
 function _isSickAbs(a) { return a.reason === 'sick' || /מחלה/.test(a.note || ''); }
 function _skDates(from, to) {
@@ -12859,8 +12995,22 @@ function vatRepPdf(btn) {
       <div class="modal-title" id="tc-title">על העסק</div>
       <button class="modal-close" onclick="closeModal('modal-teamcfg')" aria-label="סגור">×</button>
     </div>
+    <div id="tc-prof" hidden>
+      <div class="tc-row">
+        <div id="tc-av"></div>
+        <div class="tc-pb">
+          <label class="btn btn-secondary btn-sm">העלאת תמונה<input type="file" accept="image/*" onchange="teamPhoto(this)" hidden></label>
+          <button type="button" class="btn btn-secondary btn-sm" id="tc-rm" onclick="teamPhotoRm()" hidden>הסרה</button>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">שם</label><input class="form-control" id="tc-name" maxlength="20"></div>
+        <div class="form-group"><label class="form-label">פנייה</label><select class="form-control" id="tc-g"><option value="f">לשון נקבה</option><option value="m">לשון זכר</option></select></div>
+      </div>
+    </div>
+    <div class="form-label" id="tc-lbl" style="margin-top:4px"></div>
     <p class="tc-help" id="tc-help"></p>
-    <textarea class="form-control" id="tc-text" rows="9" style="resize:vertical;font-size:15px;line-height:1.6"></textarea>
+    <textarea class="form-control" id="tc-text" rows="8" style="resize:vertical;font-size:15px;line-height:1.6"></textarea>
     <div class="modal-footer"><div>
       <button class="btn btn-secondary" onclick="closeModal('modal-teamcfg')">ביטול</button>
       <button class="btn btn-primary" onclick="teamCfgSave()">שמירה</button>
