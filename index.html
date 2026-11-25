@@ -632,6 +632,9 @@ html[data-dark] .tm-m.x{background:#3b1d1d;color:#f3b4b4}
 .tm-ch em,.tm-who em{display:block;font-style:normal;font-size:13px;color:var(--text-muted)}
 .tm-who{display:flex;align-items:center;gap:12px;margin:2px 0 10px}
 .tm-who b{font-size:19px}
+.tm-card{position:relative}
+.tm-pend{position:absolute;top:12px;left:12px;font-size:12px;font-weight:700;color:#8A4B00;background:#FFF4E5;border-radius:8px;padding:3px 8px}
+html[data-dark] .tm-pend{background:#3a2a12;color:#f5c67a}
 .tm-ph{font-size:13.5px;color:var(--text-muted);margin-top:8px;line-height:1.5}
 .tm-ph b{color:var(--text)}
 .tm-all{align-self:flex-end}
@@ -12059,7 +12062,8 @@ function renderTeam() {
     h += '<div class="tm-cards">' + TEAM.map(function (a) {
       var p = tmProf(a.id), c = chats[a.id] || [], last = c.length ? c[c.length - 1] : null;
       var nxt = a.id === 'mk' ? dr.filter(function (d) { return d.status === 'scheduled' && d.date >= todayISO(); }).sort(function (x, y) { return x.date < y.date ? -1 : 1; })[0] : null;
-      return '<button type="button" class="tm-card" onclick="teamOpen(\'' + a.id + '\')"><span class="tm-ch">' + _tmAv(a.id) + '<span><b>' + _tmE(p.label) + '</b>' +
+      var pend = c.reduce(function (n, m) { return n + (m.actions || []).filter(function (x) { return !x.st; }).length; }, 0);
+      return '<button type="button" class="tm-card" onclick="teamOpen(\'' + a.id + '\')">' + (pend ? '<span class="tm-pend">' + pend + ' ממתינים לאישור</span>' : '') + '<span class="tm-ch">' + _tmAv(a.id) + '<span><b>' + _tmE(p.label) + '</b>' +
         (p.name ? '<em>' + a.role + '</em>' : '') + '</span></span><span>' + a.sub + '</span>' +
         (nxt ? '<small>הפוסט הבא: ' + _skFmt(nxt.date) + ' · ' + _tmE(nxt.title) + '</small>' :
           last ? '<small>' + _tmE(String(last.content || '').slice(0, 70)) + '</small>' : '<small>עוד לא דיברתם</small>') + '</button>';

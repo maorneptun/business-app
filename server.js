@@ -1144,7 +1144,7 @@ ${ag.role}
 נתונים מהאפליקציה (JSON): ${cut(b.ctx, 24000)}
 
 אתה עונה תמיד דרך הכלי respond:
-- reply: התשובה שלך לבעל העסק. אם הכנת טקסטים — כתוב בקצרה מה הכנת (הטקסט המלא נמצא בטיוטות).
+- reply: התשובה שלך לבעל העסק. אם הכנת טקסטים או הצעות — כתוב בקצרה מה הכנת ושזה מחכה לאישור שלו. לעולם אל תכתוב שכבר שמרת, פרסמת, שלחת או קבעת משהו — שום דבר לא קורה בלי שהוא מאשר.
 - actions: הצעות לפעולה (ריק אם אין). מותר לך רק: ${ag.actions.join(', ')}.
   save_draft: title (כותרת קצרה), text (הטקסט המלא, מוכן להעתקה), kind (post / ad / email / message / job / other), channel ו-photo כשרלוונטי.
   plan_post: date, time, channel (facebook / instagram / linkedin / google / whatsapp / site), title, text, photo.
