@@ -12094,14 +12094,15 @@ function renderTeam() {
 function _tmActLabel(a) {
   if (a.type === 'save_draft') return 'טיוטה: ' + (a.title || '') + (a.channel ? ' · ' + (TM_CH[a.channel] || a.channel) : '');
   if (a.type === 'plan_post') return (a.date ? _skFmt(a.date) + (a.time ? ' ' + a.time : '') : '') + ' · ' + (TM_CH[a.channel] || a.channel || '') + ': ' + (a.title || '');
-  if (a.type === 'connect_facebook') return 'חיבור לדף הפייסבוק של העסק';
+  if (a.type === 'connect_facebook') return 'חיבור לדף הפייסבוק של העסק' + (tmFb && tmFb.connected ? ' (כרגע מחובר: ' + (tmFb.name || '') + ')' : '');
+  if (a.type === 'disconnect_facebook') return 'ניתוק מהדף' + (tmFb && tmFb.name ? ' ' + tmFb.name : '');
   if (a.type === 'publish_facebook') return 'פרסום בפייסבוק: ' + (a.title || '');
   if (a.type === 'add_reminder') return 'תזכורת: ' + (a.text || '') + ' · ' + (a.date ? _skFmt(a.date) : '') + (a.time ? ' ' + a.time : '');
   if (a.type === 'add_employee') return 'עובד/ת חדש/ה: ' + [a.fname, a.lname].join(' ').trim() + (a.clients && a.clients.length ? ' · ' + a.clients.join(', ') : '');
   if (a.type === 'invoice') { var c = (clientsData || []).find(function (x) { return x.id === a.clientId; }); var mm = String(a.month || activeMonth).split('-'); return 'חשבונית: ' + (c ? c.name : 'לקוח לא נמצא') + ' · ' + (_HEB_MN[+mm[1] - 1] || '') + ' ' + mm[0]; }
   return a.type;
 }
-function _tmActBtn(a) { return { connect_facebook: 'התחבר לפייסבוק', publish_facebook: 'פתח לפרסום', save_draft: 'שמור בתוצרים', plan_post: 'הוסף ללוח', add_reminder: 'הוסף תזכורת', add_employee: 'פתח טופס עובד', invoice: 'פתח טיוטת חשבונית' }[a.type] || 'אשר'; }
+function _tmActBtn(a) { return { disconnect_facebook: 'נתק', connect_facebook: 'התחבר לפייסבוק', publish_facebook: 'פתח לפרסום', save_draft: 'שמור בתוצרים', plan_post: 'הוסף ללוח', add_reminder: 'הוסף תזכורת', add_employee: 'פתח טופס עובד', invoice: 'פתח טיוטת חשבונית' }[a.type] || 'אשר'; }
 function _tmChatHtml() {
   var ag = _tmAg(teamCur), p = tmProf(teamCur), msgs = tmChats()[teamCur] || [];
   var h = '<div class="tm-top"><button type="button" class="tm-back" onclick="teamOpen(null)">‹ הצוות</button>' +
@@ -12113,7 +12114,7 @@ function _tmChatHtml() {
     '<div class="tm-chips">' + ag.chips.map(function (c) { return '<button type="button" onclick="teamChip(this.textContent)">' + _tmE(c) + '</button>'; }).join('') + '</div></div>';
   msgs.forEach(function (m, mi) {
     h += '<div class="tm-m ' + (m.role === 'user' ? 'u' : m.err ? 'x' : 'a') + '">' + _tmE(m.content) + '</div>';
-    var pend = (m.actions || []).filter(function (a) { return !a.st && a.type !== 'invoice' && a.type !== 'add_employee' && a.type !== 'connect_facebook' && a.type !== 'publish_facebook'; }).length;
+    var pend = (m.actions || []).filter(function (a) { return !a.st && a.type !== 'invoice' && a.type !== 'add_employee' && a.type !== 'connect_facebook' && a.type !== 'disconnect_facebook' && a.type !== 'publish_facebook'; }).length;
     if (pend >= 2) h += '<div class="tm-all"><button type="button" class="btn btn-primary btn-sm" onclick="teamActAll(' + mi + ')">אשר את כל ה-' + pend + '</button></div>';
     (m.actions || []).forEach(function (a, ai) {
       h += '<div class="tm-act"><div class="tm-al">' + _tmE(_tmActLabel(a)) + '</div>' +
@@ -12169,6 +12170,11 @@ function _tmDo(a, quiet) {
       }).catch(function (e) { showToast(e.message || 'לא הצלחתי לפתוח את פייסבוק'); });
     return true;
   }
+  if (a.type === 'disconnect_facebook') {
+    fetch(RC_API + '/fb/disconnect', { method: 'POST' }).then(function (r) { if (!r.ok) throw 0; tmFb = { connected: false }; showToast('פייסבוק נותק'); renderTeam(); })
+      .catch(function () { showToast('הניתוק נכשל'); });
+    return true;
+  }
   if (a.type === 'publish_facebook') {
     if (!(tmFb && tmFb.connected)) { showToast('הדף עוד לא מחובר — בקש ממיכל לחבר את פייסבוק'); return false; }
     var dp = tmDrafts(), nid = _tmNewId();
@@ -12219,7 +12225,7 @@ function teamAct(mi, ai, ok) {
 }
 function teamActAll(mi) {
   var c = tmChats(), m = (c[teamCur] || [])[mi]; if (!m) return; var n = 0;
-  (m.actions || []).forEach(function (a) { if (!a.st && a.type !== 'invoice' && a.type !== 'add_employee' && a.type !== 'connect_facebook' && a.type !== 'publish_facebook' && _tmDo(a, true)) { a.st = 'ok'; n++; } });
+  (m.actions || []).forEach(function (a) { if (!a.st && a.type !== 'invoice' && a.type !== 'add_employee' && a.type !== 'connect_facebook' && a.type !== 'disconnect_facebook' && a.type !== 'publish_facebook' && _tmDo(a, true)) { a.st = 'ok'; n++; } });
   // _tmDo כותב טיוטות — לשמור את הצ'אט אחרי זה בלי לדרוס אותן
   var c2 = tmChats(); c2[teamCur][mi].actions = m.actions; _tmSet('nep_agent_chat', c2);
   try { save(); } catch (e) {}

@@ -1045,11 +1045,12 @@ const AGENTS = {
 - ב-reply: סיכום קצר של הלוח (כמה פוסטים, באילו ימים), לא את כל הטקסטים.
 
 פייסבוק: בנתונים, facebook אומר אם הדף מחובר.
+- כשמבקשים לנתק את פייסבוק, או אומרים שהוא מחובר לדף הלא נכון — הצע disconnect_facebook ואחריו connect_facebook (שניהם באותה תשובה).
 - כשמבקשים לחבר את פייסבוק (או לפרסם כשהוא לא מחובר) — הצע connect_facebook. ב-reply הסבר שבלחיצה ייפתח חלון של פייסבוק להתחברות ובחירת הדף.
 - כשמבקשים לפרסם פוסט והדף מחובר — הצע publish_facebook עם title, text מלא ו-photo. בעל העסק יראה את הטקסט לפני הפרסום ויוכל לערוך ולצרף תמונה.
 - לעולם אל תכתוב שפרסמת — רק שהפוסט מוכן לפרסום ומחכה לאישור.
 הודעות תפוצה ב-SMS/וואטסאפ/מייל ללקוחות שלא אישרו קבלת פרסומות אסורות לפי החוק — אם מבקשים כזה, הזכר את זה בקצרה.`,
-    actions: ['save_draft', 'add_reminder', 'plan_post', 'connect_facebook', 'publish_facebook']
+    actions: ['save_draft', 'add_reminder', 'plan_post', 'connect_facebook', 'disconnect_facebook', 'publish_facebook']
   },
   hr: {
     name: 'גיוס וכוח אדם',
@@ -1154,6 +1155,7 @@ ${ag.role}
   save_draft: title (כותרת קצרה), text (הטקסט המלא, מוכן להעתקה), kind (post / ad / email / message / job / other), channel ו-photo כשרלוונטי.
   plan_post: date, time, channel (facebook / instagram / linkedin / google / whatsapp / site), title, text, photo.
   connect_facebook: בלי שדות.
+  disconnect_facebook: בלי שדות.
   publish_facebook: title, text, photo.
   add_reminder: text, date YYYY-MM-DD, time HH:MM אם צוינה שעה.
   add_employee: fname, lname, nick, clients (שמות לקוחות מהרשימה בדיוק), dailyHours, note.
@@ -1231,6 +1233,7 @@ app.get('/api/fb/connect', (req, res) => {
   // Facebook Login for Business עובד עם config_id (הגדרה שנוצרה ב-Configurations); בלי זה — scope רגיל
   const q = { client_id: process.env.FB_APP_ID, redirect_uri: _fbRedirect(req), state, response_type: 'code' };
   if (process.env.FB_CONFIG_ID) { q.config_id = process.env.FB_CONFIG_ID; q.override_default_response_type = 'true'; } else q.scope = FB_SCOPES;
+  q.auth_type = 'rerequest';
   const url = 'https://www.facebook.com/dialog/oauth?' + new URLSearchParams(q).toString();
   res.json({ url });
 });
@@ -1244,11 +1247,19 @@ app.get('/api/fbcb', async (req, res) => {
     const g = async (path, q) => { const r = await fetch(FB_API + path + '?' + new URLSearchParams(q).toString()); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error((j.error && j.error.message) || 'שגיאת פייסבוק'); return j; };
     const t1 = await g('oauth/access_token', { client_id: id, client_secret: sec, redirect_uri: _fbRedirect(req), code: String(req.query.code) });
     const t2 = await g('oauth/access_token', { grant_type: 'fb_exchange_token', client_id: id, client_secret: sec, fb_exchange_token: t1.access_token });
-    const pages = ((await g('me/accounts', { fields: 'id,name,access_token', access_token: t2.access_token })).data || []).filter(p => p.access_token);
+    let pages = ((await g('me/accounts', { fields: 'id,name,access_token', access_token: t2.access_token, limit: '100' })).data || []).filter(p => p.access_token);
+    // דפים שמנוהלים דרך תיק עסקי (אם יש הרשאה) — מוסיפים לרשימה
+    try {
+      const biz = (await g('me/businesses', { fields: 'id,name', access_token: t2.access_token })).data || [];
+      for (const bz of biz) for (const edge of ['owned_pages', 'client_pages']) {
+        try { ((await g(bz.id + '/' + edge, { fields: 'id,name,access_token', access_token: t2.access_token, limit: '100' })).data || []).forEach(p => { if (p.access_token && !pages.some(x => x.id === p.id)) pages.push(p); }); } catch (e) {}
+      }
+    } catch (e) {}
     if (!pages.length) { fbStates.delete(String(req.query.state)); return res.send(_fbHtml('לא נמצא דף', '<h3>לא נמצא דף עסקי</h3><p>ההתחברות הצליחה, אבל לא נבחר אף דף. נסה שוב וסמן את הדף של העסק.</p><a class="b" href="' + st.ret + '">חזרה לאפליקציה</a>')); }
-    if (pages.length === 1) { await fbSavePage(pages[0]); fbStates.delete(String(req.query.state)); return res.redirect(st.ret + '#team-fb-ok'); }
+    // תמיד מציגים בחירה — גם כשיש דף אחד — כדי שבעל העסק יראה לאיזה דף מתחברים
     st.pages = pages; st.at = Date.now();
-    res.send(_fbHtml('בחירת דף', '<h3>איזה דף לחבר?</h3>' + pages.map(p => '<a class="b" href="/api/fbcb/pick?state=' + encodeURIComponent(req.query.state) + '&id=' + encodeURIComponent(p.id) + '">' + String(p.name || p.id).replace(/[<>&"]/g, '') + '</a>').join('')));
+    res.send(_fbHtml('בחירת דף', '<h3>לאיזה דף לחבר את מיכל?</h3>' + pages.map(p => '<a class="b" href="/api/fbcb/pick?state=' + encodeURIComponent(req.query.state) + '&id=' + encodeURIComponent(p.id) + '">' + String(p.name || p.id).replace(/[<>&"]/g, '') + '</a>').join('') +
+      '<p style="margin-top:18px;font-size:14px;color:#555">הדף שאתה רוצה לא ברשימה? פייסבוק נותן גישה רק לדפים שסימנת בחלון ההתחברות. חזור לאפליקציה, נתק את החיבור ובקש להתחבר שוב — ובחלון של פייסבוק סמן את הדף הנכון.</p><a class="b" style="background:#8a8a8e" href="' + st.ret + '#team-fb-cancel">ביטול</a>'));
   } catch (e) { fbStates.delete(String(req.query.state)); res.status(502).send(_fbHtml('שגיאה', '<h3>החיבור נכשל</h3><p>' + String(e.message).replace(/[<>&]/g, '') + '</p><a class="b" href="' + st.ret + '">חזרה לאפליקציה</a>')); }
 });
 app.get('/api/fbcb/pick', async (req, res) => {
