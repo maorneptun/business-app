@@ -22,7 +22,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 app.use(cors({ origin: '*', methods: ['GET','POST','OPTIONS'], allowedHeaders: ['Content-Type','x-app-token'] }));
 const jsonSmall = express.json({ limit: '10mb' });
 // קבצים (צילומי שעות וכו') מקבלים גבול גדול יותר — שאר הנתיבים נשארים עם 10MB
-app.use((req, res, next) => ((req.path.startsWith('/api/files') || req.path === '/api/vat/doc' || req.path === '/api/vat/scan' || req.path === '/api/sick/scan') ? next() : jsonSmall(req, res, next)));
+app.use((req, res, next) => ((req.path.startsWith('/api/files') || req.path === '/api/vat/doc' || req.path === '/api/vat/scan' || req.path === '/api/sick/scan' || req.path === '/api/fb/post') ? next() : jsonSmall(req, res, next)));
 
 // ===== MongoDB =====
 const MONGO_URI = process.env.MONGODB_URI;
@@ -59,7 +59,7 @@ function tokenOk(req) {
   return crypto.timingSafeEqual(Buffer.from(got), Buffer.from(exp));
 }
 // כשמוגדרת סיסמה — כל נתיבי הנתונים דורשים התחברות
-const PROTECTED = ['/api/files', '/api/state', '/api/data', '/api/clients', '/api/invoice', '/api/transactions', '/api/assistant', '/api/reminders/sync', '/api/green-invoice', '/api/vat', '/api/push', '/api/sick', '/api/agent'];
+const PROTECTED = ['/api/files', '/api/state', '/api/data', '/api/clients', '/api/invoice', '/api/transactions', '/api/assistant', '/api/reminders/sync', '/api/green-invoice', '/api/vat', '/api/push', '/api/sick', '/api/agent', '/api/fb'];
 app.use((req, res, next) => {
   if (req.method === 'OPTIONS' || !process.env.APP_PASSWORD) return next();
   if (req.path === '/api/state/status') return next();
@@ -1043,8 +1043,13 @@ const AGENTS = {
 - גיוון: יתרון של השירות, טיפ ניקיון מקצועי, מאחורי הקלעים של הצוות, מועד או עונה, קריאה ישירה להצעת מחיר.
 - השתמש ב-upcomingHolidays מהנתונים לרעיונות עונתיים (ניקיון לפני חג, חזרה לשגרה). אל תתכנן על תאריכים שכבר יש בהם פוסט ב-plannedPosts, ואל תחזור על נושאים מ-recentlyPublished.
 - ב-reply: סיכום קצר של הלוח (כמה פוסטים, באילו ימים), לא את כל הטקסטים.
+
+פייסבוק: בנתונים, facebook אומר אם הדף מחובר.
+- כשמבקשים לחבר את פייסבוק (או לפרסם כשהוא לא מחובר) — הצע connect_facebook. ב-reply הסבר שבלחיצה ייפתח חלון של פייסבוק להתחברות ובחירת הדף.
+- כשמבקשים לפרסם פוסט והדף מחובר — הצע publish_facebook עם title, text מלא ו-photo. בעל העסק יראה את הטקסט לפני הפרסום ויוכל לערוך ולצרף תמונה.
+- לעולם אל תכתוב שפרסמת — רק שהפוסט מוכן לפרסום ומחכה לאישור.
 הודעות תפוצה ב-SMS/וואטסאפ/מייל ללקוחות שלא אישרו קבלת פרסומות אסורות לפי החוק — אם מבקשים כזה, הזכר את זה בקצרה.`,
-    actions: ['save_draft', 'add_reminder', 'plan_post']
+    actions: ['save_draft', 'add_reminder', 'plan_post', 'connect_facebook', 'publish_facebook']
   },
   hr: {
     name: 'גיוס וכוח אדם',
@@ -1148,6 +1153,8 @@ ${ag.role}
 - actions: הצעות לפעולה (ריק אם אין). מותר לך רק: ${ag.actions.join(', ')}.
   save_draft: title (כותרת קצרה), text (הטקסט המלא, מוכן להעתקה), kind (post / ad / email / message / job / other), channel ו-photo כשרלוונטי.
   plan_post: date, time, channel (facebook / instagram / linkedin / google / whatsapp / site), title, text, photo.
+  connect_facebook: בלי שדות.
+  publish_facebook: title, text, photo.
   add_reminder: text, date YYYY-MM-DD, time HH:MM אם צוינה שעה.
   add_employee: fname, lname, nick, clients (שמות לקוחות מהרשימה בדיוק), dailyHours, note.
   invoice: clientId (מהרשימה), month YYYY-MM.
@@ -1178,6 +1185,104 @@ ${ag.role}
     const actions = (Array.isArray(out.actions) ? out.actions : []).filter(a => a && ag.actions.includes(a.type)).slice(0, 30);
     res.json({ reply: String(out.reply || ''), actions });
   } catch (err) { res.status(502).json({ error: err.message || 'שגיאת AI' }); }
+});
+
+// ===== פייסבוק: חיבור לדף (OAuth מתוך האפליקציה) + פרסום — רק אחרי אישור של בעל העסק =====
+const FB_API = 'https://graph.facebook.com/' + (process.env.FB_GRAPH_VERSION ? process.env.FB_GRAPH_VERSION + '/' : '');
+const FB_SCOPES = 'pages_show_list,pages_manage_posts,pages_read_engagement';
+let fbPageCache = null;
+const fbStates = new Map();
+async function fbCreds() {
+  if (process.env.FB_PAGE_ID && process.env.FB_PAGE_TOKEN) return { id: process.env.FB_PAGE_ID, tok: process.env.FB_PAGE_TOKEN };
+  if (!db) return null;
+  const d = await db.collection('config').findOne({ _id: 'fb' });
+  return d && d.pageId && d.token ? { id: d.pageId, tok: d.token, name: d.name } : null;
+}
+const _fbBase = req => (process.env.PUBLIC_URL || ((req.get('x-forwarded-proto') || req.protocol) + '://' + req.get('host'))).replace(/\/$/, '');
+const _fbRedirect = req => _fbBase(req) + '/api/fbcb';
+const _fbRet = r => { const ok = (process.env.FRONTEND_URL || 'https://neptun-employees.onrender.com').replace(/\/$/, ''); return typeof r === 'string' && r.indexOf(ok) === 0 ? r.split('#')[0] : ok + '/'; };
+const _fbHtml = (title, body) => `<!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title>
+<style>body{font-family:system-ui,sans-serif;background:#f4f5f7;margin:0;padding:24px;color:#1d1d1f}.c{max-width:420px;margin:40px auto;background:#fff;border-radius:18px;padding:22px}a.b{display:block;background:#3F6FA8;color:#fff;text-decoration:none;border-radius:12px;padding:14px;margin-top:10px;text-align:center;font-weight:600}</style></head><body><div class="c">${body}</div></body></html>`;
+async function fbSavePage(p) {
+  await db.collection('config').updateOne({ _id: 'fb' }, { $set: { pageId: p.id, name: p.name || '', token: p.access_token, at: new Date() } }, { upsert: true });
+  fbPageCache = null;
+}
+
+app.get('/api/fb/status', async (req, res) => {
+  const canConnect = !!(process.env.FB_APP_ID && process.env.FB_APP_SECRET);
+  try {
+    const c = await fbCreds();
+    if (!c) return res.json({ connected: false, canConnect });
+    if (!fbPageCache || Date.now() - fbPageCache.at > 3600000) {
+      const r = await fetch(FB_API + encodeURIComponent(c.id) + '?fields=name,link&access_token=' + encodeURIComponent(c.tok));
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) return res.json({ connected: false, canConnect, error: 'החיבור לפייסבוק פג או בוטל — צריך להתחבר מחדש' });
+      fbPageCache = { at: Date.now(), name: j.name || c.name || '', link: j.link || '' };
+    }
+    res.json({ connected: true, canConnect, name: fbPageCache.name, link: fbPageCache.link });
+  } catch (e) { res.json({ connected: false, canConnect, error: e.message }); }
+});
+// מחזיר קישור התחברות לפייסבוק (רק למשתמש מחובר לאפליקציה)
+app.get('/api/fb/connect', (req, res) => {
+  if (!process.env.FB_APP_ID || !process.env.FB_APP_SECRET) return res.status(501).json({ error: 'need_app' });
+  const state = require('crypto').randomBytes(18).toString('hex');
+  for (const [k, v] of fbStates) if (Date.now() - v.at > 900000) fbStates.delete(k);
+  fbStates.set(state, { at: Date.now(), ret: _fbRet(req.query.ret) });
+  const url = 'https://www.facebook.com/dialog/oauth?' + new URLSearchParams({ client_id: process.env.FB_APP_ID, redirect_uri: _fbRedirect(req), state, scope: FB_SCOPES, response_type: 'code' }).toString();
+  res.json({ url });
+});
+// פייסבוק מחזיר לכאן אחרי ההתחברות (מאובטח ע"י state חד-פעמי)
+app.get('/api/fbcb', async (req, res) => {
+  const st = fbStates.get(String(req.query.state || ''));
+  if (!st || Date.now() - st.at > 900000) return res.status(400).send(_fbHtml('שגיאה', '<h3>הקישור פג</h3><p>חזור לאפליקציה ובקש מחדש להתחבר לפייסבוק.</p>'));
+  if (req.query.error || !req.query.code) { fbStates.delete(String(req.query.state)); return res.redirect(st.ret + '#team-fb-cancel'); }
+  try {
+    const id = process.env.FB_APP_ID, sec = process.env.FB_APP_SECRET;
+    const g = async (path, q) => { const r = await fetch(FB_API + path + '?' + new URLSearchParams(q).toString()); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error((j.error && j.error.message) || 'שגיאת פייסבוק'); return j; };
+    const t1 = await g('oauth/access_token', { client_id: id, client_secret: sec, redirect_uri: _fbRedirect(req), code: String(req.query.code) });
+    const t2 = await g('oauth/access_token', { grant_type: 'fb_exchange_token', client_id: id, client_secret: sec, fb_exchange_token: t1.access_token });
+    const pages = ((await g('me/accounts', { fields: 'id,name,access_token', access_token: t2.access_token })).data || []).filter(p => p.access_token);
+    if (!pages.length) { fbStates.delete(String(req.query.state)); return res.send(_fbHtml('לא נמצא דף', '<h3>לא נמצא דף עסקי</h3><p>ההתחברות הצליחה, אבל לא נבחר אף דף. נסה שוב וסמן את הדף של העסק.</p><a class="b" href="' + st.ret + '">חזרה לאפליקציה</a>')); }
+    if (pages.length === 1) { await fbSavePage(pages[0]); fbStates.delete(String(req.query.state)); return res.redirect(st.ret + '#team-fb-ok'); }
+    st.pages = pages; st.at = Date.now();
+    res.send(_fbHtml('בחירת דף', '<h3>איזה דף לחבר?</h3>' + pages.map(p => '<a class="b" href="/api/fbcb/pick?state=' + encodeURIComponent(req.query.state) + '&id=' + encodeURIComponent(p.id) + '">' + String(p.name || p.id).replace(/[<>&"]/g, '') + '</a>').join('')));
+  } catch (e) { fbStates.delete(String(req.query.state)); res.status(502).send(_fbHtml('שגיאה', '<h3>החיבור נכשל</h3><p>' + String(e.message).replace(/[<>&]/g, '') + '</p><a class="b" href="' + st.ret + '">חזרה לאפליקציה</a>')); }
+});
+app.get('/api/fbcb/pick', async (req, res) => {
+  const st = fbStates.get(String(req.query.state || ''));
+  const p = st && st.pages && st.pages.find(x => x.id === String(req.query.id || ''));
+  if (!p) return res.status(400).send(_fbHtml('שגיאה', '<h3>הקישור פג</h3><p>בקש מחדש להתחבר לפייסבוק.</p>'));
+  try { await fbSavePage(p); fbStates.delete(String(req.query.state)); res.redirect(st.ret + '#team-fb-ok'); }
+  catch (e) { res.status(500).send(_fbHtml('שגיאה', '<h3>שמירה נכשלה</h3>')); }
+});
+app.post('/api/fb/disconnect', async (req, res) => {
+  try { if (db) await db.collection('config').deleteOne({ _id: 'fb' }); fbPageCache = null; res.json({ ok: true }); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.post('/api/fb/post', express.json({ limit: '15mb' }), async (req, res) => {
+  const c = await fbCreds().catch(() => null);
+  if (!c) return res.status(501).json({ error: 'פייסבוק לא מחובר' });
+  try {
+    const b = req.body || {};
+    const message = String(b.message || '').trim();
+    if (!message || message.length > 60000) return res.status(400).json({ error: 'טקסט לא תקין' });
+    let r;
+    if (typeof b.image === 'string' && b.image) {
+      const type = /^image\/(jpeg|png|webp)$/.test(String(b.imageType || '')) ? b.imageType : 'image/jpeg';
+      const fd = new FormData();
+      fd.append('caption', message);
+      fd.append('access_token', c.tok);
+      fd.append('source', new Blob([Buffer.from(b.image, 'base64')], { type }), 'photo.' + type.split('/')[1]);
+      r = await fetch(FB_API + encodeURIComponent(c.id) + '/photos', { method: 'POST', body: fd });
+    } else {
+      r = await fetch(FB_API + encodeURIComponent(c.id) + '/feed', { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ message, access_token: c.tok }).toString() });
+    }
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) return res.status(502).json({ error: (j.error && j.error.message) || 'פייסבוק דחה את הפרסום' });
+    const pid = j.post_id || j.id || '';
+    res.json({ ok: true, id: pid, link: pid ? 'https://www.facebook.com/' + pid : '' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // ===== REMINDERS + WHATSAPP (GREEN-API) =====

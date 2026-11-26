@@ -633,6 +633,8 @@ html[data-dark] .tm-m.x{background:#3b1d1d;color:#f3b4b4}
 .tm-who{display:flex;align-items:center;gap:12px;margin:2px 0 10px}
 .tm-who b{font-size:19px}
 .tm-card{position:relative}
+.tm-fb{font-size:13px;color:var(--text-muted);margin:-4px 2px 10px}
+.fb-prev img{max-width:100%;max-height:220px;border-radius:12px;display:block}
 .tm-pend{position:absolute;top:12px;left:12px;font-size:12px;font-weight:700;color:#8A4B00;background:#FFF4E5;border-radius:8px;padding:3px 8px}
 html[data-dark] .tm-pend{background:#3a2a12;color:#f5c67a}
 .tm-ph{font-size:13.5px;color:var(--text-muted);margin-top:8px;line-height:1.5}
@@ -11978,7 +11980,7 @@ var TEAM = [
 ];
 var TM_CH = { facebook: 'פייסבוק', instagram: 'אינסטגרם', linkedin: 'לינקדאין', google: 'גוגל', whatsapp: 'וואטסאפ', site: 'אתר' };
 var TM_ST = { draft: 'טיוטה', scheduled: 'מתוכנן', published: 'פורסם' };
-var teamCur = null, teamBusy = false, teamTab = 'team', teamDf = 'all';
+var teamCur = null, teamBusy = false, teamTab = 'team', teamDf = 'all', tmFb = null;
 function _tmGet(k, d) { try { var v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? d : v; } catch (e) { return d; } }
 function _tmSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { showToast('אין מספיק מקום בזיכרון המכשיר'); } try { if (window.nepSync && nepSync.now) nepSync.now(); } catch (e) {} }
 function tmChats() { return _tmGet('nep_agent_chat', {}); }
@@ -12031,6 +12033,7 @@ function tmCtx(id) {
   var dr = tmDrafts();
   return { activeEmployees: act.length, clients: cls.length, clientNames: cls.slice(0, 40).map(function (c) { return c.name; }),
     upcomingHolidays: _tmUpcoming(),
+    facebook: tmFb && tmFb.connected ? { connected: true, page: tmFb.name || '' } : { connected: false },
     plannedPosts: dr.filter(function (d) { return d.status === 'scheduled' && d.date >= todayISO(); }).map(function (d) { return { date: d.date, channel: d.channel, title: d.title }; }).slice(0, 40),
     recentlyPublished: dr.filter(function (d) { return d.status === 'published'; }).slice(-10).map(function (d) { return d.title; }) };
 }
@@ -12045,6 +12048,8 @@ function _tmDraftHtml(d, showAg) {
     '<div class="tm-dt">' + _tmE(d.text) + '</div>' +
     (d.photo ? '<div class="tm-ph"><b>תמונה מומלצת:</b> ' + _tmE(d.photo) + '</div>' : '') +
     '<div class="tm-da"><button type="button" class="btn btn-secondary btn-sm" onclick="teamCopy(\'' + d.id + '\')">העתק</button>' +
+    (st !== 'published' && tmFb && tmFb.connected && (!d.channel || d.channel === 'facebook') && (d.kind === 'post' || d.kind === 'ad' || !d.kind) ? '<button type="button" class="btn btn-primary btn-sm" onclick="teamFbOpen(\'' + d.id + '\')">פרסם בפייסבוק</button>' : '') +
+    (d.pubLink ? '<a class="btn btn-secondary btn-sm" href="' + _tmE(d.pubLink) + '" target="_blank" rel="noopener">צפה בפוסט</a>' : '') +
     (st !== 'published' ? '<button type="button" class="btn btn-secondary btn-sm" onclick="teamSetSt(\'' + d.id + '\',\'published\')">סמן כפורסם</button>'
       : '<button type="button" class="btn btn-secondary btn-sm" onclick="teamSetSt(\'' + d.id + '\',\'draft\')">החזר לטיוטה</button>') +
     '<button type="button" class="btn btn-secondary btn-sm" style="color:var(--danger)" onclick="teamDelDraft(\'' + d.id + '\')">מחק</button></div></div>';
@@ -12052,6 +12057,7 @@ function _tmDraftHtml(d, showAg) {
 function renderTeam() {
   var body = document.getElementById('team-body'); if (!body) return;
   var sub = document.getElementById('team-sub');
+  if (tmFb === null) { tmFb = false; fetch(RC_API + '/fb/status').then(function (r) { return r.json(); }).then(function (j) { tmFb = j || { connected: false }; if (!teamCur && teamTab === 'drafts') renderTeam(); }).catch(function () { tmFb = { connected: false }; }); }
   if (teamCur) { if (sub) sub.textContent = ''; body.innerHTML = _tmChatHtml(); _tmScroll(); return; }
   if (sub) sub.textContent = 'עובדים וירטואליים שמבצעים משימות בשבילך';
   var chats = tmChats(), dr = tmDrafts();
@@ -12071,6 +12077,7 @@ function renderTeam() {
     var cfg = tmCfg();
     h += '<button type="button" class="tm-biz" onclick="teamCfgOpen(\'\')"><b>על העסק</b><span>' + (cfg.business ? _tmE(cfg.business.slice(0, 90)) + '…' : 'ספר לצוות מה העסק עושה, אזורים, מחירים וסגנון. הם ישתמשו בזה בכל משימה.') + '</span></button>';
   } else {
+    h += '<div class="tm-fb">' + (tmFb && tmFb.connected ? 'מחובר לדף בפייסבוק: <b>' + _tmE(tmFb.name || '') + '</b>' : tmFb && tmFb.error ? 'פייסבוק: ' + _tmE(tmFb.error) : 'פייסבוק לא מחובר — אפשר לבקש ממיכל לחבר אותו') + '</div>';
     var cnt = function (s) { return dr.filter(function (d) { return s === 'all' || (d.status || 'draft') === s; }).length; };
     h += '<div class="tm-flt">' + [['all', 'הכל'], ['scheduled', 'מתוכנן'], ['draft', 'טיוטה'], ['published', 'פורסם']].map(function (f) {
       return '<button type="button" aria-pressed="' + (teamDf === f[0]) + '" onclick="teamDf=\'' + f[0] + '\';renderTeam()">' + f[1] + ' (' + cnt(f[0]) + ')</button>';
@@ -12087,12 +12094,14 @@ function renderTeam() {
 function _tmActLabel(a) {
   if (a.type === 'save_draft') return 'טיוטה: ' + (a.title || '') + (a.channel ? ' · ' + (TM_CH[a.channel] || a.channel) : '');
   if (a.type === 'plan_post') return (a.date ? _skFmt(a.date) + (a.time ? ' ' + a.time : '') : '') + ' · ' + (TM_CH[a.channel] || a.channel || '') + ': ' + (a.title || '');
+  if (a.type === 'connect_facebook') return 'חיבור לדף הפייסבוק של העסק';
+  if (a.type === 'publish_facebook') return 'פרסום בפייסבוק: ' + (a.title || '');
   if (a.type === 'add_reminder') return 'תזכורת: ' + (a.text || '') + ' · ' + (a.date ? _skFmt(a.date) : '') + (a.time ? ' ' + a.time : '');
   if (a.type === 'add_employee') return 'עובד/ת חדש/ה: ' + [a.fname, a.lname].join(' ').trim() + (a.clients && a.clients.length ? ' · ' + a.clients.join(', ') : '');
   if (a.type === 'invoice') { var c = (clientsData || []).find(function (x) { return x.id === a.clientId; }); var mm = String(a.month || activeMonth).split('-'); return 'חשבונית: ' + (c ? c.name : 'לקוח לא נמצא') + ' · ' + (_HEB_MN[+mm[1] - 1] || '') + ' ' + mm[0]; }
   return a.type;
 }
-function _tmActBtn(a) { return { save_draft: 'שמור בתוצרים', plan_post: 'הוסף ללוח', add_reminder: 'הוסף תזכורת', add_employee: 'פתח טופס עובד', invoice: 'פתח טיוטת חשבונית' }[a.type] || 'אשר'; }
+function _tmActBtn(a) { return { connect_facebook: 'התחבר לפייסבוק', publish_facebook: 'פתח לפרסום', save_draft: 'שמור בתוצרים', plan_post: 'הוסף ללוח', add_reminder: 'הוסף תזכורת', add_employee: 'פתח טופס עובד', invoice: 'פתח טיוטת חשבונית' }[a.type] || 'אשר'; }
 function _tmChatHtml() {
   var ag = _tmAg(teamCur), p = tmProf(teamCur), msgs = tmChats()[teamCur] || [];
   var h = '<div class="tm-top"><button type="button" class="tm-back" onclick="teamOpen(null)">‹ הצוות</button>' +
@@ -12104,11 +12113,11 @@ function _tmChatHtml() {
     '<div class="tm-chips">' + ag.chips.map(function (c) { return '<button type="button" onclick="teamChip(this.textContent)">' + _tmE(c) + '</button>'; }).join('') + '</div></div>';
   msgs.forEach(function (m, mi) {
     h += '<div class="tm-m ' + (m.role === 'user' ? 'u' : m.err ? 'x' : 'a') + '">' + _tmE(m.content) + '</div>';
-    var pend = (m.actions || []).filter(function (a) { return !a.st && a.type !== 'invoice' && a.type !== 'add_employee'; }).length;
+    var pend = (m.actions || []).filter(function (a) { return !a.st && a.type !== 'invoice' && a.type !== 'add_employee' && a.type !== 'connect_facebook' && a.type !== 'publish_facebook'; }).length;
     if (pend >= 2) h += '<div class="tm-all"><button type="button" class="btn btn-primary btn-sm" onclick="teamActAll(' + mi + ')">אשר את כל ה-' + pend + '</button></div>';
     (m.actions || []).forEach(function (a, ai) {
       h += '<div class="tm-act"><div class="tm-al">' + _tmE(_tmActLabel(a)) + '</div>' +
-        ((a.type === 'save_draft' || a.type === 'plan_post') && a.text ? '<div class="tm-dt">' + _tmE(a.text) + '</div>' : '') +
+        ((a.type === 'save_draft' || a.type === 'plan_post' || a.type === 'publish_facebook') && a.text ? '<div class="tm-dt">' + _tmE(a.text) + '</div>' : '') +
         (a.photo ? '<div class="tm-ph"><b>תמונה מומלצת:</b> ' + _tmE(a.photo) + '</div>' : '') +
         (a.st ? '<div class="tm-ast">' + (a.st === 'ok' ? 'בוצע' : 'דולג') + '</div>' :
           '<div class="tm-da">' + (a.text ? '<button type="button" class="btn btn-secondary btn-sm" onclick="teamCopyAct(' + mi + ',' + ai + ')">העתק</button>' : '') +
@@ -12151,6 +12160,21 @@ function teamSend() {
 function _tmNewId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 // מבצע פעולה אחת. מחזיר true אם בוצעה
 function _tmDo(a, quiet) {
+  if (a.type === 'connect_facebook') {
+    fetch(RC_API + '/fb/connect?ret=' + encodeURIComponent(location.href.split('#')[0])).then(function (r) { return r.json().then(function (j) { return { r: r, j: j }; }); })
+      .then(function (x) {
+        if (x.r.status === 501) { _tmPush(teamCur, { role: 'assistant', err: 1, content: 'כדי שאוכל לחבר את הדף צריך הקמה חד-פעמית: אפליקציה ב-Meta for Developers, ושני ערכים ב-Render — FB_APP_ID ו-FB_APP_SECRET. אחרי זה אני מחברת אותך מכאן בלחיצה.', ts: Date.now() }); renderTeam(); return; }
+        if (!x.r.ok || !x.j.url) throw new Error(x.j.error || 'שגיאה');
+        location.href = x.j.url;
+      }).catch(function (e) { showToast(e.message || 'לא הצלחתי לפתוח את פייסבוק'); });
+    return true;
+  }
+  if (a.type === 'publish_facebook') {
+    if (!(tmFb && tmFb.connected)) { showToast('הדף עוד לא מחובר — בקש ממיכל לחבר את פייסבוק'); return false; }
+    var dp = tmDrafts(), nid = _tmNewId();
+    dp.push({ id: nid, agent: teamCur, title: a.title || 'פוסט', text: a.text || '', kind: 'post', channel: 'facebook', photo: a.photo || '', status: 'draft', at: Date.now() });
+    _tmSet('nep_agent_drafts', dp.slice(-300)); teamFbOpen(nid); return true;
+  }
   if (a.type === 'save_draft') {
     var d = tmDrafts(); d.push({ id: _tmNewId(), agent: teamCur, title: a.title || 'טיוטה', text: a.text || '', kind: a.kind || '', channel: a.channel || '', photo: a.photo || '', status: 'draft', at: Date.now() });
     _tmSet('nep_agent_drafts', d.slice(-300)); if (!quiet) showToast('נשמר בתוצרים'); return true;
@@ -12195,7 +12219,7 @@ function teamAct(mi, ai, ok) {
 }
 function teamActAll(mi) {
   var c = tmChats(), m = (c[teamCur] || [])[mi]; if (!m) return; var n = 0;
-  (m.actions || []).forEach(function (a) { if (!a.st && a.type !== 'invoice' && a.type !== 'add_employee' && _tmDo(a, true)) { a.st = 'ok'; n++; } });
+  (m.actions || []).forEach(function (a) { if (!a.st && a.type !== 'invoice' && a.type !== 'add_employee' && a.type !== 'connect_facebook' && a.type !== 'publish_facebook' && _tmDo(a, true)) { a.st = 'ok'; n++; } });
   // _tmDo כותב טיוטות — לשמור את הצ'אט אחרי זה בלי לדרוס אותן
   var c2 = tmChats(); c2[teamCur][mi].actions = m.actions; _tmSet('nep_agent_chat', c2);
   try { save(); } catch (e) {}
@@ -12206,6 +12230,51 @@ function teamCopyAct(mi, ai) { var m = (tmChats()[teamCur] || [])[mi], a = m && 
 function teamCopy(id) { var d = tmDrafts().find(function (x) { return x.id === id; }); if (d) _tmCopy(d.text); }
 function teamSetSt(id, st) { var dr = tmDrafts(), d = dr.find(function (x) { return x.id === id; }); if (!d) return; d.status = st; if (st === 'published') d.pubAt = Date.now(); _tmSet('nep_agent_drafts', dr); renderTeam(); }
 function teamDelDraft(id) { if (!confirm('למחוק?')) return; _tmSet('nep_agent_drafts', tmDrafts().filter(function (x) { return x.id !== id; })); renderTeam(); }
+/* חזרה מההתחברות לפייסבוק */
+(function () {
+  var h = location.hash || ''; if (h.indexOf('#team-fb-') !== 0) return;
+  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+  setTimeout(function () {
+    tmFb = null; teamCur = 'mk';
+    try { showPage('team'); } catch (e) {}
+    if (h === '#team-fb-ok') fetch(RC_API + '/fb/status').then(function (r) { return r.json(); }).then(function (j) {
+      tmFb = j; _tmPush('mk', { role: 'assistant', content: j && j.connected ? 'מחוברת לדף "' + (j.name || '') + '". מעכשיו אפשר לבקש ממני לפרסם — אני מכינה, ואתה רואה ומאשר לפני שזה עולה.' : 'משהו לא הסתדר בחיבור. נסה שוב לבקש ממני לחבר את פייסבוק.', ts: Date.now() }); renderTeam();
+    });
+    else showToast('ההתחברות לפייסבוק בוטלה');
+  }, 900);
+})();
+/* פרסום בפייסבוק — רק אחרי שבעל העסק רואה את הטקסט ולוחץ "פרסם עכשיו" */
+var _fbD = null, _fbImg = null;
+function teamFbOpen(id) {
+  var d = tmDrafts().find(function (x) { return x.id === id; }); if (!d) return;
+  _fbD = id; _fbImg = null;
+  document.getElementById('fb-page').textContent = tmFb && tmFb.name ? 'יפורסם בדף: ' + tmFb.name : '';
+  document.getElementById('fb-text').value = d.text || '';
+  document.getElementById('fb-ph').textContent = d.photo ? 'תמונה מומלצת: ' + d.photo : '';
+  document.getElementById('fb-prev').innerHTML = ''; document.getElementById('fb-rm').hidden = true;
+  var b = document.getElementById('fb-go'); b.disabled = false; b.textContent = 'פרסם עכשיו';
+  openModal('modal-fbpost');
+}
+function teamFbImg(input) {
+  var f = (input.files || [])[0]; input.value = ''; if (!f) return;
+  _rcCompress(f).then(function (ff) { return _rcB64(ff).then(function (b64) { _fbImg = { data: b64, type: ff.type || 'image/jpeg' };
+    document.getElementById('fb-prev').innerHTML = '<img src="data:' + _fbImg.type + ';base64,' + b64 + '" alt="">'; document.getElementById('fb-rm').hidden = false; }); })
+    .catch(function () { showToast('לא הצלחתי לקרוא את התמונה'); });
+}
+function teamFbImgRm() { _fbImg = null; document.getElementById('fb-prev').innerHTML = ''; document.getElementById('fb-rm').hidden = true; }
+function teamFbGo() {
+  var msg = document.getElementById('fb-text').value.trim(); if (!msg) { showToast('הטקסט ריק'); return; }
+  if (/\[(להשלים|טלפון|מחיר)\]/.test(msg) && !confirm('בטקסט נשאר [להשלים] או [טלפון]. לפרסם בכל זאת?')) return;
+  var b = document.getElementById('fb-go'); b.disabled = true; b.textContent = 'מפרסם…';
+  fetch(RC_API + '/fb/post', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: msg, image: _fbImg ? _fbImg.data : '', imageType: _fbImg ? _fbImg.type : '' }) })
+    .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) throw new Error(j.error || 'שגיאה ' + r.status); return j; }); })
+    .then(function (j) {
+      var dr = tmDrafts(), d = dr.find(function (x) { return x.id === _fbD; });
+      if (d) { d.text = msg; d.status = 'published'; d.pubAt = Date.now(); d.channel = 'facebook'; d.pubLink = j.link || ''; _tmSet('nep_agent_drafts', dr); }
+      closeModal('modal-fbpost'); showToast('פורסם בפייסבוק'); renderTeam();
+    })
+    .catch(function (e) { b.disabled = false; b.textContent = 'פרסם עכשיו'; showToast(e.message || 'הפרסום נכשל'); });
+}
 var _tmCfgFor = '', _tmPhoto = null;
 function teamCfgOpen(id) {
   _tmCfgFor = id; _tmPhoto = null;
@@ -12991,6 +13060,26 @@ function vatRepPdf(btn) {
       <div class="sm-card" id="hl-list"></div>
       <button type="button" class="btn btn-secondary" onclick="homeReset()">חזרה לסידור ברירת המחדל</button>
     </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-fbpost">
+  <div class="modal" style="width:520px">
+    <div class="modal-header">
+      <div class="modal-title">פרסום בפייסבוק</div>
+      <button class="modal-close" onclick="closeModal('modal-fbpost')" aria-label="סגור">×</button>
+    </div>
+    <p class="tc-help" id="fb-page"></p>
+    <textarea class="form-control" id="fb-text" rows="8" style="resize:vertical;font-size:15px;line-height:1.6"></textarea>
+    <p class="tc-help" id="fb-ph" style="margin-top:8px"></p>
+    <div class="tc-pb" style="margin:4px 0 10px">
+      <label class="btn btn-secondary btn-sm">הוספת תמונה<input type="file" accept="image/*" onchange="teamFbImg(this)" hidden></label>
+      <button type="button" class="btn btn-secondary btn-sm" id="fb-rm" onclick="teamFbImgRm()" hidden>הסרת תמונה</button>
+    </div>
+    <div id="fb-prev" class="fb-prev"></div>
+    <div class="modal-footer"><div>
+      <button class="btn btn-secondary" onclick="closeModal('modal-fbpost')">ביטול</button>
+      <button class="btn btn-primary" id="fb-go" onclick="teamFbGo()">פרסם עכשיו</button>
+    </div></div>
   </div>
 </div>
 <div class="modal-overlay" id="modal-teamcfg">
