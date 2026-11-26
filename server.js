@@ -1228,7 +1228,10 @@ app.get('/api/fb/connect', (req, res) => {
   const state = require('crypto').randomBytes(18).toString('hex');
   for (const [k, v] of fbStates) if (Date.now() - v.at > 900000) fbStates.delete(k);
   fbStates.set(state, { at: Date.now(), ret: _fbRet(req.query.ret) });
-  const url = 'https://www.facebook.com/dialog/oauth?' + new URLSearchParams({ client_id: process.env.FB_APP_ID, redirect_uri: _fbRedirect(req), state, scope: FB_SCOPES, response_type: 'code' }).toString();
+  // Facebook Login for Business עובד עם config_id (הגדרה שנוצרה ב-Configurations); בלי זה — scope רגיל
+  const q = { client_id: process.env.FB_APP_ID, redirect_uri: _fbRedirect(req), state, response_type: 'code' };
+  if (process.env.FB_CONFIG_ID) { q.config_id = process.env.FB_CONFIG_ID; q.override_default_response_type = 'true'; } else q.scope = FB_SCOPES;
+  const url = 'https://www.facebook.com/dialog/oauth?' + new URLSearchParams(q).toString();
   res.json({ url });
 });
 // פייסבוק מחזיר לכאן אחרי ההתחברות (מאובטח ע"י state חד-פעמי)
